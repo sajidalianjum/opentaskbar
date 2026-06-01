@@ -16,6 +16,8 @@ final class AppButtonView: NSView {
     private var isHovering = false
     private var trackingArea: NSTrackingArea?
 
+    private static let sharedPopover = WindowListPopover()
+
     var target: AnyObject?
     var action: Selector?
     var rightAction: ((Int) -> Void)?
@@ -169,12 +171,39 @@ final class AppButtonView: NSView {
         isHovering = true
         hoverOverlay.isHidden = false
         layer?.backgroundColor = NSColor.controlAccentColor.withAlphaComponent(0.05).cgColor
+
+        showWindowListIfNeeded()
     }
 
     override func mouseExited(with event: NSEvent) {
         isHovering = false
         hoverOverlay.isHidden = true
         layer?.backgroundColor = nil
+
+        Self.sharedPopover.scheduleHide()
+    }
+
+    private func showWindowListIfNeeded() {
+        let settings = TaskbarSettings.shared
+        guard !settings.showThumbnails, appGroup.hasMultipleWindows else { return }
+
+        let popover = Self.sharedPopover
+        popover.cancelHideTimer()
+
+        guard let screen = window?.screen ?? NSScreen.main else { return }
+
+        let buttonRectInScreen = convert(bounds, to: nil)
+        let screenPoint: NSPoint
+        if let windowFrame = window?.frame {
+            screenPoint = NSPoint(
+                x: windowFrame.origin.x + buttonRectInScreen.midX,
+                y: windowFrame.origin.y + buttonRectInScreen.maxY
+            )
+        } else {
+            screenPoint = NSPoint(x: buttonRectInScreen.midX, y: buttonRectInScreen.maxY)
+        }
+
+        popover.show(windows: appGroup.windows, anchorPoint: screenPoint, screen: screen)
     }
 
     override func mouseDown(with event: NSEvent) {

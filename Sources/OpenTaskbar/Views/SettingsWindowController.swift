@@ -291,7 +291,7 @@ final class SettingsWindowController {
 
     @objc private func resetDefaults() {
         settings.dockMode = .hidden
-        settings.showThumbnails = true
+        settings.showThumbnails = false
         settings.showAppNames = false
         settings.showOnAllScreens = true
         settings.barAlignment = .center

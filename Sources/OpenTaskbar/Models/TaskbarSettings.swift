@@ -91,7 +91,7 @@ final class TaskbarSettings {
     private init() {
         let defaults = UserDefaults.standard
         self.dockMode = DockMode(rawValue: defaults.string(forKey: "dockMode") ?? "") ?? .hidden
-        self.showThumbnails = defaults.object(forKey: "showThumbnails") as? Bool ?? true
+        self.showThumbnails = defaults.object(forKey: "showThumbnails") as? Bool ?? false
         self.showAppNames = defaults.object(forKey: "showAppNames") as? Bool ?? false
         self.showOnAllScreens = defaults.object(forKey: "showOnAllScreens") as? Bool ?? true
         self.barAlignment = BarAlignment(rawValue: defaults.string(forKey: "barAlignment") ?? "") ?? .center

@@ -1,0 +1,9 @@
+.build/
+build/
+*.xcodeproj/
+.DS_Store
+DerivedData/
+.swiftpm/
+*.swp
+*~
+.idea/

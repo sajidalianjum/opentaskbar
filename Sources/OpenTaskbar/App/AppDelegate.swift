@@ -29,6 +29,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     private func setupApp() {
+        if dockManager.hasSavedState() {
+            dockManager.restoreDock()
+        }
         dockManager.hideDock()
         windowManager.start()
         createTaskbarPanels()

@@ -28,7 +28,15 @@ final class DockManager {
         restartDock()
     }
 
+    func hasSavedState() -> Bool {
+        FileManager.default.fileExists(atPath: defaultsPath)
+    }
+
     func restoreDock() {
+        if savedState.isEmpty {
+            loadStateFromFile()
+        }
+
         guard !savedState.isEmpty else {
             runDefaults("delete", "com.apple.dock", "autohide-delay")
             runDefaults("write", "com.apple.dock", "autohide", "-bool", "false")
@@ -45,6 +53,12 @@ final class DockManager {
             runDefaults("delete", "com.apple.dock", "autohide-delay")
         }
         restartDock()
+    }
+
+    private func loadStateFromFile() {
+        guard FileManager.default.fileExists(atPath: defaultsPath) else { return }
+        guard let saved = NSDictionary(contentsOfFile: defaultsPath) as? [String: Any] else { return }
+        savedState = saved
     }
 
     private func saveCurrentDockState() {

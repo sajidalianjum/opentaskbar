@@ -22,7 +22,7 @@ cp "${UNIVERSAL_BINARY}" "${APP_BUNDLE}/Contents/MacOS/${APP_NAME}"
 cp "${PROJECT_DIR}/Resources/Info.plist" "${APP_BUNDLE}/Contents/Info.plist"
 
 echo "Code signing..."
-codesign --force --deep --sign - "${APP_BUNDLE}"
+codesign --force --deep --sign "OpenTaskbarDev" "${APP_BUNDLE}"
 
 echo ""
 echo "Build complete: ${APP_BUNDLE}"

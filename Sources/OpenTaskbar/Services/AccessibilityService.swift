@@ -98,13 +98,11 @@ final class AccessibilityService {
         AXUIElementSetAttributeValue(element, kAXFocusedAttribute as CFString, kCFBooleanTrue)
         AXUIElementPerformAction(element, kAXRaiseAction as CFString)
 
-        NSApp.activate(ignoringOtherApps: true)
         app.activate()
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
             AXUIElementSetAttributeValue(element, kAXFocusedAttribute as CFString, kCFBooleanTrue)
         }
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
-            NSApp.activate(ignoringOtherApps: true)
             app.activate()
         }
     }

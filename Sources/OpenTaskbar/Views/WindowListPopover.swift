@@ -13,11 +13,14 @@ final class WindowListPopover: NSWindow {
 
     private let containerView: NSView
     private let visualEffect: NSVisualEffectView
+    private var solidBackgroundView: NSView?
     private let stackView: NSStackView
+    private let borderView: NSView
 
     init() {
         containerView = NSView()
         visualEffect = NSVisualEffectView()
+        borderView = NSView()
         stackView = NSStackView()
         stackView.orientation = .vertical
         stackView.alignment = .leading
@@ -38,12 +41,19 @@ final class WindowListPopover: NSWindow {
         hidesOnDeactivate = false
         collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
 
-        visualEffect.material = .popover
+        visualEffect.material = .sidebar
         visualEffect.blendingMode = .behindWindow
         visualEffect.state = .active
-        visualEffect.layer?.cornerRadius = 8
+        visualEffect.layer?.cornerRadius = 10
         visualEffect.layer?.masksToBounds = true
         visualEffect.translatesAutoresizingMaskIntoConstraints = false
+
+        borderView.wantsLayer = true
+        borderView.layer?.borderColor = NSColor.separatorColor.withAlphaComponent(0.3).cgColor
+        borderView.layer?.borderWidth = 1
+        borderView.layer?.cornerRadius = 10
+        borderView.layer?.masksToBounds = true
+        borderView.translatesAutoresizingMaskIntoConstraints = false
 
         stackView.translatesAutoresizingMaskIntoConstraints = false
         visualEffect.addSubview(stackView)
@@ -56,12 +66,17 @@ final class WindowListPopover: NSWindow {
         ])
 
         containerView.addSubview(visualEffect)
-        visualEffect.translatesAutoresizingMaskIntoConstraints = false
+        containerView.addSubview(borderView)
         NSLayoutConstraint.activate([
             visualEffect.leadingAnchor.constraint(equalTo: containerView.leadingAnchor),
             visualEffect.trailingAnchor.constraint(equalTo: containerView.trailingAnchor),
             visualEffect.topAnchor.constraint(equalTo: containerView.topAnchor),
             visualEffect.bottomAnchor.constraint(equalTo: containerView.bottomAnchor),
+
+            borderView.leadingAnchor.constraint(equalTo: containerView.leadingAnchor),
+            borderView.trailingAnchor.constraint(equalTo: containerView.trailingAnchor),
+            borderView.topAnchor.constraint(equalTo: containerView.topAnchor),
+            borderView.bottomAnchor.constraint(equalTo: containerView.bottomAnchor),
         ])
 
         let trackingView = PopoverTrackingView()
@@ -81,6 +96,8 @@ final class WindowListPopover: NSWindow {
     func show(windows: [WindowInfo], anchorPoint: NSPoint, screen: NSScreen) {
         cancelHideTimer()
         self.windows = windows
+
+        applyTheme()
 
         stackView.arrangedSubviews.forEach { $0.removeFromSuperview() }
         windowRows.removeAll()
@@ -144,6 +161,68 @@ final class WindowListPopover: NSWindow {
         isHovering = hovering
         if hovering {
             cancelHideTimer()
+        }
+    }
+
+    private func applyTheme() {
+        let settings = TaskbarSettings.shared
+
+        switch settings.backgroundTheme {
+        case .system:
+            solidBackgroundView?.isHidden = true
+            visualEffect.isHidden = false
+            visualEffect.material = .sidebar
+            visualEffect.blendingMode = .behindWindow
+            visualEffect.state = .active
+            visualEffect.appearance = nil
+            containerView.appearance = nil
+
+        case .dark:
+            solidBackgroundView?.isHidden = true
+            visualEffect.isHidden = false
+            visualEffect.material = .sidebar
+            visualEffect.blendingMode = .behindWindow
+            visualEffect.state = .active
+            visualEffect.appearance = NSAppearance(named: .darkAqua)
+            containerView.appearance = nil
+
+        case .light:
+            solidBackgroundView?.isHidden = true
+            visualEffect.isHidden = false
+            visualEffect.material = .sidebar
+            visualEffect.blendingMode = .behindWindow
+            visualEffect.state = .active
+            visualEffect.appearance = NSAppearance(named: .aqua)
+            containerView.appearance = nil
+
+        case .custom:
+            visualEffect.isHidden = true
+            if solidBackgroundView == nil {
+                let solid = NSView()
+                solid.wantsLayer = true
+                solid.layer?.cornerRadius = 10
+                solid.layer?.masksToBounds = true
+                solid.translatesAutoresizingMaskIntoConstraints = false
+                containerView.addSubview(solid, positioned: .below, relativeTo: visualEffect)
+                NSLayoutConstraint.activate([
+                    solid.leadingAnchor.constraint(equalTo: containerView.leadingAnchor),
+                    solid.trailingAnchor.constraint(equalTo: containerView.trailingAnchor),
+                    solid.topAnchor.constraint(equalTo: containerView.topAnchor),
+                    solid.bottomAnchor.constraint(equalTo: containerView.bottomAnchor),
+                ])
+                solidBackgroundView = solid
+            }
+            solidBackgroundView?.isHidden = false
+            let color = settings.customBackgroundColor
+            solidBackgroundView?.layer?.backgroundColor = color.cgColor
+
+            let srgb = color.usingColorSpace(.sRGB) ?? color
+            let luminance = 0.299 * srgb.redComponent + 0.587 * srgb.greenComponent + 0.114 * srgb.blueComponent
+            if luminance > 0.5 {
+                containerView.appearance = NSAppearance(named: .aqua)
+            } else {
+                containerView.appearance = NSAppearance(named: .darkAqua)
+            }
         }
     }
 

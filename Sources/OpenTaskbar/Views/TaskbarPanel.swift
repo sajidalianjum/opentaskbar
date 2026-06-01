@@ -10,6 +10,10 @@ final class ClickThroughView: NSView {
         super.resetCursorRects()
         addCursorRect(bounds, cursor: .arrow)
     }
+
+    override func acceptsFirstMouse(for event: NSEvent?) -> Bool {
+        return true
+    }
 }
 
 final class TaskbarPanel: NSPanel {
@@ -85,7 +89,7 @@ final class TaskbarPanel: NSPanel {
         setFrame(rect, display: true, animate: true)
     }
 
-    override var canBecomeKey: Bool { true }
+    override var canBecomeKey: Bool { false }
 
     override var canBecomeMain: Bool { false }
 

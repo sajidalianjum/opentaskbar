@@ -3,7 +3,7 @@ set -euo pipefail
 
 PROJECT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 BUILD_DIR="${PROJECT_DIR}/.build/release"
-APP_NAME="MacBar"
+APP_NAME="OpenTaskbar"
 APP_BUNDLE="${PROJECT_DIR}/build/${APP_NAME}.app"
 
 echo "Building ${APP_NAME}..."
@@ -30,4 +30,4 @@ echo ""
 echo "To run: open \"${APP_BUNDLE}\""
 echo ""
 echo "Important: You must grant Accessibility permission in System Settings > Privacy & Security > Accessibility"
-echo "           for MacBar to work. The app will prompt you on first launch."
+echo "           for OpenTaskbar to work. The app will prompt you on first launch."

@@ -3,11 +3,11 @@
 <plist version="1.0">
 <dict>
     <key>CFBundleName</key>
-    <string>MacBar</string>
+    <string>OpenTaskbar</string>
     <key>CFBundleDisplayName</key>
-    <string>MacBar</string>
+    <string>OpenTaskbar</string>
     <key>CFBundleIdentifier</key>
-    <string>com.macbar.app</string>
+    <string>com.opentaskbar.app</string>
     <key>CFBundleVersion</key>
     <string>1.0</string>
     <key>CFBundleShortVersionString</key>
@@ -15,13 +15,13 @@
     <key>CFBundlePackageType</key>
     <string>APPL</string>
     <key>CFBundleExecutable</key>
-    <string>MacBar</string>
+    <string>OpenTaskbar</string>
     <key>LSUIElement</key>
     <true/>
     <key>NSAccessibilityUsageDescription</key>
-    <string>MacBar needs Accessibility to switch between windows and manage them.</string>
+    <string>OpenTaskbar needs Accessibility to switch between windows and manage them.</string>
     <key>NSScreenCaptureUsageDescription</key>
-    <string>MacBar needs Screen Recording to show window thumbnails on hover.</string>
+    <string>OpenTaskbar needs Screen Recording to show window thumbnails on hover.</string>
     <key>LSMinimumSystemVersion</key>
     <string>14.0</string>
     <key>NSHighResolutionCapable</key>

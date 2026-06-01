@@ -8,6 +8,7 @@ final class WindowManager {
     private(set) var axObserverManager: AXObserverManager
     private var pollTimer: Timer?
     private let pollInterval: TimeInterval = 2.0
+    private var nextInsertionOrder = 0
 
     var onAppGroupsChanged: (() -> Void)?
 
@@ -100,53 +101,44 @@ final class WindowManager {
             app.activationPolicy == .regular
         }
 
-        var newGroups: [AppGroup] = []
         let cgWindows = CGWindowExtensions.eligibleWindows()
+        let existingMap = Dictionary(uniqueKeysWithValues: appGroups.map { ($0.bundleIdentifier, $0) })
+
+        var updatedGroups: [AppGroup] = []
 
         for app in runningApps {
             let pid = app.processIdentifier
+            let bundleID = app.bundleIdentifier ?? "unknown-\(pid)"
             let appWindows = cgWindows.filter { $0.pid == pid }
 
             let axWindows = accessibilityService.windowsForPID(pid)
             var mergedWindows = mergeWindows(axWindows: axWindows, cgWindows: appWindows)
 
-            if mergedWindows.isEmpty && appWindows.isEmpty {
-                let group = AppGroup(
-                    bundleIdentifier: app.bundleIdentifier ?? "unknown-\(pid)",
-                    localizedName: app.localizedName ?? "Unknown",
-                    icon: app.icon ?? NSImage(),
-                    runningApplication: app,
-                    windows: [],
-                    isActive: app.isActive
-                )
-                newGroups.append(group)
-                continue
-            }
-
             mergedWindows.sort { $0.windowID < $1.windowID }
 
+            let order: Int
+            if let existing = existingMap[bundleID] {
+                order = existing.insertionOrder
+            } else {
+                order = nextInsertionOrder
+                nextInsertionOrder += 1
+            }
+
             let group = AppGroup(
-                bundleIdentifier: app.bundleIdentifier ?? "unknown-\(pid)",
+                bundleIdentifier: bundleID,
                 localizedName: app.localizedName ?? "Unknown",
                 icon: app.icon ?? NSImage(),
                 runningApplication: app,
-                windows: mergedWindows,
-                isActive: app.isActive
+                windows: mergedWindows.isEmpty && appWindows.isEmpty ? [] : mergedWindows,
+                isActive: app.isActive,
+                insertionOrder: order
             )
-            newGroups.append(group)
+            updatedGroups.append(group)
         }
 
-        newGroups.sort { group1, group2 in
-            if group1.isActive != group2.isActive {
-                return group1.isActive && !group2.isActive
-            }
-            if group1.hasMultipleWindows != group2.hasMultipleWindows {
-                return group1.hasMultipleWindows && !group2.hasMultipleWindows
-            }
-            return group1.localizedName.localizedCaseInsensitiveCompare(group2.localizedName) == .orderedAscending
-        }
+        updatedGroups.sort { $0.insertionOrder < $1.insertionOrder }
 
-        appGroups = newGroups
+        appGroups = updatedGroups
         notifyChanged()
     }
 

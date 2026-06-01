@@ -104,25 +104,51 @@ final class TaskbarContentView: NSView {
     }
 
     func reloadData() {
-        appStackView.arrangedSubviews.forEach { $0.removeFromSuperview() }
-        appButtons.removeAll()
-
         let groups = windowManager.appGroups
         let showNames = settings.showAppNames
 
-        for (index, group) in groups.enumerated() {
-            let button = AppButtonView(appGroup: group, index: index, showName: showNames)
-            button.target = self
-            button.action = #selector(appButtonClicked(_:))
-            button.rightAction = { [weak self] index in
-                self?.showContextMenu(for: index)
+        let existingIDs = appButtons.map(\.bundleIdentifier)
+        let newIDs = groups.map(\.bundleIdentifier)
+
+        if existingIDs != newIDs {
+            appStackView.arrangedSubviews.forEach { $0.removeFromSuperview() }
+            appButtons.removeAll()
+
+            for (index, group) in groups.enumerated() {
+                let button = AppButtonView(appGroup: group, index: index, showName: showNames)
+                button.target = self
+                button.action = #selector(appButtonClicked(_:))
+                button.rightAction = { [weak self] index in
+                    self?.showContextMenu(for: index)
+                }
+
+                appButtons.append(button)
+                appStackView.addArrangedSubview(button)
+
+                button.widthAnchor.constraint(equalToConstant: showNames ? 140 : 44).isActive = true
+                button.heightAnchor.constraint(equalToConstant: settings.taskbarHeight - 4).isActive = true
             }
+        } else {
+            for (index, group) in groups.enumerated() {
+                if index < appButtons.count {
+                    let oldButton = appButtons[index]
+                    let newButton = AppButtonView(appGroup: group, index: index, showName: showNames)
+                    newButton.target = self
+                    newButton.action = #selector(appButtonClicked(_:))
+                    newButton.rightAction = { [weak self] index in
+                        self?.showContextMenu(for: index)
+                    }
 
-            appButtons.append(button)
-            appStackView.addArrangedSubview(button)
+                    appStackView.removeArrangedSubview(oldButton)
+                    oldButton.removeFromSuperview()
+                    appStackView.insertArrangedSubview(newButton, at: index)
 
-            button.widthAnchor.constraint(equalToConstant: showNames ? 140 : 44).isActive = true
-            button.heightAnchor.constraint(equalToConstant: settings.taskbarHeight - 4).isActive = true
+                    newButton.widthAnchor.constraint(equalToConstant: showNames ? 140 : 44).isActive = true
+                    newButton.heightAnchor.constraint(equalToConstant: settings.taskbarHeight - 4).isActive = true
+
+                    appButtons[index] = newButton
+                }
+            }
         }
     }
 

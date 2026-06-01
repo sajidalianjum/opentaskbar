@@ -2,6 +2,7 @@ import AppKit
 
 final class AppButtonView: NSView {
     let index: Int
+    let bundleIdentifier: String
     private let appGroup: AppGroup
     private var showName: Bool
 
@@ -22,6 +23,7 @@ final class AppButtonView: NSView {
     init(appGroup: AppGroup, index: Int, showName: Bool) {
         self.appGroup = appGroup
         self.index = index
+        self.bundleIdentifier = appGroup.bundleIdentifier
         self.showName = showName
         super.init(frame: .zero)
         setupView()

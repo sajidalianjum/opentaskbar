@@ -7,6 +7,7 @@ struct AppGroup: Hashable {
     let runningApplication: NSRunningApplication?
     var windows: [WindowInfo]
     var isActive: Bool
+    var insertionOrder: Int
 
     var windowCount: Int {
         windows.count

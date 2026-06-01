@@ -10,7 +10,6 @@ final class ClickThroughView: NSView {
 final class TaskbarPanel: NSPanel {
     private let windowManager: WindowManager
     private var contentView_: TaskbarContentView?
-    private var previousFrontmostApp: NSRunningApplication?
 
     init(screen: NSScreen, windowManager: WindowManager) {
         self.windowManager = windowManager
@@ -68,17 +67,7 @@ final class TaskbarPanel: NSPanel {
         setFrame(rect, display: true)
     }
 
-    override var canBecomeKey: Bool { true }
+    override var canBecomeKey: Bool { false }
 
     override var canBecomeMain: Bool { false }
-
-    override func becomeKey() {
-        previousFrontmostApp = NSWorkspace.shared.frontmostApplication
-        super.becomeKey()
-    }
-
-    override func resignKey() {
-        super.resignKey()
-        previousFrontmostApp = nil
-    }
 }

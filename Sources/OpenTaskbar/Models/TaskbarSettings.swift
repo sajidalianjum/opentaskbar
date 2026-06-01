@@ -60,6 +60,10 @@ final class TaskbarSettings {
         didSet { UserDefaults.standard.set(backgroundTheme.rawValue, forKey: "backgroundTheme"); postChange() }
     }
 
+    @Published var quitOnLastWindowClose: Bool {
+        didSet { UserDefaults.standard.set(quitOnLastWindowClose, forKey: "quitOnLastWindowClose"); postChange() }
+    }
+
     @Published var customBackgroundColorData: Data {
         didSet { UserDefaults.standard.set(customBackgroundColorData, forKey: "customBackgroundColor"); postChange() }
     }
@@ -94,6 +98,7 @@ final class TaskbarSettings {
         self.compactBar = defaults.object(forKey: "compactBar") as? Bool ?? true
         self.barSpacing = defaults.object(forKey: "barSpacing") as? Double ?? 4.0
         self.iconSize = defaults.object(forKey: "iconSize") as? Double ?? 32.0
+        self.quitOnLastWindowClose = defaults.object(forKey: "quitOnLastWindowClose") as? Bool ?? false
         self.backgroundTheme = BackgroundTheme(rawValue: defaults.string(forKey: "backgroundTheme") ?? "") ?? .system
         if let saved = defaults.data(forKey: "customBackgroundColor") {
             self.customBackgroundColorData = saved

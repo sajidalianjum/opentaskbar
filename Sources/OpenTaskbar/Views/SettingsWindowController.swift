@@ -16,7 +16,7 @@ final class SettingsWindowController {
         }
 
         let window = NSWindow(
-            contentRect: NSRect(x: 0, y: 0, width: 400, height: 540),
+            contentRect: NSRect(x: 0, y: 0, width: 400, height: 580),
             styleMask: [.titled, .closable],
             backing: .buffered,
             defer: false
@@ -25,7 +25,7 @@ final class SettingsWindowController {
         window.isReleasedWhenClosed = false
         window.center()
 
-        let contentView = NSView(frame: NSRect(x: 0, y: 0, width: 400, height: 540))
+        let contentView = NSView(frame: NSRect(x: 0, y: 0, width: 400, height: 580))
         setupControls(in: contentView)
         window.contentView = contentView
 
@@ -103,6 +103,13 @@ final class SettingsWindowController {
         allScreensCheck.state = settings.showOnAllScreens ? .on : .off
         view.addSubview(allScreensCheck)
         allScreensCheck.frame = NSRect(x: padding, y: y, width: 300, height: 20)
+
+        y -= 35
+
+        let quitOnCloseCheck = NSButton(checkboxWithTitle: "Quit Apps When All Windows Close", target: self, action: #selector(quitOnCloseChanged(_:)))
+        quitOnCloseCheck.state = settings.quitOnLastWindowClose ? .on : .off
+        view.addSubview(quitOnCloseCheck)
+        quitOnCloseCheck.frame = NSRect(x: padding, y: y, width: 300, height: 20)
 
         y -= 40
 
@@ -238,6 +245,10 @@ final class SettingsWindowController {
         settings.showOnAllScreens = sender.state == .on
     }
 
+    @objc private func quitOnCloseChanged(_ sender: NSButton) {
+        settings.quitOnLastWindowClose = sender.state == .on
+    }
+
     @objc private func spacingChanged(_ sender: NSSlider) {
         settings.barSpacing = sender.doubleValue
         if let window,
@@ -287,6 +298,7 @@ final class SettingsWindowController {
         settings.compactBar = true
         settings.barSpacing = 4.0
         settings.iconSize = 32.0
+        settings.quitOnLastWindowClose = false
         settings.backgroundTheme = .system
         settings.customBackgroundColor = NSColor(calibratedRed: 0.15, green: 0.15, blue: 0.2, alpha: 1.0)
         window?.close()

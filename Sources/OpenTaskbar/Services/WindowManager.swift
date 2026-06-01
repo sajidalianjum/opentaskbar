@@ -144,7 +144,13 @@ final class WindowManager {
 
         updatedGroups.sort { $0.insertionOrder < $1.insertionOrder }
 
-        appGroups = updatedGroups
+        if TaskbarSettings.shared.quitOnLastWindowClose {
+            for group in updatedGroups where group.windows.isEmpty {
+                group.runningApplication?.terminate()
+            }
+        }
+
+        appGroups = updatedGroups.filter { !$0.windows.isEmpty }
 
         if !minimizedWindowIDs.isEmpty {
             let allMinimizedIDs = Set(updatedGroups.flatMap { $0.windows.filter(\.isMinimized).map(\.windowID) })

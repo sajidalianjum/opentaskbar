@@ -316,14 +316,16 @@ final class WindowManager {
 
         for (i, window) in group.windows.enumerated() {
             let title = window.title.isEmpty ? "Window \(i + 1)" : window.title
-            let item = NSMenuItem(title: title, action: #selector(MenuItemActions.activateWindow(_:)), keyEquivalent: "")
+            let item = NSMenuItem(title: title, action: #selector(MenuItemActions.shared.activateWindow(_:)), keyEquivalent: "")
+            item.target = MenuItemActions.shared
             item.representedObject = ["windowID": Int(window.windowID), "pid": Int(window.pid)]
             menu.addItem(item)
         }
 
         if group.windows.count > 1 {
             menu.addItem(NSMenuItem.separator())
-            let closeAll = NSMenuItem(title: "Close All Windows", action: #selector(MenuItemActions.closeAllWindows(_:)), keyEquivalent: "")
+            let closeAll = NSMenuItem(title: "Close All Windows", action: #selector(MenuItemActions.shared.closeAllWindows(_:)), keyEquivalent: "")
+            closeAll.target = MenuItemActions.shared
             closeAll.representedObject = ["pid": Int(group.runningApplication?.processIdentifier ?? 0)]
             menu.addItem(closeAll)
         }
@@ -344,7 +346,8 @@ final class WindowManager {
 
         for (i, window) in group.windows.enumerated() {
             let title = window.title.isEmpty ? "Window \(i + 1)" : window.title
-            let windowItem = NSMenuItem(title: title, action: #selector(MenuItemActions.activateWindow(_:)), keyEquivalent: "\(i + 1)")
+            let windowItem = NSMenuItem(title: title, action: #selector(MenuItemActions.shared.activateWindow(_:)), keyEquivalent: "\(i + 1)")
+            windowItem.target = MenuItemActions.shared
             windowItem.representedObject = ["windowID": Int(window.windowID), "pid": Int(window.pid)]
             menu.addItem(windowItem)
         }
@@ -352,7 +355,8 @@ final class WindowManager {
         if !group.windows.isEmpty {
             menu.addItem(NSMenuItem.separator())
 
-            let closeAll = NSMenuItem(title: "Close All", action: #selector(MenuItemActions.closeAllWindows(_:)), keyEquivalent: "")
+            let closeAll = NSMenuItem(title: "Close All", action: #selector(MenuItemActions.shared.closeAllWindows(_:)), keyEquivalent: "")
+            closeAll.target = MenuItemActions.shared
             closeAll.representedObject = ["pid": Int(group.runningApplication?.processIdentifier ?? 0)]
             menu.addItem(closeAll)
         }
@@ -360,7 +364,8 @@ final class WindowManager {
         menu.addItem(NSMenuItem.separator())
 
         if group.isRunning {
-            let quitItem = NSMenuItem(title: "Quit \(appName)", action: #selector(MenuItemActions.quitApp(_:)), keyEquivalent: "q")
+            let quitItem = NSMenuItem(title: "Quit \(appName)", action: #selector(MenuItemActions.shared.quitApp(_:)), keyEquivalent: "q")
+            quitItem.target = MenuItemActions.shared
             quitItem.representedObject = ["bundleID": group.bundleIdentifier]
             menu.addItem(quitItem)
         }
@@ -370,7 +375,9 @@ final class WindowManager {
 }
 
 final class MenuItemActions: NSObject {
-    @objc static func activateWindow(_ sender: NSMenuItem) {
+    static let shared = MenuItemActions()
+
+    @objc func activateWindow(_ sender: NSMenuItem) {
         guard let info = sender.representedObject as? [String: Int],
               let windowID = info["windowID"],
               let pid = info["pid"] else { return }
@@ -383,7 +390,7 @@ final class MenuItemActions: NSObject {
         }
     }
 
-    @objc static func closeAllWindows(_ sender: NSMenuItem) {
+    @objc func closeAllWindows(_ sender: NSMenuItem) {
         guard let info = sender.representedObject as? [String: Int],
               let pid = info["pid"] else { return }
 
@@ -396,7 +403,7 @@ final class MenuItemActions: NSObject {
         }
     }
 
-    @objc static func quitApp(_ sender: NSMenuItem) {
+    @objc func quitApp(_ sender: NSMenuItem) {
         guard let info = sender.representedObject as? [String: String],
               let bundleID = info["bundleID"] else { return }
 

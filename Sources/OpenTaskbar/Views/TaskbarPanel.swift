@@ -80,7 +80,7 @@ final class TaskbarPanel: NSPanel {
         setFrame(rect, display: true, animate: true)
     }
 
-    override var canBecomeKey: Bool { false }
+    override var canBecomeKey: Bool { true }
 
     override var canBecomeMain: Bool { false }
 

@@ -8,7 +8,7 @@ final class TaskbarContentView: NSView {
     private var appStackView: NSStackView!
     private var contentStackView: NSStackView!
     private var showDesktopButton: ShowDesktopButton!
-    private var settingsButton: NSButton!
+    private var solidBackgroundView: NSView?
 
     private var appButtons: [AppButtonView] = []
 
@@ -34,6 +34,7 @@ final class TaskbarContentView: NSView {
         subviews.forEach { $0.removeFromSuperview() }
         activeConstraints.removeAll()
         appButtons.removeAll()
+        solidBackgroundView = nil
 
         backgroundView = NSVisualEffectView(frame: .zero)
         backgroundView.material = .sidebar
@@ -55,14 +56,7 @@ final class TaskbarContentView: NSView {
         showDesktopButton.action = #selector(showDesktopClicked(_:))
         showDesktopButton.toolTip = "Show Desktop"
 
-        settingsButton = NSButton(image: NSImage(systemSymbolName: "chevron.up", accessibilityDescription: "Settings")!, target: nil, action: #selector(showActionMenu))
-        settingsButton.isBordered = false
-        settingsButton.imagePosition = .imageOnly
-        settingsButton.bezelStyle = .regularSquare
-        settingsButton.contentTintColor = .secondaryLabelColor
-        settingsButton.toolTip = "OpenTaskbar"
-
-        let rightStack = NSStackView(views: [showDesktopButton, settingsButton])
+        let rightStack = NSStackView(views: [showDesktopButton])
         rightStack.orientation = .horizontal
         rightStack.spacing = 8
         rightStack.alignment = .centerY
@@ -182,7 +176,69 @@ final class TaskbarContentView: NSView {
         }
 
         NSLayoutConstraint.activate(activeConstraints)
+        applyTheme()
         reloadData()
+    }
+
+    private func applyTheme() {
+        switch settings.backgroundTheme {
+        case .system:
+            solidBackgroundView?.isHidden = true
+            backgroundView.isHidden = false
+            backgroundView.material = .sidebar
+            backgroundView.blendingMode = .behindWindow
+            backgroundView.state = .active
+            backgroundView.appearance = nil
+            self.appearance = nil
+
+        case .dark:
+            solidBackgroundView?.isHidden = true
+            backgroundView.isHidden = false
+            backgroundView.material = .sidebar
+            backgroundView.blendingMode = .behindWindow
+            backgroundView.state = .active
+            backgroundView.appearance = NSAppearance(named: .darkAqua)
+            self.appearance = nil
+
+        case .light:
+            solidBackgroundView?.isHidden = true
+            backgroundView.isHidden = false
+            backgroundView.material = .sidebar
+            backgroundView.blendingMode = .behindWindow
+            backgroundView.state = .active
+            backgroundView.appearance = NSAppearance(named: .aqua)
+            self.appearance = nil
+
+        case .custom:
+            backgroundView.isHidden = true
+            if solidBackgroundView == nil {
+                let solid = NSView()
+                solid.wantsLayer = true
+                solid.layer?.cornerRadius = backgroundView.layer?.cornerRadius ?? 0
+                solid.layer?.masksToBounds = true
+                addSubview(solid)
+                solid.translatesAutoresizingMaskIntoConstraints = false
+                NSLayoutConstraint.activate([
+                    solid.leadingAnchor.constraint(equalTo: backgroundView.leadingAnchor),
+                    solid.trailingAnchor.constraint(equalTo: backgroundView.trailingAnchor),
+                    solid.topAnchor.constraint(equalTo: backgroundView.topAnchor),
+                    solid.bottomAnchor.constraint(equalTo: backgroundView.bottomAnchor),
+                ])
+                solidBackgroundView = solid
+            }
+            solidBackgroundView?.isHidden = false
+            let color = settings.customBackgroundColor
+            solidBackgroundView?.layer?.backgroundColor = color.cgColor
+            solidBackgroundView?.layer?.cornerRadius = backgroundView.layer?.cornerRadius ?? 0
+
+            let srgb = color.usingColorSpace(.sRGB) ?? color
+            let luminance = 0.299 * srgb.redComponent + 0.587 * srgb.greenComponent + 0.114 * srgb.blueComponent
+            if luminance > 0.5 {
+                self.appearance = NSAppearance(named: .aqua)
+            } else {
+                self.appearance = NSAppearance(named: .darkAqua)
+            }
+        }
     }
 
     func reloadData() {
@@ -265,29 +321,6 @@ final class TaskbarContentView: NSView {
     private func showContextMenu(for index: Int) {
         let menu = windowManager.contextMenu(forAppAt: index)
         menu.popUp(positioning: nil, at: NSEvent.mouseLocation, in: nil)
-    }
-
-    @objc private func showActionMenu() {
-        let menu = NSMenu()
-        menu.addItem(NSMenuItem(title: "Preferences...", action: #selector(showPreferences), keyEquivalent: ","))
-        menu.addItem(NSMenuItem.separator())
-        menu.addItem(NSMenuItem(title: "About OpenTaskbar", action: #selector(showAbout), keyEquivalent: ""))
-        menu.addItem(NSMenuItem.separator())
-        menu.addItem(NSMenuItem(title: "Restore Dock & Quit", action: #selector(restoreAndQuit), keyEquivalent: "q"))
-
-        menu.popUp(positioning: nil, at: NSEvent.mouseLocation, in: nil)
-    }
-
-    @objc private func showPreferences() {
-        SettingsWindowController.shared.showWindow()
-    }
-
-    @objc private func showAbout() {
-        NSApp.orderFrontStandardAboutPanel(nil)
-    }
-
-    @objc private func restoreAndQuit() {
-        NSApp.terminate(nil)
     }
 
     deinit {

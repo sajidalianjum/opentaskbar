@@ -15,6 +15,13 @@ final class TaskbarSettings {
         case right
     }
 
+    enum BackgroundTheme: String {
+        case system
+        case dark
+        case light
+        case custom
+    }
+
     static let settingsDidChange = Notification.Name("TaskbarSettingsDidChange")
 
     @Published var dockMode: DockMode {
@@ -49,6 +56,28 @@ final class TaskbarSettings {
         didSet { UserDefaults.standard.set(iconSize, forKey: "iconSize"); postChange() }
     }
 
+    @Published var backgroundTheme: BackgroundTheme {
+        didSet { UserDefaults.standard.set(backgroundTheme.rawValue, forKey: "backgroundTheme"); postChange() }
+    }
+
+    @Published var customBackgroundColorData: Data {
+        didSet { UserDefaults.standard.set(customBackgroundColorData, forKey: "customBackgroundColor"); postChange() }
+    }
+
+    var customBackgroundColor: NSColor {
+        get {
+            if let color = try? NSKeyedUnarchiver.unarchivedObject(ofClass: NSColor.self, from: customBackgroundColorData) {
+                return color
+            }
+            return NSColor(calibratedRed: 0.15, green: 0.15, blue: 0.2, alpha: 1.0)
+        }
+        set {
+            if let data = try? NSKeyedArchiver.archivedData(withRootObject: newValue, requiringSecureCoding: false) {
+                customBackgroundColorData = data
+            }
+        }
+    }
+
     private var lastChangeKey: String?
 
     private func postChange() {
@@ -65,5 +94,12 @@ final class TaskbarSettings {
         self.compactBar = defaults.object(forKey: "compactBar") as? Bool ?? true
         self.barSpacing = defaults.object(forKey: "barSpacing") as? Double ?? 4.0
         self.iconSize = defaults.object(forKey: "iconSize") as? Double ?? 32.0
+        self.backgroundTheme = BackgroundTheme(rawValue: defaults.string(forKey: "backgroundTheme") ?? "") ?? .system
+        if let saved = defaults.data(forKey: "customBackgroundColor") {
+            self.customBackgroundColorData = saved
+        } else {
+            let defaultColor = NSColor(calibratedRed: 0.15, green: 0.15, blue: 0.2, alpha: 1.0)
+            self.customBackgroundColorData = (try? NSKeyedArchiver.archivedData(withRootObject: defaultColor, requiringSecureCoding: false)) ?? Data()
+        }
     }
 }

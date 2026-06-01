@@ -16,7 +16,7 @@ final class SettingsWindowController {
         }
 
         let window = NSWindow(
-            contentRect: NSRect(x: 0, y: 0, width: 400, height: 480),
+            contentRect: NSRect(x: 0, y: 0, width: 400, height: 540),
             styleMask: [.titled, .closable],
             backing: .buffered,
             defer: false
@@ -25,7 +25,7 @@ final class SettingsWindowController {
         window.isReleasedWhenClosed = false
         window.center()
 
-        let contentView = NSView(frame: NSRect(x: 0, y: 0, width: 400, height: 480))
+        let contentView = NSView(frame: NSRect(x: 0, y: 0, width: 400, height: 540))
         setupControls(in: contentView)
         window.contentView = contentView
 
@@ -150,6 +150,46 @@ final class SettingsWindowController {
         view.addSubview(iconSizeValue)
         iconSizeValue.frame = NSRect(x: 370, y: y + 3, width: 40, height: 20)
 
+        y -= 10
+
+        let themeLabel = NSTextField(labelWithString: "Background Theme:")
+        themeLabel.font = NSFont.systemFont(ofSize: 13, weight: .semibold)
+        view.addSubview(themeLabel)
+        themeLabel.frame = NSRect(x: padding, y: y, width: 150, height: 20)
+
+        let themeSelect = NSPopUpButton(frame: NSRect(x: 170, y: y - 2, width: 200, height: 26))
+        themeSelect.addItem(withTitle: "System")
+        themeSelect.addItem(withTitle: "Dark")
+        themeSelect.addItem(withTitle: "Light")
+        themeSelect.addItem(withTitle: "Custom")
+        switch settings.backgroundTheme {
+        case .system: themeSelect.selectItem(at: 0)
+        case .dark: themeSelect.selectItem(at: 1)
+        case .light: themeSelect.selectItem(at: 2)
+        case .custom: themeSelect.selectItem(at: 3)
+        }
+        themeSelect.target = self
+        themeSelect.action = #selector(themeChanged(_:))
+        themeSelect.tag = 200
+        view.addSubview(themeSelect)
+
+        y -= 40
+
+        let colorLabel = NSTextField(labelWithString: "Custom Color:")
+        colorLabel.font = NSFont.systemFont(ofSize: 13, weight: .semibold)
+        colorLabel.tag = 201
+        view.addSubview(colorLabel)
+        colorLabel.frame = NSRect(x: padding, y: y + 5, width: 150, height: 20)
+        colorLabel.isHidden = settings.backgroundTheme != .custom
+
+        let colorWell = NSColorWell(frame: NSRect(x: 170, y: y, width: 40, height: 28))
+        colorWell.color = settings.customBackgroundColor
+        colorWell.target = self
+        colorWell.action = #selector(customColorChanged(_:))
+        colorWell.tag = 202
+        view.addSubview(colorWell)
+        colorWell.isHidden = settings.backgroundTheme != .custom
+
         y -= 40
 
         let resetButton = NSButton(title: "Reset to Defaults", target: self, action: #selector(resetDefaults))
@@ -214,6 +254,30 @@ final class SettingsWindowController {
         }
     }
 
+    @objc private func themeChanged(_ sender: NSPopUpButton) {
+        let selected: TaskbarSettings.BackgroundTheme
+        switch sender.indexOfSelectedItem {
+        case 0: selected = .system
+        case 1: selected = .dark
+        case 2: selected = .light
+        case 3: selected = .custom
+        default: selected = .system
+        }
+        settings.backgroundTheme = selected
+
+        if let window,
+           let colorLabel = window.contentView?.viewWithTag(201) as? NSTextField,
+           let colorWell = window.contentView?.viewWithTag(202) as? NSColorWell {
+            let isCustom = selected == .custom
+            colorLabel.isHidden = !isCustom
+            colorWell.isHidden = !isCustom
+        }
+    }
+
+    @objc private func customColorChanged(_ sender: NSColorWell) {
+        settings.customBackgroundColor = sender.color
+    }
+
     @objc private func resetDefaults() {
         settings.dockMode = .hidden
         settings.showThumbnails = true
@@ -223,6 +287,8 @@ final class SettingsWindowController {
         settings.compactBar = true
         settings.barSpacing = 4.0
         settings.iconSize = 32.0
+        settings.backgroundTheme = .system
+        settings.customBackgroundColor = NSColor(calibratedRed: 0.15, green: 0.15, blue: 0.2, alpha: 1.0)
         window?.close()
         showWindow()
     }

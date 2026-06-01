@@ -10,6 +10,12 @@ final class WindowManager {
     private let pollInterval: TimeInterval = 2.0
     private var nextInsertionOrder = 0
 
+    private var minimizedWindowIDs: Set<CGWindowID> = []
+
+    var isShowingDesktop: Bool {
+        !minimizedWindowIDs.isEmpty
+    }
+
     var onAppGroupsChanged: (() -> Void)?
 
     private var cancellables = Set<AnyCancellable>()
@@ -139,6 +145,12 @@ final class WindowManager {
         updatedGroups.sort { $0.insertionOrder < $1.insertionOrder }
 
         appGroups = updatedGroups
+
+        if !minimizedWindowIDs.isEmpty {
+            let allMinimizedIDs = Set(updatedGroups.flatMap { $0.windows.filter(\.isMinimized).map(\.windowID) })
+            minimizedWindowIDs = minimizedWindowIDs.intersection(allMinimizedIDs)
+        }
+
         notifyChanged()
     }
 
@@ -198,6 +210,35 @@ final class WindowManager {
         DispatchQueue.main.async { [weak self] in
             self?.onAppGroupsChanged?()
         }
+    }
+
+    func showDesktop() {
+        minimizedWindowIDs.removeAll()
+        for group in appGroups {
+            guard let app = group.runningApplication else { continue }
+            for window in group.windows where !window.isMinimized {
+                if let element = accessibilityService.windowElement(for: window.windowID, pid: app.processIdentifier) {
+                    accessibilityService.minimizeWindow(element)
+                    minimizedWindowIDs.insert(window.windowID)
+                }
+            }
+        }
+        refreshAppGroups()
+    }
+
+    func restoreDesktop() {
+        let ids = minimizedWindowIDs
+        minimizedWindowIDs.removeAll()
+        for windowID in ids {
+            for group in appGroups {
+                guard let app = group.runningApplication else { continue }
+                if group.windows.contains(where: { $0.windowID == windowID }),
+                   let element = accessibilityService.windowElement(for: windowID, pid: app.processIdentifier) {
+                    accessibilityService.unminimizeWindow(element)
+                }
+            }
+        }
+        refreshAppGroups()
     }
 
     func activateApp(at index: Int) {

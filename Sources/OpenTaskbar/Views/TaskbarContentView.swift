@@ -7,11 +7,10 @@ final class TaskbarContentView: NSView {
     private var backgroundView: NSVisualEffectView!
     private var appStackView: NSStackView!
     private var contentStackView: NSStackView!
-    private var clockLabel: NSTextField!
+    private var showDesktopButton: ShowDesktopButton!
     private var settingsButton: NSButton!
 
     private var appButtons: [AppButtonView] = []
-    private var clockTimer: Timer?
 
     private var activeConstraints: [NSLayoutConstraint] = []
 
@@ -19,7 +18,6 @@ final class TaskbarContentView: NSView {
         self.windowManager = windowManager
         super.init(frame: .zero)
         setupViews()
-        startClock()
         observeSettings()
     }
 
@@ -48,11 +46,10 @@ final class TaskbarContentView: NSView {
         appStackView.setContentHuggingPriority(.defaultHigh, for: .horizontal)
         appStackView.setContentCompressionResistancePriority(.required, for: .horizontal)
 
-        clockLabel = NSTextField(labelWithString: "")
-        clockLabel.font = NSFont.monospacedDigitSystemFont(ofSize: 13, weight: .medium)
-        clockLabel.textColor = .labelColor
-        clockLabel.alignment = .center
-        clockLabel.setContentHuggingPriority(.required, for: .horizontal)
+        showDesktopButton = ShowDesktopButton()
+        showDesktopButton.target = self
+        showDesktopButton.action = #selector(showDesktopClicked(_:))
+        showDesktopButton.toolTip = "Show Desktop"
 
         settingsButton = NSButton(image: NSImage(systemSymbolName: "chevron.up", accessibilityDescription: "Settings")!, target: nil, action: #selector(showActionMenu))
         settingsButton.isBordered = false
@@ -61,11 +58,17 @@ final class TaskbarContentView: NSView {
         settingsButton.contentTintColor = .secondaryLabelColor
         settingsButton.toolTip = "OpenTaskbar"
 
-        let rightStack = NSStackView(views: [clockLabel, settingsButton])
+        let rightStack = NSStackView(views: [showDesktopButton, settingsButton])
         rightStack.orientation = .horizontal
         rightStack.spacing = 8
         rightStack.alignment = .centerY
         rightStack.setContentHuggingPriority(.required, for: .horizontal)
+
+        showDesktopButton.translatesAutoresizingMaskIntoConstraints = false
+        NSLayoutConstraint.activate([
+            showDesktopButton.widthAnchor.constraint(equalToConstant: 36),
+            showDesktopButton.heightAnchor.constraint(equalToConstant: max(settings.taskbarHeight - 4, 1)),
+        ])
 
         let separator = NSView()
         separator.wantsLayer = true
@@ -226,6 +229,8 @@ final class TaskbarContentView: NSView {
                 }
             }
         }
+
+        showDesktopButton?.isShowingDesktop = windowManager.isShowingDesktop
     }
 
     private func observeSettings() {
@@ -241,6 +246,14 @@ final class TaskbarContentView: NSView {
 
     @objc private func appButtonClicked(_ sender: AppButtonView) {
         windowManager.activateApp(at: sender.index)
+    }
+
+    @objc private func showDesktopClicked(_ sender: ShowDesktopButton) {
+        if windowManager.isShowingDesktop {
+            windowManager.restoreDesktop()
+        } else {
+            windowManager.showDesktop()
+        }
     }
 
     private func showContextMenu(for index: Int) {
@@ -271,22 +284,7 @@ final class TaskbarContentView: NSView {
         NSApp.terminate(nil)
     }
 
-    private func startClock() {
-        updateClock()
-        clockTimer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { [weak self] _ in
-            self?.updateClock()
-        }
-    }
-
-    private func updateClock() {
-        let formatter = DateFormatter()
-        formatter.dateStyle = .none
-        formatter.timeStyle = .short
-        clockLabel?.stringValue = formatter.string(from: Date())
-    }
-
     deinit {
-        clockTimer?.invalidate()
         NotificationCenter.default.removeObserver(self)
     }
 }

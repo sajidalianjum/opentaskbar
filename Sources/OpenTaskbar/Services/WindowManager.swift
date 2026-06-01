@@ -97,6 +97,15 @@ final class WindowManager {
             }
         }
 
+        let trackedPIDs = Set(appGroups.compactMap { $0.runningApplication?.processIdentifier })
+        let untrackedPIDs = Set(cgWindows.map(\.pid)).filter { !trackedPIDs.contains($0) }
+        if !untrackedPIDs.isEmpty {
+            let runningPIDs = Set(NSWorkspace.shared.runningApplications.filter { $0.activationPolicy == .regular }.map(\.processIdentifier))
+            if !untrackedPIDs.intersection(runningPIDs).isEmpty {
+                changed = true
+            }
+        }
+
         if changed {
             refreshAppGroups()
         }
@@ -150,7 +159,7 @@ final class WindowManager {
             }
         }
 
-        appGroups = updatedGroups.filter { !$0.windows.isEmpty }
+        appGroups = updatedGroups
 
         if !minimizedWindowIDs.isEmpty {
             let allMinimizedIDs = Set(updatedGroups.flatMap { $0.windows.filter(\.isMinimized).map(\.windowID) })
@@ -184,6 +193,10 @@ final class WindowManager {
     private func handleAppLaunched(_ app: NSRunningApplication) {
         axObserverManager.addObserver(for: app.processIdentifier)
         refreshAppGroups()
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) { [weak self] in
+            self?.axObserverManager.addObserver(for: app.processIdentifier)
+            self?.refreshAppGroups()
+        }
     }
 
     private func handleAppTerminated(_ app: NSRunningApplication) {
@@ -193,7 +206,11 @@ final class WindowManager {
     }
 
     private func handleAppActivated(_ app: NSRunningApplication) {
-        updateActiveStates()
+        if !appGroups.contains(where: { $0.runningApplication?.processIdentifier == app.processIdentifier }) {
+            refreshAppGroups()
+        } else {
+            updateActiveStates()
+        }
     }
 
     private func updateActiveStates() {

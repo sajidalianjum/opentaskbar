@@ -14,6 +14,10 @@ final class TaskbarContentView: NSView {
 
     private var activeConstraints: [NSLayoutConstraint] = []
 
+    private var taskbarHeight: CGFloat {
+        ScreenGeometry.taskbarHeight(forIconSize: CGFloat(settings.iconSize))
+    }
+
     init(windowManager: WindowManager) {
         self.windowManager = windowManager
         super.init(frame: .zero)
@@ -67,7 +71,7 @@ final class TaskbarContentView: NSView {
         showDesktopButton.translatesAutoresizingMaskIntoConstraints = false
         NSLayoutConstraint.activate([
             showDesktopButton.widthAnchor.constraint(equalToConstant: 36),
-            showDesktopButton.heightAnchor.constraint(equalToConstant: max(settings.taskbarHeight - 4, 1)),
+            showDesktopButton.heightAnchor.constraint(equalToConstant: max(taskbarHeight - 4, 1)),
         ])
 
         let separator = NSView()
@@ -204,8 +208,9 @@ final class TaskbarContentView: NSView {
                 appButtons.append(button)
                 appStackView.addArrangedSubview(button)
 
-                button.widthAnchor.constraint(equalToConstant: showNames ? 140 : 44).isActive = true
-                button.heightAnchor.constraint(equalToConstant: max(settings.taskbarHeight - 4, 1)).isActive = true
+                let btnWidth: CGFloat = showNames ? 140 : CGFloat(settings.iconSize) + 16
+                button.widthAnchor.constraint(equalToConstant: btnWidth).isActive = true
+                button.heightAnchor.constraint(equalToConstant: max(taskbarHeight - 4, 1)).isActive = true
             }
         } else {
             for (index, group) in groups.enumerated() {
@@ -222,8 +227,9 @@ final class TaskbarContentView: NSView {
                     oldButton.removeFromSuperview()
                     appStackView.insertArrangedSubview(newButton, at: index)
 
-                    newButton.widthAnchor.constraint(equalToConstant: showNames ? 140 : 44).isActive = true
-                    newButton.heightAnchor.constraint(equalToConstant: max(settings.taskbarHeight - 4, 1)).isActive = true
+                    let btnWidth: CGFloat = showNames ? 140 : CGFloat(settings.iconSize) + 16
+                    newButton.widthAnchor.constraint(equalToConstant: btnWidth).isActive = true
+                    newButton.heightAnchor.constraint(equalToConstant: max(taskbarHeight - 4, 1)).isActive = true
 
                     appButtons[index] = newButton
                 }

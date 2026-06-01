@@ -9,11 +9,13 @@ final class ClickThroughView: NSView {
 
 final class TaskbarPanel: NSPanel {
     private let windowManager: WindowManager
+    private let settings = TaskbarSettings.shared
     private var contentView_: TaskbarContentView?
 
     init(screen: NSScreen, windowManager: WindowManager) {
         self.windowManager = windowManager
-        let rect = ScreenGeometry.taskbarRect(for: screen)
+        let height = ScreenGeometry.taskbarHeight(forIconSize: CGFloat(TaskbarSettings.shared.iconSize))
+        let rect = ScreenGeometry.taskbarRect(for: screen, height: height)
 
         super.init(
             contentRect: rect,
@@ -60,14 +62,29 @@ final class TaskbarPanel: NSPanel {
             self?.contentView_?.reloadData()
         }
         contentView_?.reloadData()
+
+        NotificationCenter.default.addObserver(
+            self, selector: #selector(settingsChanged),
+            name: TaskbarSettings.settingsDidChange, object: nil
+        )
+    }
+
+    @objc private func settingsChanged() {
+        guard let screen = NSScreen.screens.first(where: { NSIntersectsRect($0.frame, frame) }) else { return }
+        updateFrame(for: screen)
     }
 
     func updateFrame(for screen: NSScreen) {
-        let rect = ScreenGeometry.taskbarRect(for: screen)
-        setFrame(rect, display: true)
+        let height = ScreenGeometry.taskbarHeight(forIconSize: CGFloat(settings.iconSize))
+        let rect = ScreenGeometry.taskbarRect(for: screen, height: height)
+        setFrame(rect, display: true, animate: true)
     }
 
     override var canBecomeKey: Bool { false }
 
     override var canBecomeMain: Bool { false }
+
+    deinit {
+        NotificationCenter.default.removeObserver(self)
+    }
 }

@@ -29,10 +29,6 @@ final class TaskbarSettings {
         didSet { UserDefaults.standard.set(showAppNames, forKey: "showAppNames"); postChange() }
     }
 
-    @Published var taskbarHeight: Double {
-        didSet { UserDefaults.standard.set(taskbarHeight, forKey: "taskbarHeight"); postChange() }
-    }
-
     @Published var showOnAllScreens: Bool {
         didSet { UserDefaults.standard.set(showOnAllScreens, forKey: "showOnAllScreens"); postChange() }
     }
@@ -49,6 +45,10 @@ final class TaskbarSettings {
         didSet { UserDefaults.standard.set(barSpacing, forKey: "barSpacing"); postChange() }
     }
 
+    @Published var iconSize: Double {
+        didSet { UserDefaults.standard.set(iconSize, forKey: "iconSize"); postChange() }
+    }
+
     private var lastChangeKey: String?
 
     private func postChange() {
@@ -60,10 +60,10 @@ final class TaskbarSettings {
         self.dockMode = DockMode(rawValue: defaults.string(forKey: "dockMode") ?? "") ?? .hidden
         self.showThumbnails = defaults.object(forKey: "showThumbnails") as? Bool ?? true
         self.showAppNames = defaults.object(forKey: "showAppNames") as? Bool ?? false
-        self.taskbarHeight = defaults.object(forKey: "taskbarHeight") as? Double ?? 48.0
         self.showOnAllScreens = defaults.object(forKey: "showOnAllScreens") as? Bool ?? true
         self.barAlignment = BarAlignment(rawValue: defaults.string(forKey: "barAlignment") ?? "") ?? .center
         self.compactBar = defaults.object(forKey: "compactBar") as? Bool ?? true
         self.barSpacing = defaults.object(forKey: "barSpacing") as? Double ?? 4.0
+        self.iconSize = defaults.object(forKey: "iconSize") as? Double ?? 32.0
     }
 }

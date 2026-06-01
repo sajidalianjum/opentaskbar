@@ -104,29 +104,6 @@ final class SettingsWindowController {
         view.addSubview(allScreensCheck)
         allScreensCheck.frame = NSRect(x: padding, y: y, width: 300, height: 20)
 
-        y -= 45
-
-        let heightLabel = NSTextField(labelWithString: "Taskbar Height:")
-        heightLabel.font = NSFont.systemFont(ofSize: 13, weight: .semibold)
-        view.addSubview(heightLabel)
-        heightLabel.frame = NSRect(x: padding, y: y + 5, width: 150, height: 20)
-
-        let heightSlider = NSSlider(frame: NSRect(x: 170, y: y, width: 200, height: 20))
-        heightSlider.minValue = 36
-        heightSlider.maxValue = 72
-        heightSlider.doubleValue = settings.taskbarHeight
-        heightSlider.target = self
-        heightSlider.action = #selector(heightChanged(_:))
-        view.addSubview(heightSlider)
-
-        y -= 30
-
-        let heightValue = NSTextField(labelWithString: "\(Int(settings.taskbarHeight))pt")
-        heightValue.font = NSFont.systemFont(ofSize: 12)
-        heightValue.tag = 100
-        view.addSubview(heightValue)
-        heightValue.frame = NSRect(x: 370, y: y + 3, width: 40, height: 20)
-
         y -= 40
 
         let spacingLabel = NSTextField(labelWithString: "Bar Spacing:")
@@ -149,6 +126,29 @@ final class SettingsWindowController {
         spacingValue.tag = 101
         view.addSubview(spacingValue)
         spacingValue.frame = NSRect(x: 370, y: y + 3, width: 40, height: 20)
+
+        y -= 40
+
+        let iconSizeLabel = NSTextField(labelWithString: "App Icon Size:")
+        iconSizeLabel.font = NSFont.systemFont(ofSize: 13, weight: .semibold)
+        view.addSubview(iconSizeLabel)
+        iconSizeLabel.frame = NSRect(x: padding, y: y + 5, width: 150, height: 20)
+
+        let iconSizeSlider = NSSlider(frame: NSRect(x: 170, y: y, width: 200, height: 20))
+        iconSizeSlider.minValue = 16
+        iconSizeSlider.maxValue = 64
+        iconSizeSlider.doubleValue = settings.iconSize
+        iconSizeSlider.target = self
+        iconSizeSlider.action = #selector(iconSizeChanged(_:))
+        view.addSubview(iconSizeSlider)
+
+        y -= 30
+
+        let iconSizeValue = NSTextField(labelWithString: "\(Int(settings.iconSize))pt")
+        iconSizeValue.font = NSFont.systemFont(ofSize: 12)
+        iconSizeValue.tag = 102
+        view.addSubview(iconSizeValue)
+        iconSizeValue.frame = NSRect(x: 370, y: y + 3, width: 40, height: 20)
 
         y -= 40
 
@@ -198,14 +198,6 @@ final class SettingsWindowController {
         settings.showOnAllScreens = sender.state == .on
     }
 
-    @objc private func heightChanged(_ sender: NSSlider) {
-        settings.taskbarHeight = sender.doubleValue
-        if let window,
-           let heightLabel = window.contentView?.viewWithTag(100) as? NSTextField {
-            heightLabel.stringValue = "\(Int(sender.doubleValue))pt"
-        }
-    }
-
     @objc private func spacingChanged(_ sender: NSSlider) {
         settings.barSpacing = sender.doubleValue
         if let window,
@@ -214,15 +206,23 @@ final class SettingsWindowController {
         }
     }
 
+    @objc private func iconSizeChanged(_ sender: NSSlider) {
+        settings.iconSize = sender.doubleValue
+        if let window,
+           let iconSizeLabel = window.contentView?.viewWithTag(102) as? NSTextField {
+            iconSizeLabel.stringValue = "\(Int(sender.doubleValue))pt"
+        }
+    }
+
     @objc private func resetDefaults() {
         settings.dockMode = .hidden
         settings.showThumbnails = true
         settings.showAppNames = false
-        settings.taskbarHeight = 48.0
         settings.showOnAllScreens = true
         settings.barAlignment = .center
         settings.compactBar = true
         settings.barSpacing = 4.0
+        settings.iconSize = 32.0
         window?.close()
         showWindow()
     }

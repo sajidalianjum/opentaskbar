@@ -45,7 +45,7 @@ final class AppButtonView: NSView {
         hoverOverlay.isHidden = true
         addSubview(hoverOverlay)
 
-        let iconSize: CGFloat = showName ? 24 : 28
+        let iconSize = CGFloat(TaskbarSettings.shared.iconSize)
         let scaledIcon = appGroup.icon.resized(to: NSSize(width: iconSize, height: iconSize))
 
         iconView = NSImageView(image: scaledIcon)
@@ -110,8 +110,8 @@ final class AppButtonView: NSView {
         countBadge?.translatesAutoresizingMaskIntoConstraints = false
         countLabel?.translatesAutoresizingMaskIntoConstraints = false
 
-        let iconLeading: CGFloat = showName ? 8 : 8
-        let iconHeight: CGFloat = showName ? 24 : 28
+        let iconLeading: CGFloat = 8
+        let iconHeight = CGFloat(TaskbarSettings.shared.iconSize)
 
         NSLayoutConstraint.activate([
             hoverOverlay.leadingAnchor.constraint(equalTo: leadingAnchor),

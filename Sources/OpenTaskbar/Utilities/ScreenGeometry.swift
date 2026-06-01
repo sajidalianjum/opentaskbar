@@ -1,9 +1,11 @@
 import AppKit
 
 enum ScreenGeometry {
-    static let defaultTaskbarHeight: CGFloat = 48
+    static func taskbarHeight(forIconSize iconSize: CGFloat) -> CGFloat {
+        iconSize + 24
+    }
 
-    static func taskbarRect(for screen: NSScreen, height: CGFloat = defaultTaskbarHeight) -> NSRect {
+    static func taskbarRect(for screen: NSScreen, height: CGFloat) -> NSRect {
         let screenFrame = screen.visibleFrame
         let fullScreenFrame = screen.frame
 

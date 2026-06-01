@@ -11,7 +11,7 @@ swift build -c release --arch arm64 --arch x86_64 2>/dev/null || swift build -c 
 
 UNIVERSAL_BINARY="${BUILD_DIR}/${APP_NAME}"
 if [ ! -f "${UNIVERSAL_BINARY}" ]; then
-    UNIVERSAL_BINARY="${BUILD_DIR}/${APP_NAME}"
+    UNIVERSAL_BINARY="${PROJECT_DIR}/.build/apple/Products/Release/${APP_NAME}"
 fi
 
 echo "Creating app bundle..."

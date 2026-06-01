@@ -101,6 +101,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     @objc private func restoreAndQuit() {
+        dockManager.restoreDock()
         NSApp.terminate(nil)
     }
 

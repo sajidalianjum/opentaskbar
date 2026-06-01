@@ -85,6 +85,7 @@ final class DockManager {
         process.executableURL = URL(fileURLWithPath: "/usr/bin/killall")
         process.arguments = ["Dock"]
         try? process.run()
+        process.waitUntilExit()
     }
 
     private func shellReadDefaults(_ args: String...) -> String? {

@@ -180,8 +180,10 @@ final class WindowManager {
 
     private func updateActiveStates() {
         let frontApp = NSWorkspace.shared.frontmostApplication
+        let frontPID = frontApp?.processIdentifier
         for i in appGroups.indices {
-            appGroups[i].isActive = appGroups[i].runningApplication?.processIdentifier == frontApp?.processIdentifier
+            let pid = appGroups[i].runningApplication?.processIdentifier
+            appGroups[i].isActive = pid == frontPID
         }
         notifyChanged()
     }
@@ -204,9 +206,11 @@ final class WindowManager {
 
         guard let app = group.runningApplication else { return }
 
+        let isFrontmost = NSWorkspace.shared.frontmostApplication?.processIdentifier == app.processIdentifier
+
         let visibleWindows = group.windows.filter { !$0.isMinimized }
 
-        if group.isActive && visibleWindows.count <= 1 {
+        if isFrontmost && visibleWindows.count <= 1 {
             if let window = visibleWindows.first ?? group.windows.first {
                 if window.isMinimized {
                     let element = accessibilityService.windowElement(for: window.windowID, pid: app.processIdentifier)

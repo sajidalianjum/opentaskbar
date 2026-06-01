@@ -6,19 +6,21 @@ final class TaskbarContentView: NSView {
 
     private var backgroundView: NSVisualEffectView!
     private var appStackView: NSStackView!
-    private var rightSection: NSView!
+    private var contentStackView: NSStackView!
     private var clockLabel: NSTextField!
     private var settingsButton: NSButton!
-    private var containerStackView: NSStackView!
 
     private var appButtons: [AppButtonView] = []
     private var clockTimer: Timer?
+
+    private var activeConstraints: [NSLayoutConstraint] = []
 
     init(windowManager: WindowManager) {
         self.windowManager = windowManager
         super.init(frame: .zero)
         setupViews()
         startClock()
+        observeSettings()
     }
 
     required init?(coder: NSCoder) {
@@ -27,32 +29,23 @@ final class TaskbarContentView: NSView {
 
     private func setupViews() {
         wantsLayer = true
+        subviews.forEach { $0.removeFromSuperview() }
+        activeConstraints.removeAll()
 
         backgroundView = NSVisualEffectView(frame: .zero)
         backgroundView.material = .sidebar
         backgroundView.blendingMode = .behindWindow
         backgroundView.state = .active
         backgroundView.wantsLayer = true
-        backgroundView.layer?.cornerRadius = 10
+        backgroundView.layer?.cornerRadius = settings.compactBar ? 10 : 0
         backgroundView.layer?.masksToBounds = true
-
-        containerStackView = NSStackView()
-        containerStackView.orientation = .horizontal
-        containerStackView.alignment = .centerY
-        containerStackView.spacing = 0
-
-        let leftSpacer = NSView()
-        leftSpacer.setContentHuggingPriority(.defaultLow, for: .horizontal)
-        leftSpacer.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
 
         appStackView = NSStackView()
         appStackView.orientation = .horizontal
         appStackView.alignment = .centerY
-        appStackView.spacing = 2
+        appStackView.spacing = CGFloat(settings.barSpacing)
         appStackView.setContentHuggingPriority(.defaultHigh, for: .horizontal)
-
-        rightSection = NSView()
-        rightSection.wantsLayer = true
+        appStackView.setContentCompressionResistancePriority(.required, for: .horizontal)
 
         clockLabel = NSTextField(labelWithString: "")
         clockLabel.font = NSFont.monospacedDigitSystemFont(ofSize: 13, weight: .medium)
@@ -73,39 +66,121 @@ final class TaskbarContentView: NSView {
         rightStack.alignment = .centerY
         rightStack.setContentHuggingPriority(.required, for: .horizontal)
 
-        let rightSpacer = NSView()
-        rightSpacer.setContentHuggingPriority(.defaultLow, for: .horizontal)
-        rightSpacer.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
+        let separator = NSView()
+        separator.wantsLayer = true
+        separator.layer?.backgroundColor = NSColor.separatorColor.withAlphaComponent(0.3).cgColor
+        separator.setContentHuggingPriority(.required, for: .horizontal)
+        separator.setContentCompressionResistancePriority(.required, for: .horizontal)
 
-        containerStackView.addArrangedSubview(leftSpacer)
-        containerStackView.addArrangedSubview(appStackView)
-        containerStackView.addArrangedSubview(rightSpacer)
-        containerStackView.addArrangedSubview(rightStack)
+        if settings.compactBar {
+            contentStackView = NSStackView()
+            contentStackView.orientation = .horizontal
+            contentStackView.alignment = .centerY
+            contentStackView.spacing = 8
+            contentStackView.addArrangedSubview(appStackView)
+            contentStackView.addArrangedSubview(separator)
+            contentStackView.addArrangedSubview(rightStack)
+            contentStackView.setContentHuggingPriority(.required, for: .horizontal)
 
-        addSubview(backgroundView)
-        addSubview(containerStackView)
+            addSubview(backgroundView)
+            addSubview(contentStackView)
 
-        backgroundView.translatesAutoresizingMaskIntoConstraints = false
-        containerStackView.translatesAutoresizingMaskIntoConstraints = false
+            backgroundView.translatesAutoresizingMaskIntoConstraints = false
+            contentStackView.translatesAutoresizingMaskIntoConstraints = false
+            separator.translatesAutoresizingMaskIntoConstraints = false
 
-        NSLayoutConstraint.activate([
-            backgroundView.leadingAnchor.constraint(equalTo: leadingAnchor),
-            backgroundView.trailingAnchor.constraint(equalTo: trailingAnchor),
-            backgroundView.topAnchor.constraint(equalTo: topAnchor),
-            backgroundView.bottomAnchor.constraint(equalTo: bottomAnchor),
+            let padding: CGFloat = 8
 
-            containerStackView.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 4),
-            containerStackView.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -4),
-            containerStackView.topAnchor.constraint(equalTo: topAnchor),
-            containerStackView.bottomAnchor.constraint(equalTo: bottomAnchor),
-        ])
+            activeConstraints = [
+                backgroundView.leadingAnchor.constraint(equalTo: contentStackView.leadingAnchor, constant: -padding),
+                backgroundView.trailingAnchor.constraint(equalTo: contentStackView.trailingAnchor, constant: padding),
+                backgroundView.topAnchor.constraint(equalTo: topAnchor),
+                backgroundView.bottomAnchor.constraint(equalTo: bottomAnchor),
 
-        updateClock()
+                contentStackView.centerYAnchor.constraint(equalTo: centerYAnchor),
+
+                separator.widthAnchor.constraint(equalToConstant: 1),
+                separator.heightAnchor.constraint(lessThanOrEqualTo: contentStackView.heightAnchor, multiplier: 0.5),
+            ]
+
+            switch settings.barAlignment {
+            case .center:
+                activeConstraints.append(contentStackView.centerXAnchor.constraint(equalTo: centerXAnchor))
+            case .left:
+                activeConstraints.append(contentsOf: [
+                    contentStackView.leadingAnchor.constraint(greaterThanOrEqualTo: leadingAnchor, constant: 8),
+                    contentStackView.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 8),
+                ])
+            case .right:
+                activeConstraints.append(contentsOf: [
+                    contentStackView.trailingAnchor.constraint(lessThanOrEqualTo: trailingAnchor, constant: -8),
+                    contentStackView.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -8),
+                ])
+            }
+        } else {
+            let leftSpacer = NSView()
+            leftSpacer.setContentHuggingPriority(.defaultLow, for: .horizontal)
+            leftSpacer.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
+
+            let rightSpacer = NSView()
+            rightSpacer.setContentHuggingPriority(.defaultLow, for: .horizontal)
+            rightSpacer.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
+
+            contentStackView = NSStackView()
+            contentStackView.orientation = .horizontal
+            contentStackView.alignment = .centerY
+            contentStackView.spacing = 8
+
+            switch settings.barAlignment {
+            case .center:
+                contentStackView.addArrangedSubview(leftSpacer)
+                contentStackView.addArrangedSubview(appStackView)
+                contentStackView.addArrangedSubview(separator)
+                contentStackView.addArrangedSubview(rightStack)
+                contentStackView.addArrangedSubview(rightSpacer)
+            case .left:
+                contentStackView.addArrangedSubview(appStackView)
+                contentStackView.addArrangedSubview(separator)
+                contentStackView.addArrangedSubview(rightStack)
+                contentStackView.addArrangedSubview(rightSpacer)
+            case .right:
+                contentStackView.addArrangedSubview(leftSpacer)
+                contentStackView.addArrangedSubview(appStackView)
+                contentStackView.addArrangedSubview(separator)
+                contentStackView.addArrangedSubview(rightStack)
+            }
+
+            addSubview(backgroundView)
+            addSubview(contentStackView)
+
+            backgroundView.translatesAutoresizingMaskIntoConstraints = false
+            contentStackView.translatesAutoresizingMaskIntoConstraints = false
+            separator.translatesAutoresizingMaskIntoConstraints = false
+
+            activeConstraints = [
+                backgroundView.leadingAnchor.constraint(equalTo: leadingAnchor),
+                backgroundView.trailingAnchor.constraint(equalTo: trailingAnchor),
+                backgroundView.topAnchor.constraint(equalTo: topAnchor),
+                backgroundView.bottomAnchor.constraint(equalTo: bottomAnchor),
+
+                contentStackView.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 8),
+                contentStackView.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -8),
+                contentStackView.topAnchor.constraint(equalTo: topAnchor),
+                contentStackView.bottomAnchor.constraint(equalTo: bottomAnchor),
+
+                separator.widthAnchor.constraint(equalToConstant: 1),
+                separator.heightAnchor.constraint(lessThanOrEqualTo: contentStackView.heightAnchor, multiplier: 0.5),
+            ]
+        }
+
+        NSLayoutConstraint.activate(activeConstraints)
+        reloadData()
     }
 
     func reloadData() {
         let groups = windowManager.appGroups
         let showNames = settings.showAppNames
+        appStackView.spacing = CGFloat(settings.barSpacing)
 
         let existingIDs = appButtons.map(\.bundleIdentifier)
         let newIDs = groups.map(\.bundleIdentifier)
@@ -152,6 +227,17 @@ final class TaskbarContentView: NSView {
         }
     }
 
+    private func observeSettings() {
+        NotificationCenter.default.addObserver(self, selector: #selector(settingsChanged), name: TaskbarSettings.settingsDidChange, object: nil)
+    }
+
+    @objc private func settingsChanged() {
+        let needsRebuild = true
+        if needsRebuild {
+            setupViews()
+        }
+    }
+
     @objc private func appButtonClicked(_ sender: AppButtonView) {
         windowManager.activateApp(at: sender.index)
     }
@@ -169,7 +255,6 @@ final class TaskbarContentView: NSView {
         menu.addItem(NSMenuItem.separator())
         menu.addItem(NSMenuItem(title: "Restore Dock & Quit", action: #selector(restoreAndQuit), keyEquivalent: "q"))
 
-        let _ = NSApp.currentEvent
         menu.popUp(positioning: nil, at: NSEvent.mouseLocation, in: nil)
     }
 
@@ -201,5 +286,6 @@ final class TaskbarContentView: NSView {
 
     deinit {
         clockTimer?.invalidate()
+        NotificationCenter.default.removeObserver(self)
     }
 }

@@ -110,7 +110,7 @@ final class AppButtonView: NSView {
         countBadge?.translatesAutoresizingMaskIntoConstraints = false
         countLabel?.translatesAutoresizingMaskIntoConstraints = false
 
-        let iconLeading: CGFloat = showName ? 8 : 6
+        let iconLeading: CGFloat = showName ? 8 : 8
         let iconHeight: CGFloat = showName ? 24 : 28
 
         NSLayoutConstraint.activate([

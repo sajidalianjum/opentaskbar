@@ -15,12 +15,10 @@ final class WindowListPopover: NSWindow {
     private let visualEffect: NSVisualEffectView
     private var solidBackgroundView: NSView?
     private let stackView: NSStackView
-    private let borderView: NSView
 
     init() {
         containerView = NSView()
         visualEffect = NSVisualEffectView()
-        borderView = NSView()
         stackView = NSStackView()
         stackView.orientation = .vertical
         stackView.alignment = .leading
@@ -41,19 +39,16 @@ final class WindowListPopover: NSWindow {
         hidesOnDeactivate = false
         collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
 
+        containerView.wantsLayer = true
+        containerView.layer?.cornerRadius = 10
+        containerView.layer?.masksToBounds = true
+        containerView.layer?.borderColor = NSColor.separatorColor.withAlphaComponent(0.3).cgColor
+        containerView.layer?.borderWidth = 1
+
         visualEffect.material = .sidebar
         visualEffect.blendingMode = .behindWindow
         visualEffect.state = .active
-        visualEffect.layer?.cornerRadius = 10
-        visualEffect.layer?.masksToBounds = true
         visualEffect.translatesAutoresizingMaskIntoConstraints = false
-
-        borderView.wantsLayer = true
-        borderView.layer?.borderColor = NSColor.separatorColor.withAlphaComponent(0.3).cgColor
-        borderView.layer?.borderWidth = 1
-        borderView.layer?.cornerRadius = 10
-        borderView.layer?.masksToBounds = true
-        borderView.translatesAutoresizingMaskIntoConstraints = false
 
         stackView.translatesAutoresizingMaskIntoConstraints = false
         visualEffect.addSubview(stackView)
@@ -66,17 +61,11 @@ final class WindowListPopover: NSWindow {
         ])
 
         containerView.addSubview(visualEffect)
-        containerView.addSubview(borderView)
         NSLayoutConstraint.activate([
             visualEffect.leadingAnchor.constraint(equalTo: containerView.leadingAnchor),
             visualEffect.trailingAnchor.constraint(equalTo: containerView.trailingAnchor),
             visualEffect.topAnchor.constraint(equalTo: containerView.topAnchor),
             visualEffect.bottomAnchor.constraint(equalTo: containerView.bottomAnchor),
-
-            borderView.leadingAnchor.constraint(equalTo: containerView.leadingAnchor),
-            borderView.trailingAnchor.constraint(equalTo: containerView.trailingAnchor),
-            borderView.topAnchor.constraint(equalTo: containerView.topAnchor),
-            borderView.bottomAnchor.constraint(equalTo: containerView.bottomAnchor),
         ])
 
         let trackingView = PopoverTrackingView()
@@ -200,7 +189,6 @@ final class WindowListPopover: NSWindow {
             if solidBackgroundView == nil {
                 let solid = NSView()
                 solid.wantsLayer = true
-                solid.layer?.cornerRadius = 10
                 solid.layer?.masksToBounds = true
                 solid.translatesAutoresizingMaskIntoConstraints = false
                 containerView.addSubview(solid, positioned: .below, relativeTo: visualEffect)

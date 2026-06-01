@@ -159,7 +159,7 @@ final class WindowManager {
             }
         }
 
-        appGroups = updatedGroups
+        appGroups = updatedGroups.filter { !$0.windows.isEmpty }
 
         if !minimizedWindowIDs.isEmpty {
             let allMinimizedIDs = Set(updatedGroups.flatMap { $0.windows.filter(\.isMinimized).map(\.windowID) })

@@ -1,12 +1,6 @@
 import Foundation
 
 final class DockManager {
-    private enum DockState {
-        case autohide
-        case autohideDelay
-        case normal
-    }
-
     private var savedState: [String: Any] = [:]
     private let defaultsPath: String
 
@@ -16,14 +10,18 @@ final class DockManager {
     }
 
     func hideDock() {
-        saveCurrentDockState()
+        if !hasSavedState() {
+            saveCurrentDockState()
+        }
         runDefaults("write", "com.apple.dock", "autohide", "-bool", "true")
         runDefaults("write", "com.apple.dock", "autohide-delay", "-float", "1000")
         restartDock()
     }
 
     func autoHideDock() {
-        saveCurrentDockState()
+        if !hasSavedState() {
+            saveCurrentDockState()
+        }
         runDefaults("write", "com.apple.dock", "autohide", "-bool", "true")
         restartDock()
     }
@@ -37,22 +35,22 @@ final class DockManager {
             loadStateFromFile()
         }
 
-        guard !savedState.isEmpty else {
-            runDefaults("delete", "com.apple.dock", "autohide-delay")
-            runDefaults("write", "com.apple.dock", "autohide", "-bool", "false")
-            restartDock()
-            return
-        }
+        let autohide = (savedState["autohide"] as? Bool) ?? false
+        runDefaults("write", "com.apple.dock", "autohide", "-bool", autohide ? "true" : "false")
 
-        if let autohide = savedState["autohide"] as? Bool {
-            runDefaults("write", "com.apple.dock", "autohide", "-bool", autohide ? "true" : "false")
-        }
         if let delay = savedState["autohide-delay"] as? Double {
             runDefaults("write", "com.apple.dock", "autohide-delay", "-float", "\(delay)")
         } else {
             runDefaults("delete", "com.apple.dock", "autohide-delay")
         }
+
+        deleteSavedState()
         restartDock()
+    }
+
+    private func deleteSavedState() {
+        try? FileManager.default.removeItem(atPath: defaultsPath)
+        savedState = [:]
     }
 
     private func loadStateFromFile() {

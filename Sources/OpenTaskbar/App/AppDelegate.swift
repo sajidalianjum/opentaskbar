@@ -24,7 +24,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     func applicationWillTerminate(_ notification: Notification) {
-        dockManager.restoreDock()
         SingleInstanceLock.release()
     }
 

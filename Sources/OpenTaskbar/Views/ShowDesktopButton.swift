@@ -125,4 +125,9 @@ final class ShowDesktopButton: NSView {
         super.updateTrackingAreas()
         setupTrackingArea()
     }
+
+    override func resetCursorRects() {
+        super.resetCursorRects()
+        addCursorRect(bounds, cursor: .arrow)
+    }
 }

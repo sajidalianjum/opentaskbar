@@ -5,6 +5,11 @@ final class ClickThroughView: NSView {
         let view = super.hitTest(point)
         return view !== self ? view : nil
     }
+
+    override func resetCursorRects() {
+        super.resetCursorRects()
+        addCursorRect(bounds, cursor: .arrow)
+    }
 }
 
 final class TaskbarPanel: NSPanel {

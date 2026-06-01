@@ -266,6 +266,11 @@ private final class PopoverTrackingView: NSView {
         popover?.setHovering(false)
         popover?.scheduleHide()
     }
+
+    override func resetCursorRects() {
+        super.resetCursorRects()
+        addCursorRect(bounds, cursor: .arrow)
+    }
 }
 
 private final class WindowRowView: NSView {
@@ -357,5 +362,10 @@ private final class WindowRowView: NSView {
     override func updateTrackingAreas() {
         super.updateTrackingAreas()
         setupTrackingArea()
+    }
+
+    override func resetCursorRects() {
+        super.resetCursorRects()
+        addCursorRect(bounds, cursor: .arrow)
     }
 }

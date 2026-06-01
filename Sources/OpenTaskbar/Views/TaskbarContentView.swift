@@ -295,6 +295,11 @@ final class TaskbarContentView: NSView {
         showDesktopButton?.isShowingDesktop = windowManager.isShowingDesktop
     }
 
+    override func resetCursorRects() {
+        super.resetCursorRects()
+        addCursorRect(bounds, cursor: .arrow)
+    }
+
     private func observeSettings() {
         NotificationCenter.default.addObserver(self, selector: #selector(settingsChanged), name: TaskbarSettings.settingsDidChange, object: nil)
     }

@@ -217,11 +217,6 @@ final class WindowManager {
                     if let element {
                         accessibilityService.unminimizeWindow(element)
                     }
-                } else {
-                    let element = accessibilityService.windowElement(for: window.windowID, pid: app.processIdentifier)
-                    if let element {
-                        accessibilityService.minimizeWindow(element)
-                    }
                 }
             }
             return

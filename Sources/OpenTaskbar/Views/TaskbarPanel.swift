@@ -79,9 +79,6 @@ final class TaskbarPanel: NSPanel {
 
     override func resignKey() {
         super.resignKey()
-        if let app = previousFrontmostApp, !app.isTerminated {
-            app.activate()
-        }
         previousFrontmostApp = nil
     }
 }

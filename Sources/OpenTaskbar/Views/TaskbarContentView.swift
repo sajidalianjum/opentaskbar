@@ -31,6 +31,7 @@ final class TaskbarContentView: NSView {
         wantsLayer = true
         subviews.forEach { $0.removeFromSuperview() }
         activeConstraints.removeAll()
+        appButtons.removeAll()
 
         backgroundView = NSVisualEffectView(frame: .zero)
         backgroundView.material = .sidebar
@@ -201,7 +202,7 @@ final class TaskbarContentView: NSView {
                 appStackView.addArrangedSubview(button)
 
                 button.widthAnchor.constraint(equalToConstant: showNames ? 140 : 44).isActive = true
-                button.heightAnchor.constraint(equalToConstant: settings.taskbarHeight - 4).isActive = true
+                button.heightAnchor.constraint(equalToConstant: max(settings.taskbarHeight - 4, 1)).isActive = true
             }
         } else {
             for (index, group) in groups.enumerated() {
@@ -219,7 +220,7 @@ final class TaskbarContentView: NSView {
                     appStackView.insertArrangedSubview(newButton, at: index)
 
                     newButton.widthAnchor.constraint(equalToConstant: showNames ? 140 : 44).isActive = true
-                    newButton.heightAnchor.constraint(equalToConstant: settings.taskbarHeight - 4).isActive = true
+                    newButton.heightAnchor.constraint(equalToConstant: max(settings.taskbarHeight - 4, 1)).isActive = true
 
                     appButtons[index] = newButton
                 }

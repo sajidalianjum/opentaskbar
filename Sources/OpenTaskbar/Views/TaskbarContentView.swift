@@ -298,6 +298,9 @@ final class TaskbarContentView: NSView {
                 button.rightAction = { [weak self] index in
                     self?.showContextMenu(for: index)
                 }
+                button.onNeedsRefresh = { [weak self] windowID in
+                    self?.windowManager.removeWindow(withID: windowID)
+                }
 
                 appButtons.append(button)
                 appStackView.addArrangedSubview(button)
@@ -315,6 +318,9 @@ final class TaskbarContentView: NSView {
                     newButton.action = #selector(appButtonClicked(_:))
                     newButton.rightAction = { [weak self] index in
                         self?.showContextMenu(for: index)
+                    }
+                    newButton.onNeedsRefresh = { [weak self] windowID in
+                        self?.windowManager.removeWindow(withID: windowID)
                     }
 
                     appStackView.removeArrangedSubview(oldButton)

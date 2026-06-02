@@ -389,6 +389,14 @@ final class WindowManager {
 
         return menu
     }
+
+    func removeWindow(withID windowID: CGWindowID) {
+        for i in appGroups.indices {
+            appGroups[i].windows.removeAll { $0.windowID == windowID }
+        }
+        appGroups.removeAll { $0.windows.isEmpty }
+        notifyChanged()
+    }
 }
 
 final class MenuItemActions: NSObject {

@@ -16,6 +16,8 @@ final class WindowListPopover: NSWindow {
     private var solidBackgroundView: NSView?
     private let stackView: NSStackView
 
+    var onWindowClosed: ((CGWindowID) -> Void)?
+
     init() {
         containerView = NSView()
         visualEffect = NSVisualEffectView()
@@ -42,8 +44,6 @@ final class WindowListPopover: NSWindow {
         containerView.wantsLayer = true
         containerView.layer?.cornerRadius = 10
         containerView.layer?.masksToBounds = true
-        containerView.layer?.borderColor = NSColor.separatorColor.withAlphaComponent(0.3).cgColor
-        containerView.layer?.borderWidth = 1
 
         visualEffect.material = .sidebar
         visualEffect.blendingMode = .behindWindow
@@ -82,7 +82,7 @@ final class WindowListPopover: NSWindow {
         contentView = containerView
     }
 
-    func show(windows: [WindowInfo], anchorPoint: NSPoint, screen: NSScreen) {
+    func show(windows: [WindowInfo], appIcon: NSImage, anchorPoint: NSPoint, screen: NSScreen) {
         cancelHideTimer()
         self.windows = windows
 
@@ -92,9 +92,13 @@ final class WindowListPopover: NSWindow {
         windowRows.removeAll()
 
         for (index, window) in windows.enumerated() {
-            let row = WindowRowView(windowInfo: window, index: index)
+            let row = WindowRowView(windowInfo: window, index: index, appIcon: appIcon)
             row.onActivate = { [weak self] idx in
                 self?.activateWindow(at: idx)
+            }
+            let windowID = window.windowID
+            row.onClose = { [weak self] in
+                self?.closeWindow(with: windowID)
             }
             windowRows.append(row)
             stackView.addArrangedSubview(row)
@@ -237,6 +241,40 @@ final class WindowListPopover: NSWindow {
 
         hide()
     }
+
+    private func closeWindow(with windowID: CGWindowID) {
+        guard let window = windows.first(where: { $0.windowID == windowID }),
+              let index = windows.firstIndex(where: { $0.windowID == windowID }),
+              index < windowRows.count else { return }
+
+        let service = AccessibilityService()
+        if let element = service.windowElement(for: window.windowID, pid: window.pid) {
+            service.closeWindow(element)
+        }
+
+        windows.remove(at: index)
+        let removedRow = windowRows.remove(at: index)
+        removedRow.removeFromSuperview()
+
+        updatePopoverSize()
+
+        if windows.count <= 1 {
+            hide()
+        }
+
+        onWindowClosed?(windowID)
+    }
+
+    private func updatePopoverSize() {
+        guard !windows.isEmpty else { return }
+        let contentHeight = CGFloat(windows.count) * WindowListPopover.rowHeight
+            + CGFloat(max(windows.count - 1, 0)) * stackView.spacing
+            + WindowListPopover.padding * 2
+        var frame = self.frame
+        frame.size.height = contentHeight
+        setFrame(frame, display: true, animate: true)
+        invalidateShadow()
+    }
 }
 
 private final class PopoverTrackingView: NSView {
@@ -277,12 +315,14 @@ private final class WindowRowView: NSView {
     private let windowInfo: WindowInfo
     private let index: Int
     private let titleLabel: NSTextField
-    private let indicatorDot: NSView
+    private let iconImageView: NSImageView
+    private let closeButton: NSButton
     private var trackingArea: NSTrackingArea?
 
     var onActivate: ((Int) -> Void)?
+    var onClose: (() -> Void)?
 
-    init(windowInfo: WindowInfo, index: Int) {
+    init(windowInfo: WindowInfo, index: Int, appIcon: NSImage) {
         self.windowInfo = windowInfo
         self.index = index
 
@@ -293,44 +333,61 @@ private final class WindowRowView: NSView {
         titleLabel.maximumNumberOfLines = 1
         titleLabel.textColor = windowInfo.isMinimized ? .tertiaryLabelColor : .labelColor
 
-        indicatorDot = NSView()
-        indicatorDot.wantsLayer = true
-        indicatorDot.layer?.cornerRadius = windowInfo.isMinimized ? 2 : 3
-        if windowInfo.isMinimized {
-            indicatorDot.layer?.backgroundColor = NSColor.tertiaryLabelColor.cgColor
-        } else {
-            indicatorDot.layer?.backgroundColor = NSColor.controlAccentColor.cgColor
-        }
+        let iconCopy = appIcon.copy() as! NSImage
+        iconImageView = NSImageView(image: iconCopy)
+        iconImageView.imageScaling = .scaleProportionallyUpOrDown
+
+        closeButton = NSButton()
+        closeButton.bezelStyle = .smallSquare
+        closeButton.isBordered = false
+        closeButton.image = NSImage(systemSymbolName: "xmark", accessibilityDescription: "Close")
+        closeButton.imagePosition = .imageOnly
+        closeButton.contentTintColor = .secondaryLabelColor
+        closeButton.isHidden = true
 
         super.init(frame: .zero)
 
         wantsLayer = true
         layer?.cornerRadius = 4
 
-        addSubview(indicatorDot)
+        addSubview(iconImageView)
         addSubview(titleLabel)
+        addSubview(closeButton)
 
-        indicatorDot.translatesAutoresizingMaskIntoConstraints = false
+        iconImageView.translatesAutoresizingMaskIntoConstraints = false
         titleLabel.translatesAutoresizingMaskIntoConstraints = false
+        closeButton.translatesAutoresizingMaskIntoConstraints = false
 
-        let dotSize: CGFloat = windowInfo.isMinimized ? 5 : 7
+        let iconSize: CGFloat = 16
 
         NSLayoutConstraint.activate([
-            indicatorDot.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 8),
-            indicatorDot.centerYAnchor.constraint(equalTo: centerYAnchor),
-            indicatorDot.widthAnchor.constraint(equalToConstant: dotSize),
-            indicatorDot.heightAnchor.constraint(equalToConstant: dotSize),
+            iconImageView.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 6),
+            iconImageView.centerYAnchor.constraint(equalTo: centerYAnchor),
+            iconImageView.widthAnchor.constraint(equalToConstant: iconSize),
+            iconImageView.heightAnchor.constraint(equalToConstant: iconSize),
 
-            titleLabel.leadingAnchor.constraint(equalTo: indicatorDot.trailingAnchor, constant: 8),
-            titleLabel.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -8),
+            closeButton.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -4),
+            closeButton.centerYAnchor.constraint(equalTo: centerYAnchor),
+            closeButton.widthAnchor.constraint(equalToConstant: 18),
+            closeButton.heightAnchor.constraint(equalToConstant: 18),
+
+            titleLabel.leadingAnchor.constraint(equalTo: iconImageView.trailingAnchor, constant: 8),
+            titleLabel.trailingAnchor.constraint(equalTo: closeButton.leadingAnchor, constant: -2),
             titleLabel.centerYAnchor.constraint(equalTo: centerYAnchor),
         ])
+
+        closeButton.target = self
+        closeButton.action = #selector(closeButtonClicked)
 
         setupTrackingArea()
     }
 
     required init?(coder: NSCoder) {
         fatalError("init(coder:) has not been implemented")
+    }
+
+    @objc private func closeButtonClicked() {
+        onClose?()
     }
 
     private func setupTrackingArea() {
@@ -349,10 +406,12 @@ private final class WindowRowView: NSView {
 
     override func mouseEntered(with event: NSEvent) {
         layer?.backgroundColor = NSColor.controlAccentColor.withAlphaComponent(0.1).cgColor
+        closeButton.isHidden = false
     }
 
     override func mouseExited(with event: NSEvent) {
         layer?.backgroundColor = nil
+        closeButton.isHidden = true
     }
 
     override func mouseUp(with event: NSEvent) {

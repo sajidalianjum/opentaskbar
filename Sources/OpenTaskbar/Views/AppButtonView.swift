@@ -21,6 +21,7 @@ final class AppButtonView: NSView {
     var target: AnyObject?
     var action: Selector?
     var rightAction: ((Int) -> Void)?
+    var onNeedsRefresh: ((CGWindowID) -> Void)?
 
     init(appGroup: AppGroup, index: Int, showName: Bool) {
         self.appGroup = appGroup
@@ -203,7 +204,10 @@ final class AppButtonView: NSView {
             screenPoint = NSPoint(x: buttonRectInScreen.midX, y: buttonRectInScreen.maxY)
         }
 
-        popover.show(windows: appGroup.windows, anchorPoint: screenPoint, screen: screen)
+        popover.onWindowClosed = { [weak self] windowID in
+            self?.onNeedsRefresh?(windowID)
+        }
+        popover.show(windows: appGroup.windows, appIcon: appGroup.icon, anchorPoint: screenPoint, screen: screen)
     }
 
     override func mouseDown(with event: NSEvent) {

@@ -379,21 +379,26 @@ final class WindowManager {
         guard index < appGroups.count else { return }
         let group = appGroups[index]
 
+        if group.bundleIdentifier == "com.apple.finder" && group.windows.isEmpty {
+            Task {
+                NSWorkspace.shared.open(URL(fileURLWithPath: NSHomeDirectory()))
+            }
+            return
+        }
+
         guard let app = group.runningApplication else {
-            if let appURL = NSWorkspace.shared.urlForApplication(withBundleIdentifier: group.bundleIdentifier) {
-                let config = NSWorkspace.OpenConfiguration()
-                config.activates = true
-                NSWorkspace.shared.open(appURL, configuration: config)
+            Task {
+                if let appURL = NSWorkspace.shared.urlForApplication(withBundleIdentifier: group.bundleIdentifier) {
+                    let config = NSWorkspace.OpenConfiguration()
+                    config.activates = true
+                    NSWorkspace.shared.open(appURL, configuration: config)
+                }
             }
             return
         }
 
         if group.windows.isEmpty {
-            if let appURL = NSWorkspace.shared.urlForApplication(withBundleIdentifier: group.bundleIdentifier) {
-                let config = NSWorkspace.OpenConfiguration()
-                config.activates = true
-                NSWorkspace.shared.open(appURL, configuration: config)
-            }
+            app.activate(options: .activateAllWindows)
             return
         }
 

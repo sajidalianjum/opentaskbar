@@ -15,7 +15,6 @@ final class WindowManager {
     private var pidWindowCounts: [pid_t: Int] = [:]
     private var recentlyDestroyedPIDs: Set<pid_t> = []
     private var appsSeenWithWindows: Set<String> = []
-    private var windowsInRetry: Set<CGWindowID> = []
 
     var isShowingDesktop: Bool {
         !minimizedWindowIDs.isEmpty
@@ -281,61 +280,22 @@ final class WindowManager {
                       isZoomedFrame(liveFrame, on: screen)
                 else { continue }
 
-                guard !windowsInRetry.contains(window.windowID) else { continue }
-
                 let tbTop = taskbarTop(for: screen)
                 let windowBottom = liveFrame.minY
 
                 guard windowBottom < tbTop else { continue }
 
-                let vf = screen.visibleFrame
-                var newFrame = liveFrame
-                newFrame.size.height = vf.maxY - tbTop - 4
+                let targetHeight = screen.visibleFrame.maxY - tbTop - 4
 
-                guard newFrame.size.height >= 100 else { continue }
-
-                accessibilityService.setFrame(element, frame: newFrame)
-                windowsInRetry.insert(window.windowID)
-                scheduleRetry(element: element, windowID: window.windowID, targetFrame: newFrame, retriesLeft: 10)
-            }
-        }
-    }
-
-    private func scheduleRetry(element: AXUIElement, windowID: CGWindowID, targetFrame: CGRect, retriesLeft: Int) {
-        guard retriesLeft > 0 else {
-            windowsInRetry.remove(windowID)
-            return
-        }
-
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) { [weak self] in
-            guard let self else { return }
-            guard TaskbarSettings.shared.constrainZoomedWindows else {
-                self.windowsInRetry.remove(windowID)
-                return
-            }
-
-            guard let liveFrame = self.accessibilityService.frame(for: element),
-                  let screen = NSScreen.screens.first(where: { $0.frame.intersects(liveFrame) }),
-                  liveFrame.width > 0, liveFrame.height > 0
-            else {
-                self.windowsInRetry.remove(windowID)
-                return
-            }
-
-            let tbTop = self.taskbarTop(for: screen)
-            let visibleMaxY = screen.visibleFrame.maxY
-
-            if abs(liveFrame.maxY - visibleMaxY) > 1 {
-                var corrected = liveFrame
-                corrected.size.height = visibleMaxY - tbTop - 4
-                guard corrected.size.height >= 100 else {
-                    self.windowsInRetry.remove(windowID)
-                    return
+                if abs(liveFrame.height - targetHeight) <= 1 {
+                    continue
                 }
-                self.accessibilityService.setFrame(element, frame: corrected)
-                self.scheduleRetry(element: element, windowID: windowID, targetFrame: corrected, retriesLeft: retriesLeft - 1)
-            } else {
-                self.windowsInRetry.remove(windowID)
+
+                guard targetHeight >= 100 else { continue }
+
+                var newFrame = liveFrame
+                newFrame.size.height = targetHeight
+                accessibilityService.setFrame(element, frame: newFrame)
             }
         }
     }

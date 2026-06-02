@@ -13,6 +13,9 @@ final class WindowManager {
     private var lastFocusedWindow: [String: CGWindowID] = [:]
     private var pidWindowCounts: [pid_t: Int] = [:]
     private var recentlyDestroyedPIDs: Set<pid_t> = []
+    private var destroyedAt: [pid_t: Date] = [:]
+    private var removalGraceTimers: [pid_t: Timer] = [:]
+    private var titleChangeWorkItem: DispatchWorkItem?
     private var appsSeenWithWindows: Set<String> = []
 
     var onAppGroupsChanged: (() -> Void)?
@@ -55,6 +58,14 @@ final class WindowManager {
         pollTimer = nil
     }
 
+    deinit {
+        for (_, timer) in removalGraceTimers {
+            timer.invalidate()
+        }
+        removalGraceTimers.removeAll()
+        titleChangeWorkItem?.cancel()
+    }
+
     private func setupObservers() {
         workspaceMonitor.onAppLaunched = { [weak self] app in
             self?.handleAppLaunched(app)
@@ -69,14 +80,19 @@ final class WindowManager {
             self?.updateActiveStates()
         }
 
-        axObserverManager.onWindowCreated = { [weak self] (_: pid_t, _: AXUIElement) in
+        axObserverManager.onWindowCreated = { [weak self] (pid: pid_t, _: AXUIElement) in
+            self?.removalGraceTimers[pid]?.invalidate()
+            self?.removalGraceTimers.removeValue(forKey: pid)
             self?.refreshAppGroups()
         }
         axObserverManager.onWindowDestroyed = { [weak self] (pid: pid_t, _: AXUIElement) in
             self?.removeWindow(for: pid)
         }
         axObserverManager.onTitleChanged = { [weak self] (_: pid_t, _: AXUIElement) in
-            self?.refreshAppGroups()
+            self?.titleChangeWorkItem?.cancel()
+            let work = DispatchWorkItem { self?.refreshAppGroups() }
+            self?.titleChangeWorkItem = work
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.15, execute: work)
         }
         axObserverManager.onWindowMinimized = { [weak self] (_: pid_t, _: AXUIElement) in
             self?.refreshAppGroups()
@@ -149,7 +165,9 @@ final class WindowManager {
             let axWindows = accessibilityService.windowsForPID(pid)
             var mergedWindows = mergeWindows(axWindows: axWindows, cgWindows: appWindows)
 
-            if recentlyDestroyedPIDs.contains(pid) && axWindows.isEmpty {
+            if let destroyedDate = destroyedAt[pid],
+               Date().timeIntervalSince(destroyedDate) > 0.2,
+               axWindows.isEmpty {
                 mergedWindows = []
             }
 
@@ -237,6 +255,9 @@ final class WindowManager {
         appGroups = updatedGroups.filter { !$0.windows.isEmpty || settings.isPinned($0.bundleIdentifier) }
 
         recentlyDestroyedPIDs.removeAll()
+        destroyedAt = destroyedAt.filter { _, date in
+            Date().timeIntervalSince(date) < 2.0
+        }
         pidWindowCounts = [:]
         for group in updatedGroups {
             if let pid = group.runningApplication?.processIdentifier {
@@ -340,7 +361,11 @@ final class WindowManager {
     }
 
     private func handleAppTerminated(_ app: NSRunningApplication) {
-        axObserverManager.removeObserver(for: app.processIdentifier)
+        let pid = app.processIdentifier
+        axObserverManager.removeObserver(for: pid)
+        removalGraceTimers[pid]?.invalidate()
+        removalGraceTimers.removeValue(forKey: pid)
+        destroyedAt.removeValue(forKey: pid)
         if let bundleID = app.bundleIdentifier {
             lastFocusedWindow.removeValue(forKey: bundleID)
             appsSeenWithWindows.remove(bundleID)
@@ -368,6 +393,9 @@ final class WindowManager {
 
     private func removeWindow(for pid: pid_t) {
         recentlyDestroyedPIDs.insert(pid)
+        destroyedAt[pid] = Date()
+
+        removalGraceTimers[pid]?.invalidate()
 
         guard let prevCount = pidWindowCounts[pid], prevCount == 1 else {
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) { [weak self] in
@@ -380,13 +408,16 @@ final class WindowManager {
             appGroups[i].windows.removeAll()
             break
         }
-        appGroups.removeAll { $0.windows.isEmpty && !TaskbarSettings.shared.isPinned($0.bundleIdentifier) }
-        pidWindowCounts.removeValue(forKey: pid)
-        updateActiveStates()
 
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) { [weak self] in
-            self?.refreshAppGroups()
+        let timer = Timer.scheduledTimer(withTimeInterval: 0.3, repeats: false) { [weak self] _ in
+            guard let self else { return }
+            self.removalGraceTimers.removeValue(forKey: pid)
+            self.appGroups.removeAll { $0.windows.isEmpty && !TaskbarSettings.shared.isPinned($0.bundleIdentifier) }
+            self.pidWindowCounts.removeValue(forKey: pid)
+            self.updateActiveStates()
+            self.refreshAppGroups()
         }
+        removalGraceTimers[pid] = timer
     }
 
     private func notifyChanged() {

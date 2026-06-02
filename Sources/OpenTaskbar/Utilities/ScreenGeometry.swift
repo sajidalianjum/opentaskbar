@@ -4,7 +4,7 @@ enum ScreenGeometry {
     static let compactBarBottomOffset: CGFloat = 6
 
     static func taskbarHeight(forIconSize iconSize: CGFloat) -> CGFloat {
-        iconSize + 24
+        iconSize + 12
     }
 
     static func taskbarRect(for screen: NSScreen, height: CGFloat, compactBar: Bool = false, dockReservesSpace: Bool = false) -> NSRect {

@@ -2,8 +2,24 @@ import AppKit
 
 extension NSImage {
     func resized(to size: NSSize) -> NSImage {
+        let scale = NSScreen.main?.backingScaleFactor ?? 2.0
         let result = NSImage(size: size)
+        if let rep = NSBitmapImageRep(
+            bitmapDataPlanes: nil,
+            pixelsWide: Int(size.width * scale),
+            pixelsHigh: Int(size.height * scale),
+            bitsPerSample: 8,
+            samplesPerPixel: 4,
+            hasAlpha: true,
+            isPlanar: false,
+            colorSpaceName: .deviceRGB,
+            bytesPerRow: 0,
+            bitsPerPixel: 0
+        ) {
+            result.addRepresentation(rep)
+        }
         result.lockFocus()
+        NSGraphicsContext.current?.imageInterpolation = .high
         self.draw(
             in: NSRect(origin: .zero, size: size),
             from: NSRect(origin: .zero, size: self.size),

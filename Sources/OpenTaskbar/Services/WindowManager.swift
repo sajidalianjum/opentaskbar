@@ -12,6 +12,7 @@ final class WindowManager {
 
     private var minimizedWindowIDs: Set<CGWindowID> = []
     private var lastFocusedWindow: [String: CGWindowID] = [:]
+    private var appActivationOrder: [pid_t] = []
 
     var isShowingDesktop: Bool {
         !minimizedWindowIDs.isEmpty
@@ -230,7 +231,8 @@ final class WindowManager {
             minimizedWindowIDs = minimizedWindowIDs.intersection(allMinimizedIDs)
         }
 
-        notifyChanged()
+        focusNextApp()
+        updateActiveStates()
     }
 
     private func mergeWindows(axWindows: [WindowInfo], cgWindows: [WindowInfo]) -> [WindowInfo] {
@@ -272,7 +274,11 @@ final class WindowManager {
     }
 
     private func handleAppActivated(_ app: NSRunningApplication) {
-        if !appGroups.contains(where: { $0.runningApplication?.processIdentifier == app.processIdentifier }) {
+        let pid = app.processIdentifier
+        appActivationOrder.removeAll { $0 == pid }
+        appActivationOrder.insert(pid, at: 0)
+
+        if !appGroups.contains(where: { $0.runningApplication?.processIdentifier == pid }) {
             refreshAppGroups()
         } else {
             updateActiveStates()
@@ -289,8 +295,37 @@ final class WindowManager {
         notifyChanged()
     }
 
+    private func focusNextApp() {
+        let frontPID = NSWorkspace.shared.frontmostApplication?.processIdentifier
+        guard let frontPID else { return }
+
+        if appGroups.contains(where: { $0.runningApplication?.processIdentifier == frontPID && !$0.windows.isEmpty }) {
+            return
+        }
+
+        for pid in appActivationOrder where pid != frontPID {
+            if let app = NSRunningApplication(processIdentifier: pid),
+               appGroups.contains(where: { $0.runningApplication?.processIdentifier == pid && !$0.windows.isEmpty }) {
+                app.activate()
+                return
+            }
+        }
+
+        for group in appGroups {
+            if let app = group.runningApplication,
+               app.processIdentifier != frontPID,
+               !group.windows.isEmpty {
+                app.activate()
+                return
+            }
+        }
+    }
+
     private func removeWindow(for pid: pid_t) {
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) { [weak self] in
+            self?.refreshAppGroups()
+        }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) { [weak self] in
             self?.refreshAppGroups()
         }
     }
@@ -498,7 +533,8 @@ final class WindowManager {
             appGroups[i].windows.removeAll { $0.windowID == windowID }
         }
         appGroups.removeAll { $0.windows.isEmpty && !TaskbarSettings.shared.isPinned($0.bundleIdentifier) }
-        notifyChanged()
+        focusNextApp()
+        updateActiveStates()
     }
 
     func pinApp(bundleIdentifier: String) {

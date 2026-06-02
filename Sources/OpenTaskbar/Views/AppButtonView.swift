@@ -74,7 +74,7 @@ final class AppButtonView: NSView {
         activeIndicator.layer?.cornerRadius = 1.5
         addSubview(activeIndicator)
 
-        if appGroup.isActive {
+        if !appGroup.windows.isEmpty && appGroup.isActive {
             activeIndicator.layer?.backgroundColor = NSColor.controlAccentColor.cgColor
             activeIndicator.frame.size = NSSize(width: 16, height: 3)
         } else if appGroup.isRunning {
@@ -131,7 +131,7 @@ final class AppButtonView: NSView {
 
             activeIndicator.centerXAnchor.constraint(equalTo: centerXAnchor),
             activeIndicator.bottomAnchor.constraint(equalTo: bottomAnchor, constant: -2),
-            activeIndicator.widthAnchor.constraint(equalToConstant: appGroup.isActive ? 16 : 6),
+            activeIndicator.widthAnchor.constraint(equalToConstant: !appGroup.windows.isEmpty && appGroup.isActive ? 16 : 6),
             activeIndicator.heightAnchor.constraint(equalToConstant: 3),
         ])
 
@@ -273,7 +273,7 @@ final class AppButtonView: NSView {
     override func draw(_ dirtyRect: NSRect) {
         super.draw(dirtyRect)
 
-        if appGroup.isActive {
+        if !appGroup.windows.isEmpty && appGroup.isActive {
             let accentColor = NSColor.controlAccentColor.withAlphaComponent(0.06)
             accentColor.setFill()
             NSBezierPath(roundedRect: bounds.insetBy(dx: 1, dy: 1), xRadius: 5, yRadius: 5).fill()

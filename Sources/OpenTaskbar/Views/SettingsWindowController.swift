@@ -1,10 +1,19 @@
 import AppKit
 
+private final class FlippedView: NSView {
+    override var isFlipped: Bool { true }
+}
+
 final class SettingsWindowController {
     static let shared = SettingsWindowController()
 
     private var window: NSWindow?
     private let settings = TaskbarSettings.shared
+
+    private var colorRow: NSView?
+    private var colorRowHeight: NSLayoutConstraint?
+    private weak var spacingValueLabel: NSTextField?
+    private weak var iconSizeValueLabel: NSTextField?
 
     private init() {}
 
@@ -16,18 +25,36 @@ final class SettingsWindowController {
         }
 
         let window = NSWindow(
-            contentRect: NSRect(x: 0, y: 0, width: 400, height: 580),
+            contentRect: NSRect(x: 0, y: 0, width: 420, height: 520),
             styleMask: [.titled, .closable],
             backing: .buffered,
             defer: false
         )
         window.title = "OpenTaskbar Preferences"
         window.isReleasedWhenClosed = false
+        window.minSize = NSSize(width: 420, height: 400)
         window.center()
 
-        let contentView = NSView(frame: NSRect(x: 0, y: 0, width: 400, height: 580))
+        guard let contentFrame = window.contentView?.bounds else { return }
+        let scrollView = NSScrollView(frame: contentFrame)
+        scrollView.autoresizingMask = [NSView.AutoresizingMask.width, NSView.AutoresizingMask.height]
+        scrollView.hasVerticalScroller = true
+        scrollView.autohidesScrollers = true
+        scrollView.borderType = .noBorder
+        scrollView.drawsBackground = false
+        scrollView.scrollerStyle = .overlay
+
+        let contentView = FlippedView()
+        contentView.translatesAutoresizingMaskIntoConstraints = false
+
+        scrollView.documentView = contentView
+        window.contentView = scrollView
+
+        NSLayoutConstraint.activate([
+            contentView.widthAnchor.constraint(equalTo: scrollView.widthAnchor),
+        ])
+
         setupControls(in: contentView)
-        window.contentView = contentView
 
         self.window = window
         window.makeKeyAndOrderFront(nil)
@@ -35,15 +62,102 @@ final class SettingsWindowController {
     }
 
     private func setupControls(in view: NSView) {
-        let padding: CGFloat = 20
-        var y: CGFloat = 440
+        let hPad: CGFloat = 20
+        let labelW: CGFloat = 130
+        let gap: CGFloat = 8
+        let rowGap: CGFloat = 10
+        let secGap: CGFloat = 16
 
-        let dockLabel = NSTextField(labelWithString: "Dock Mode:")
-        dockLabel.font = NSFont.systemFont(ofSize: 13, weight: .semibold)
-        view.addSubview(dockLabel)
-        dockLabel.frame = NSRect(x: padding, y: y, width: 150, height: 20)
+        var prev: NSView?
 
-        let dockSelect = NSPopUpButton(frame: NSRect(x: 170, y: y - 2, width: 200, height: 26))
+        func section(_ title: String) {
+            let label = NSTextField(labelWithString: title.uppercased())
+            label.font = NSFont.systemFont(ofSize: 11, weight: .semibold)
+            label.textColor = NSColor.secondaryLabelColor
+            label.translatesAutoresizingMaskIntoConstraints = false
+            view.addSubview(label)
+            NSLayoutConstraint.activate([
+                label.topAnchor.constraint(equalTo: prev?.bottomAnchor ?? view.topAnchor, constant: secGap),
+                label.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: hPad),
+            ])
+            prev = label
+        }
+
+        func separator() {
+            let line = NSBox()
+            line.boxType = .separator
+            line.translatesAutoresizingMaskIntoConstraints = false
+            view.addSubview(line)
+            NSLayoutConstraint.activate([
+                line.topAnchor.constraint(equalTo: prev?.bottomAnchor ?? view.topAnchor, constant: secGap),
+                line.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: hPad),
+                line.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -hPad),
+            ])
+            prev = line
+        }
+
+        func labeled<T: NSView>(_ text: String, control: T) {
+            let label = NSTextField(labelWithString: text)
+            label.font = NSFont.systemFont(ofSize: 13)
+            label.translatesAutoresizingMaskIntoConstraints = false
+            control.translatesAutoresizingMaskIntoConstraints = false
+            view.addSubview(label)
+            view.addSubview(control)
+            NSLayoutConstraint.activate([
+                label.topAnchor.constraint(equalTo: prev?.bottomAnchor ?? view.topAnchor, constant: rowGap),
+                label.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: hPad),
+                label.widthAnchor.constraint(equalToConstant: labelW),
+
+                control.centerYAnchor.constraint(equalTo: label.centerYAnchor),
+                control.leadingAnchor.constraint(equalTo: label.trailingAnchor, constant: gap),
+                control.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -hPad),
+            ])
+            prev = label
+        }
+
+        @discardableResult
+        func checkbox(_ title: String, action: Selector, state: NSControl.StateValue) -> NSButton {
+            let btn = NSButton(checkboxWithTitle: title, target: self, action: action)
+            btn.state = state
+            btn.translatesAutoresizingMaskIntoConstraints = false
+            view.addSubview(btn)
+            NSLayoutConstraint.activate([
+                btn.topAnchor.constraint(equalTo: prev?.bottomAnchor ?? view.topAnchor, constant: rowGap),
+                btn.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: hPad),
+            ])
+            prev = btn
+            return btn
+        }
+
+        func sliderRow(_ text: String, slider: NSSlider, valueLabel: NSTextField) {
+            let label = NSTextField(labelWithString: text)
+            label.font = NSFont.systemFont(ofSize: 13)
+            label.translatesAutoresizingMaskIntoConstraints = false
+            slider.translatesAutoresizingMaskIntoConstraints = false
+            valueLabel.translatesAutoresizingMaskIntoConstraints = false
+            view.addSubview(label)
+            view.addSubview(slider)
+            view.addSubview(valueLabel)
+            NSLayoutConstraint.activate([
+                label.topAnchor.constraint(equalTo: prev?.bottomAnchor ?? view.topAnchor, constant: rowGap),
+                label.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: hPad),
+                label.widthAnchor.constraint(equalToConstant: labelW),
+
+                slider.centerYAnchor.constraint(equalTo: label.centerYAnchor),
+                slider.leadingAnchor.constraint(equalTo: label.trailingAnchor, constant: gap),
+                slider.trailingAnchor.constraint(equalTo: valueLabel.leadingAnchor, constant: -gap),
+
+                valueLabel.centerYAnchor.constraint(equalTo: label.centerYAnchor),
+                valueLabel.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -hPad),
+                valueLabel.widthAnchor.constraint(equalToConstant: 42),
+            ])
+            prev = label
+        }
+
+        // ─── General ───
+        section("General")
+
+        let dockSelect = NSPopUpButton()
         dockSelect.addItem(withTitle: "Coexist with Dock")
         dockSelect.addItem(withTitle: "Auto-hide Dock")
         dockSelect.addItem(withTitle: "Fully Hide Dock")
@@ -54,124 +168,31 @@ final class SettingsWindowController {
         }
         dockSelect.target = self
         dockSelect.action = #selector(dockModeChanged(_:))
-        view.addSubview(dockSelect)
+        labeled("Dock Mode", control: dockSelect)
 
-        y -= 40
-
-        let alignmentLabel = NSTextField(labelWithString: "Bar Alignment:")
-        alignmentLabel.font = NSFont.systemFont(ofSize: 13, weight: .semibold)
-        view.addSubview(alignmentLabel)
-        alignmentLabel.frame = NSRect(x: padding, y: y, width: 150, height: 20)
-
-        let alignmentSelect = NSPopUpButton(frame: NSRect(x: 170, y: y - 2, width: 200, height: 26))
-        alignmentSelect.addItem(withTitle: "Left")
-        alignmentSelect.addItem(withTitle: "Center")
-        alignmentSelect.addItem(withTitle: "Right")
+        let alignSelect = NSPopUpButton()
+        alignSelect.addItem(withTitle: "Left")
+        alignSelect.addItem(withTitle: "Center")
+        alignSelect.addItem(withTitle: "Right")
         switch settings.barAlignment {
-        case .left: alignmentSelect.selectItem(at: 0)
-        case .center: alignmentSelect.selectItem(at: 1)
-        case .right: alignmentSelect.selectItem(at: 2)
+        case .left: alignSelect.selectItem(at: 0)
+        case .center: alignSelect.selectItem(at: 1)
+        case .right: alignSelect.selectItem(at: 2)
         }
-        alignmentSelect.target = self
-        alignmentSelect.action = #selector(alignmentChanged(_:))
-        view.addSubview(alignmentSelect)
+        alignSelect.target = self
+        alignSelect.action = #selector(alignmentChanged(_:))
+        labeled("Bar Alignment", control: alignSelect)
 
-        y -= 40
+        checkbox("Compact Bar (wrap content only)", action: #selector(compactChanged(_:)), state: settings.compactBar ? .on : .off)
 
-        let compactCheck = NSButton(checkboxWithTitle: "Compact Bar (wrap content only)", target: self, action: #selector(compactChanged(_:)))
-        compactCheck.state = settings.compactBar ? .on : .off
-        view.addSubview(compactCheck)
-        compactCheck.frame = NSRect(x: padding, y: y, width: 300, height: 20)
+        checkbox("Show on All Screens", action: #selector(allScreensChanged(_:)), state: settings.showOnAllScreens ? .on : .off)
 
-        y -= 35
+        separator()
 
-        let thumbnailsCheck = NSButton(checkboxWithTitle: "Show Window Thumbnails on Hover", target: self, action: #selector(thumbnailsChanged(_:)))
-        thumbnailsCheck.state = settings.showThumbnails ? .on : .off
-        view.addSubview(thumbnailsCheck)
-        thumbnailsCheck.frame = NSRect(x: padding, y: y, width: 300, height: 20)
+        // ─── Appearance ───
+        section("Appearance")
 
-        y -= 35
-
-        let namesCheck = NSButton(checkboxWithTitle: "Show App Names", target: self, action: #selector(namesChanged(_:)))
-        namesCheck.state = settings.showAppNames ? .on : .off
-        view.addSubview(namesCheck)
-        namesCheck.frame = NSRect(x: padding, y: y, width: 300, height: 20)
-
-        y -= 35
-
-        let startButtonCheck = NSButton(checkboxWithTitle: "Show Start Button", target: self, action: #selector(startButtonChanged(_:)))
-        startButtonCheck.state = settings.showStartButton ? .on : .off
-        view.addSubview(startButtonCheck)
-        startButtonCheck.frame = NSRect(x: padding, y: y, width: 300, height: 20)
-
-        y -= 35
-
-        let allScreensCheck = NSButton(checkboxWithTitle: "Show on All Screens", target: self, action: #selector(allScreensChanged(_:)))
-        allScreensCheck.state = settings.showOnAllScreens ? .on : .off
-        view.addSubview(allScreensCheck)
-        allScreensCheck.frame = NSRect(x: padding, y: y, width: 300, height: 20)
-
-        y -= 35
-
-        let quitOnCloseCheck = NSButton(checkboxWithTitle: "Quit Apps When All Windows Close", target: self, action: #selector(quitOnCloseChanged(_:)))
-        quitOnCloseCheck.state = settings.quitOnLastWindowClose ? .on : .off
-        view.addSubview(quitOnCloseCheck)
-        quitOnCloseCheck.frame = NSRect(x: padding, y: y, width: 300, height: 20)
-
-        y -= 40
-
-        let spacingLabel = NSTextField(labelWithString: "Bar Spacing:")
-        spacingLabel.font = NSFont.systemFont(ofSize: 13, weight: .semibold)
-        view.addSubview(spacingLabel)
-        spacingLabel.frame = NSRect(x: padding, y: y + 5, width: 150, height: 20)
-
-        let spacingSlider = NSSlider(frame: NSRect(x: 170, y: y, width: 200, height: 20))
-        spacingSlider.minValue = 0
-        spacingSlider.maxValue = 16
-        spacingSlider.doubleValue = settings.barSpacing
-        spacingSlider.target = self
-        spacingSlider.action = #selector(spacingChanged(_:))
-        view.addSubview(spacingSlider)
-
-        y -= 30
-
-        let spacingValue = NSTextField(labelWithString: "\(Int(settings.barSpacing))px")
-        spacingValue.font = NSFont.systemFont(ofSize: 12)
-        spacingValue.tag = 101
-        view.addSubview(spacingValue)
-        spacingValue.frame = NSRect(x: 370, y: y + 3, width: 40, height: 20)
-
-        y -= 40
-
-        let iconSizeLabel = NSTextField(labelWithString: "App Icon Size:")
-        iconSizeLabel.font = NSFont.systemFont(ofSize: 13, weight: .semibold)
-        view.addSubview(iconSizeLabel)
-        iconSizeLabel.frame = NSRect(x: padding, y: y + 5, width: 150, height: 20)
-
-        let iconSizeSlider = NSSlider(frame: NSRect(x: 170, y: y, width: 200, height: 20))
-        iconSizeSlider.minValue = 16
-        iconSizeSlider.maxValue = 64
-        iconSizeSlider.doubleValue = settings.iconSize
-        iconSizeSlider.target = self
-        iconSizeSlider.action = #selector(iconSizeChanged(_:))
-        view.addSubview(iconSizeSlider)
-
-        y -= 30
-
-        let iconSizeValue = NSTextField(labelWithString: "\(Int(settings.iconSize))pt")
-        iconSizeValue.font = NSFont.systemFont(ofSize: 12)
-        iconSizeValue.tag = 102
-        view.addSubview(iconSizeValue)
-        iconSizeValue.frame = NSRect(x: 370, y: y + 3, width: 40, height: 20)
-
-        y -= 10
-
-        let themeLabel = NSTextField(labelWithString: "Background Theme:")
-        themeLabel.font = NSFont.systemFont(ofSize: 13, weight: .semibold)
-        view.addSubview(themeLabel)
-        themeLabel.frame = NSRect(x: padding, y: y, width: 150, height: 20)
-
-        let themeSelect = NSPopUpButton(frame: NSRect(x: 170, y: y - 2, width: 200, height: 26))
+        let themeSelect = NSPopUpButton()
         themeSelect.addItem(withTitle: "System")
         themeSelect.addItem(withTitle: "Dark")
         themeSelect.addItem(withTitle: "Light")
@@ -185,31 +206,102 @@ final class SettingsWindowController {
         themeSelect.target = self
         themeSelect.action = #selector(themeChanged(_:))
         themeSelect.tag = 200
-        view.addSubview(themeSelect)
+        labeled("Background Theme", control: themeSelect)
 
-        y -= 40
+        let cRow = NSView()
+        cRow.translatesAutoresizingMaskIntoConstraints = false
+        view.addSubview(cRow)
 
-        let colorLabel = NSTextField(labelWithString: "Custom Color:")
-        colorLabel.font = NSFont.systemFont(ofSize: 13, weight: .semibold)
-        colorLabel.tag = 201
-        view.addSubview(colorLabel)
-        colorLabel.frame = NSRect(x: padding, y: y + 5, width: 150, height: 20)
-        colorLabel.isHidden = settings.backgroundTheme != .custom
+        let cLabel = NSTextField(labelWithString: "Custom Color")
+        cLabel.font = NSFont.systemFont(ofSize: 13)
+        cLabel.translatesAutoresizingMaskIntoConstraints = false
+        cRow.addSubview(cLabel)
 
-        let colorWell = NSColorWell(frame: NSRect(x: 170, y: y, width: 40, height: 28))
-        colorWell.color = settings.customBackgroundColor
-        colorWell.target = self
-        colorWell.action = #selector(customColorChanged(_:))
-        colorWell.tag = 202
-        view.addSubview(colorWell)
-        colorWell.isHidden = settings.backgroundTheme != .custom
+        let cWell = NSColorWell()
+        cWell.color = settings.customBackgroundColor
+        cWell.target = self
+        cWell.action = #selector(customColorChanged(_:))
+        cWell.tag = 202
+        cWell.translatesAutoresizingMaskIntoConstraints = false
+        cRow.addSubview(cWell)
 
-        y -= 40
+        let cHeight = cRow.heightAnchor.constraint(equalToConstant: 24)
+        colorRow = cRow
+        colorRowHeight = cHeight
 
-        let resetButton = NSButton(title: "Reset to Defaults", target: self, action: #selector(resetDefaults))
-        resetButton.bezelStyle = .rounded
-        view.addSubview(resetButton)
-        resetButton.frame = NSRect(x: padding, y: y, width: 150, height: 30)
+        NSLayoutConstraint.activate([
+            cRow.topAnchor.constraint(equalTo: prev?.bottomAnchor ?? view.topAnchor, constant: rowGap),
+            cRow.leadingAnchor.constraint(equalTo: view.leadingAnchor),
+            cRow.trailingAnchor.constraint(equalTo: view.trailingAnchor),
+            cHeight,
+
+            cLabel.centerYAnchor.constraint(equalTo: cRow.centerYAnchor),
+            cLabel.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: hPad),
+            cLabel.widthAnchor.constraint(equalToConstant: labelW),
+
+            cWell.centerYAnchor.constraint(equalTo: cRow.centerYAnchor),
+            cWell.leadingAnchor.constraint(equalTo: cLabel.trailingAnchor, constant: gap),
+            cWell.widthAnchor.constraint(equalToConstant: 40),
+            cWell.heightAnchor.constraint(equalToConstant: 28),
+        ])
+
+        let hidden = settings.backgroundTheme != .custom
+        cRow.isHidden = hidden
+        prev = cRow
+
+        let iconSlider = NSSlider()
+        iconSlider.minValue = 16
+        iconSlider.maxValue = 64
+        iconSlider.doubleValue = settings.iconSize
+        iconSlider.target = self
+        iconSlider.action = #selector(iconSizeChanged(_:))
+
+        let iconVal = NSTextField(labelWithString: "\(Int(settings.iconSize))pt")
+        iconVal.font = NSFont.systemFont(ofSize: 12)
+        iconVal.alignment = .right
+        iconSizeValueLabel = iconVal
+        sliderRow("App Icon Size", slider: iconSlider, valueLabel: iconVal)
+
+        let spaceSlider = NSSlider()
+        spaceSlider.minValue = 0
+        spaceSlider.maxValue = 16
+        spaceSlider.doubleValue = settings.barSpacing
+        spaceSlider.target = self
+        spaceSlider.action = #selector(spacingChanged(_:))
+
+        let spaceVal = NSTextField(labelWithString: "\(Int(settings.barSpacing))px")
+        spaceVal.font = NSFont.systemFont(ofSize: 12)
+        spaceVal.alignment = .right
+        spacingValueLabel = spaceVal
+        sliderRow("Bar Spacing", slider: spaceSlider, valueLabel: spaceVal)
+
+        separator()
+
+        // ─── Display Options ───
+        section("Display Options")
+
+        checkbox("Show Window Thumbnails on Hover", action: #selector(thumbnailsChanged(_:)), state: settings.showThumbnails ? .on : .off)
+        checkbox("Show App Names", action: #selector(namesChanged(_:)), state: settings.showAppNames ? .on : .off)
+        checkbox("Show Spotlight Button", action: #selector(startButtonChanged(_:)), state: settings.showStartButton ? .on : .off)
+        checkbox("Quit Apps When All Windows Close", action: #selector(quitOnCloseChanged(_:)), state: settings.quitOnLastWindowClose ? .on : .off)
+
+        separator()
+
+        let resetBtn = NSButton(title: "Reset to Defaults", target: self, action: #selector(resetDefaults))
+        resetBtn.bezelStyle = .rounded
+        resetBtn.translatesAutoresizingMaskIntoConstraints = false
+        view.addSubview(resetBtn)
+        NSLayoutConstraint.activate([
+            resetBtn.topAnchor.constraint(equalTo: prev?.bottomAnchor ?? view.topAnchor, constant: secGap),
+            resetBtn.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: hPad),
+            resetBtn.widthAnchor.constraint(equalToConstant: 150),
+            resetBtn.heightAnchor.constraint(equalToConstant: 28),
+        ])
+        prev = resetBtn
+
+        NSLayoutConstraint.activate([
+            prev!.bottomAnchor.constraint(equalTo: view.bottomAnchor, constant: -secGap),
+        ])
     }
 
     @objc private func dockModeChanged(_ sender: NSPopUpButton) {
@@ -262,18 +354,12 @@ final class SettingsWindowController {
 
     @objc private func spacingChanged(_ sender: NSSlider) {
         settings.barSpacing = sender.doubleValue
-        if let window,
-           let spacingLabel = window.contentView?.viewWithTag(101) as? NSTextField {
-            spacingLabel.stringValue = "\(Int(sender.doubleValue))px"
-        }
+        spacingValueLabel?.stringValue = "\(Int(sender.doubleValue))px"
     }
 
     @objc private func iconSizeChanged(_ sender: NSSlider) {
         settings.iconSize = sender.doubleValue
-        if let window,
-           let iconSizeLabel = window.contentView?.viewWithTag(102) as? NSTextField {
-            iconSizeLabel.stringValue = "\(Int(sender.doubleValue))pt"
-        }
+        iconSizeValueLabel?.stringValue = "\(Int(sender.doubleValue))pt"
     }
 
     @objc private func themeChanged(_ sender: NSPopUpButton) {
@@ -287,13 +373,9 @@ final class SettingsWindowController {
         }
         settings.backgroundTheme = selected
 
-        if let window,
-           let colorLabel = window.contentView?.viewWithTag(201) as? NSTextField,
-           let colorWell = window.contentView?.viewWithTag(202) as? NSColorWell {
-            let isCustom = selected == .custom
-            colorLabel.isHidden = !isCustom
-            colorWell.isHidden = !isCustom
-        }
+        let isCustom = selected == .custom
+        colorRow?.isHidden = !isCustom
+        colorRowHeight?.constant = isCustom ? 24 : 0
     }
 
     @objc private func customColorChanged(_ sender: NSColorWell) {

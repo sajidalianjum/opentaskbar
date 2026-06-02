@@ -122,6 +122,35 @@ final class AccessibilityService {
         AXUIElementPerformAction(button as! AXUIElement, kAXPressAction as CFString)
     }
 
+    func frame(for element: AXUIElement) -> CGRect? {
+        var positionRef: CFTypeRef?
+        var sizeRef: CFTypeRef?
+        guard AXUIElementCopyAttributeValue(element, kAXPositionAttribute as CFString, &positionRef) == .success,
+              AXUIElementCopyAttributeValue(element, kAXSizeAttribute as CFString, &sizeRef) == .success,
+              let posValue = positionRef,
+              let sizeValue = sizeRef
+        else { return nil }
+        var point = CGPoint.zero
+        var size = CGSize.zero
+        guard AXValueGetType(posValue as! AXValue) == .cgPoint,
+              AXValueGetType(sizeValue as! AXValue) == .cgSize
+        else { return nil }
+        AXValueGetValue(posValue as! AXValue, .cgPoint, &point)
+        AXValueGetValue(sizeValue as! AXValue, .cgSize, &size)
+        return CGRect(origin: point, size: size)
+    }
+
+    func setFrame(_ element: AXUIElement, frame: CGRect) {
+        var point = frame.origin
+        var size = frame.size
+        if let axSize = AXValueCreate(.cgSize, &size) {
+            AXUIElementSetAttributeValue(element, kAXSizeAttribute as CFString, axSize)
+        }
+        if let axPoint = AXValueCreate(.cgPoint, &point) {
+            AXUIElementSetAttributeValue(element, kAXPositionAttribute as CFString, axPoint)
+        }
+    }
+
     func toggleFullscreen(_ element: AXUIElement) {
         var isFullscreen = false
         var fullscreenRef: CFTypeRef?

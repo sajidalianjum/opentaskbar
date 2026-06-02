@@ -284,6 +284,7 @@ final class SettingsWindowController {
         checkbox("Show App Names", action: #selector(namesChanged(_:)), state: settings.showAppNames ? .on : .off)
         checkbox("Show Spotlight Button", action: #selector(startButtonChanged(_:)), state: settings.showStartButton ? .on : .off)
         checkbox("Quit Apps When All Windows Close", action: #selector(quitOnCloseChanged(_:)), state: settings.quitOnLastWindowClose ? .on : .off)
+        checkbox("Keep Zoomed Windows Above Taskbar", action: #selector(constrainZoomedChanged(_:)), state: settings.constrainZoomedWindows ? .on : .off)
 
         separator()
 
@@ -352,6 +353,10 @@ final class SettingsWindowController {
         settings.quitOnLastWindowClose = sender.state == .on
     }
 
+    @objc private func constrainZoomedChanged(_ sender: NSButton) {
+        settings.constrainZoomedWindows = sender.state == .on
+    }
+
     @objc private func spacingChanged(_ sender: NSSlider) {
         settings.barSpacing = sender.doubleValue
         spacingValueLabel?.stringValue = "\(Int(sender.doubleValue))px"
@@ -393,6 +398,7 @@ final class SettingsWindowController {
         settings.barSpacing = 4.0
         settings.iconSize = 32.0
         settings.quitOnLastWindowClose = false
+        settings.constrainZoomedWindows = false
         settings.backgroundTheme = .system
         settings.customBackgroundColor = NSColor(calibratedRed: 0.15, green: 0.15, blue: 0.2, alpha: 1.0)
         window?.close()

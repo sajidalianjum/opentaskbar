@@ -15,6 +15,7 @@ final class WindowManager {
     private var pidWindowCounts: [pid_t: Int] = [:]
     private var recentlyDestroyedPIDs: Set<pid_t> = []
     private var appsSeenWithWindows: Set<String> = []
+    private var windowsInRetry: Set<CGWindowID> = []
 
     var isShowingDesktop: Bool {
         !minimizedWindowIDs.isEmpty
@@ -101,6 +102,7 @@ final class WindowManager {
     private func startPolling() {
         pollTimer = Timer.scheduledTimer(withTimeInterval: pollInterval, repeats: true) { [weak self] _ in
             self?.pollWindows()
+            self?.constrainZoomedWindows()
         }
     }
 
@@ -253,7 +255,108 @@ final class WindowManager {
             }
         }
 
+        constrainZoomedWindows()
         notifyChanged()
+    }
+
+    private func constrainZoomedWindows() {
+        guard TaskbarSettings.shared.constrainZoomedWindows else { return }
+
+        let ownPID = ProcessInfo.processInfo.processIdentifier
+
+        for group in appGroups {
+            guard let app = group.runningApplication else { continue }
+            let pid = app.processIdentifier
+            guard pid != ownPID else { continue }
+
+            for window in group.windows {
+                guard !window.isMinimized, !window.isFullscreen else { continue }
+
+                guard let element = accessibilityService.windowElement(for: window.windowID, pid: pid),
+                      let liveFrame = accessibilityService.frame(for: element),
+                      liveFrame.width > 0, liveFrame.height > 0
+                else { continue }
+
+                guard let screen = screenContaining(frame: liveFrame),
+                      isZoomedFrame(liveFrame, on: screen)
+                else { continue }
+
+                guard !windowsInRetry.contains(window.windowID) else { continue }
+
+                let tbTop = taskbarTop(for: screen)
+                let windowBottom = liveFrame.minY
+
+                guard windowBottom < tbTop else { continue }
+
+                let vf = screen.visibleFrame
+                var newFrame = liveFrame
+                newFrame.size.height = vf.maxY - tbTop - 4
+
+                guard newFrame.size.height >= 100 else { continue }
+
+                accessibilityService.setFrame(element, frame: newFrame)
+                windowsInRetry.insert(window.windowID)
+                scheduleRetry(element: element, windowID: window.windowID, targetFrame: newFrame, retriesLeft: 10)
+            }
+        }
+    }
+
+    private func scheduleRetry(element: AXUIElement, windowID: CGWindowID, targetFrame: CGRect, retriesLeft: Int) {
+        guard retriesLeft > 0 else {
+            windowsInRetry.remove(windowID)
+            return
+        }
+
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) { [weak self] in
+            guard let self else { return }
+            guard TaskbarSettings.shared.constrainZoomedWindows else {
+                self.windowsInRetry.remove(windowID)
+                return
+            }
+
+            guard let liveFrame = self.accessibilityService.frame(for: element),
+                  let screen = NSScreen.screens.first(where: { $0.frame.intersects(liveFrame) }),
+                  liveFrame.width > 0, liveFrame.height > 0
+            else {
+                self.windowsInRetry.remove(windowID)
+                return
+            }
+
+            let tbTop = self.taskbarTop(for: screen)
+            let visibleMaxY = screen.visibleFrame.maxY
+
+            if abs(liveFrame.maxY - visibleMaxY) > 1 {
+                var corrected = liveFrame
+                corrected.size.height = visibleMaxY - tbTop - 4
+                guard corrected.size.height >= 100 else {
+                    self.windowsInRetry.remove(windowID)
+                    return
+                }
+                self.accessibilityService.setFrame(element, frame: corrected)
+                self.scheduleRetry(element: element, windowID: windowID, targetFrame: corrected, retriesLeft: retriesLeft - 1)
+            } else {
+                self.windowsInRetry.remove(windowID)
+            }
+        }
+    }
+
+    private func taskbarTop(for screen: NSScreen) -> CGFloat {
+        let height = ScreenGeometry.taskbarHeight(forIconSize: CGFloat(TaskbarSettings.shared.iconSize))
+        let rect = ScreenGeometry.taskbarRect(for: screen, height: height)
+        return rect.maxY
+    }
+
+    private func screenContaining(frame: CGRect) -> NSScreen? {
+        let center = CGPoint(x: frame.midX, y: frame.midY)
+        return NSScreen.screens.first(where: { $0.frame.contains(center) })
+            ?? NSScreen.screens.first(where: { $0.frame.intersects(frame) })
+    }
+
+    private func isZoomedFrame(_ frame: CGRect, on screen: NSScreen) -> Bool {
+        let vf = screen.visibleFrame
+        let widthRatio = frame.width / vf.width
+        let heightRatio = frame.height / vf.height
+        return widthRatio >= 0.98 && heightRatio >= 0.98
     }
 
     private func mergeWindows(axWindows: [WindowInfo], cgWindows: [WindowInfo]) -> [WindowInfo] {

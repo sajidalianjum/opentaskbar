@@ -68,6 +68,10 @@ final class TaskbarSettings {
         didSet { UserDefaults.standard.set(quitOnLastWindowClose, forKey: "quitOnLastWindowClose"); postChange() }
     }
 
+    @Published var constrainZoomedWindows: Bool {
+        didSet { UserDefaults.standard.set(constrainZoomedWindows, forKey: "constrainZoomedWindows"); postChange() }
+    }
+
     @Published var customBackgroundColorData: Data {
         didSet { UserDefaults.standard.set(customBackgroundColorData, forKey: "customBackgroundColor"); postChange() }
     }
@@ -139,6 +143,7 @@ final class TaskbarSettings {
         self.barSpacing = defaults.object(forKey: "barSpacing") as? Double ?? 4.0
         self.iconSize = defaults.object(forKey: "iconSize") as? Double ?? 32.0
         self.quitOnLastWindowClose = defaults.object(forKey: "quitOnLastWindowClose") as? Bool ?? false
+        self.constrainZoomedWindows = defaults.object(forKey: "constrainZoomedWindows") as? Bool ?? false
         self.backgroundTheme = BackgroundTheme(rawValue: defaults.string(forKey: "backgroundTheme") ?? "") ?? .system
         self.pinnedBundleIdentifiers = defaults.stringArray(forKey: "pinnedBundleIdentifiers") ?? []
         if let saved = defaults.data(forKey: "customBackgroundColor") {

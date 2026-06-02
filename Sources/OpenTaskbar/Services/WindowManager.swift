@@ -501,6 +501,37 @@ final class WindowManager {
         menu.addItem(appItem)
         menu.addItem(NSMenuItem.separator())
 
+        if group.bundleIdentifier == "com.apple.finder" {
+            let newWindow = NSMenuItem(title: "New Finder Window", action: #selector(MenuItemActions.shared.newFinderWindow(_:)), keyEquivalent: "n")
+            newWindow.target = MenuItemActions.shared
+            menu.addItem(newWindow)
+
+            let openSub = NSMenu()
+            let openItem = NSMenuItem(title: "Open", action: nil, keyEquivalent: "")
+            openItem.submenu = openSub
+            menu.addItem(openItem)
+
+            let locations: [(String, String)] = [
+                ("Home", NSHomeDirectory()),
+                ("Desktop", "\(NSHomeDirectory())/Desktop"),
+                ("Downloads", "\(NSHomeDirectory())/Downloads"),
+                ("Documents", "\(NSHomeDirectory())/Documents"),
+                ("Applications", "/Applications"),
+            ]
+            for (name, path) in locations {
+                let item = NSMenuItem(title: name, action: #selector(MenuItemActions.shared.openFolder(_:)), keyEquivalent: "")
+                item.target = MenuItemActions.shared
+                item.representedObject = ["path": path]
+                openSub.addItem(item)
+            }
+
+            let emptyTrash = NSMenuItem(title: "Empty Trash…", action: #selector(MenuItemActions.shared.emptyTrash(_:)), keyEquivalent: "")
+            emptyTrash.target = MenuItemActions.shared
+            menu.addItem(emptyTrash)
+
+            menu.addItem(NSMenuItem.separator())
+        }
+
         for (i, window) in group.windows.enumerated() {
             let title = window.title.isEmpty ? "Window \(i + 1)" : window.title
             let windowItem = NSMenuItem(title: title, action: #selector(MenuItemActions.shared.activateWindow(_:)), keyEquivalent: "\(i + 1)")
@@ -624,5 +655,46 @@ final class MenuItemActions: NSObject {
         guard let info = sender.representedObject as? [String: String],
               let bundleID = info["bundleID"] else { return }
         onTogglePin?(bundleID)
+    }
+
+    @objc func newFinderWindow(_ sender: NSMenuItem) {
+        let script = """
+        tell application "Finder"
+            activate
+            make new Finder window
+        end tell
+        """
+        var error: NSDictionary?
+        NSAppleScript(source: script)?.executeAndReturnError(&error)
+        if let error {
+            print("Failed to create new Finder window: \(error)")
+        }
+    }
+
+    @objc func openFolder(_ sender: NSMenuItem) {
+        guard let info = sender.representedObject as? [String: String],
+              let path = info["path"] else { return }
+        NSWorkspace.shared.selectFile(nil, inFileViewerRootedAtPath: path)
+    }
+
+    @objc func emptyTrash(_ sender: NSMenuItem) {
+        let alert = NSAlert()
+        alert.messageText = "Empty the Trash?"
+        alert.informativeText = "Are you sure you want to permanently delete all items in the Trash?"
+        alert.addButton(withTitle: "Empty Trash")
+        alert.addButton(withTitle: "Cancel")
+        alert.alertStyle = .critical
+        guard alert.runModal() == .alertFirstButtonReturn else { return }
+
+        let script = """
+        tell application "Finder"
+            empty trash
+        end tell
+        """
+        var error: NSDictionary?
+        NSAppleScript(source: script)?.executeAndReturnError(&error)
+        if let error {
+            print("Failed to empty trash: \(error)")
+        }
     }
 }

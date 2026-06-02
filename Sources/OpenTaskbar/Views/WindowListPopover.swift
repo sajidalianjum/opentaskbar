@@ -331,6 +331,7 @@ private final class WindowRowView: NSView {
         titleLabel.font = NSFont.systemFont(ofSize: 12, weight: .medium)
         titleLabel.lineBreakMode = .byTruncatingTail
         titleLabel.maximumNumberOfLines = 1
+        titleLabel.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
         titleLabel.textColor = windowInfo.isMinimized ? .tertiaryLabelColor : .labelColor
 
         let iconCopy = appIcon.copy() as! NSImage

@@ -99,6 +99,13 @@ final class SettingsWindowController {
 
         y -= 35
 
+        let startButtonCheck = NSButton(checkboxWithTitle: "Show Start Button", target: self, action: #selector(startButtonChanged(_:)))
+        startButtonCheck.state = settings.showStartButton ? .on : .off
+        view.addSubview(startButtonCheck)
+        startButtonCheck.frame = NSRect(x: padding, y: y, width: 300, height: 20)
+
+        y -= 35
+
         let allScreensCheck = NSButton(checkboxWithTitle: "Show on All Screens", target: self, action: #selector(allScreensChanged(_:)))
         allScreensCheck.state = settings.showOnAllScreens ? .on : .off
         view.addSubview(allScreensCheck)
@@ -241,6 +248,10 @@ final class SettingsWindowController {
         settings.showAppNames = sender.state == .on
     }
 
+    @objc private func startButtonChanged(_ sender: NSButton) {
+        settings.showStartButton = sender.state == .on
+    }
+
     @objc private func allScreensChanged(_ sender: NSButton) {
         settings.showOnAllScreens = sender.state == .on
     }
@@ -293,6 +304,7 @@ final class SettingsWindowController {
         settings.dockMode = .hidden
         settings.showThumbnails = false
         settings.showAppNames = false
+        settings.showStartButton = true
         settings.showOnAllScreens = true
         settings.barAlignment = .center
         settings.compactBar = true

@@ -56,6 +56,10 @@ final class TaskbarSettings {
         didSet { UserDefaults.standard.set(iconSize, forKey: "iconSize"); postChange() }
     }
 
+    @Published var showStartButton: Bool {
+        didSet { UserDefaults.standard.set(showStartButton, forKey: "showStartButton"); postChange() }
+    }
+
     @Published var backgroundTheme: BackgroundTheme {
         didSet { UserDefaults.standard.set(backgroundTheme.rawValue, forKey: "backgroundTheme"); postChange() }
     }
@@ -92,6 +96,7 @@ final class TaskbarSettings {
         let defaults = UserDefaults.standard
         self.dockMode = DockMode(rawValue: defaults.string(forKey: "dockMode") ?? "") ?? .hidden
         self.showThumbnails = defaults.object(forKey: "showThumbnails") as? Bool ?? false
+        self.showStartButton = defaults.object(forKey: "showStartButton") as? Bool ?? true
         self.showAppNames = defaults.object(forKey: "showAppNames") as? Bool ?? false
         self.showOnAllScreens = defaults.object(forKey: "showOnAllScreens") as? Bool ?? true
         self.barAlignment = BarAlignment(rawValue: defaults.string(forKey: "barAlignment") ?? "") ?? .center

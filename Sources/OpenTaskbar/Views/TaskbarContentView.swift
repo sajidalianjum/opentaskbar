@@ -10,6 +10,8 @@ final class TaskbarContentView: NSView {
     private var showDesktopButton: ShowDesktopButton!
     private var solidBackgroundView: NSView?
 
+    private var startMenuButton: StartMenuButton!
+    private var startSeparator: NSView!
     private var appButtons: [AppButtonView] = []
 
     private var activeConstraints: [NSLayoutConstraint] = []
@@ -33,6 +35,8 @@ final class TaskbarContentView: NSView {
         wantsLayer = true
         subviews.forEach { $0.removeFromSuperview() }
         activeConstraints.removeAll()
+        startMenuButton = nil
+        startSeparator = nil
         appButtons.removeAll()
         solidBackgroundView = nil
 
@@ -56,6 +60,19 @@ final class TaskbarContentView: NSView {
         showDesktopButton.action = #selector(showDesktopClicked(_:))
         showDesktopButton.toolTip = "Show Desktop"
 
+        startMenuButton = StartMenuButton()
+        startMenuButton.target = self
+        startMenuButton.action = #selector(startMenuClicked(_:))
+        startMenuButton.toolTip = "Search (Spotlight)"
+        startMenuButton.isHidden = !settings.showStartButton
+
+        startSeparator = NSView()
+        startSeparator.wantsLayer = true
+        startSeparator.layer?.backgroundColor = NSColor.separatorColor.withAlphaComponent(0.3).cgColor
+        startSeparator.setContentHuggingPriority(.required, for: .horizontal)
+        startSeparator.setContentCompressionResistancePriority(.required, for: .horizontal)
+        startSeparator.isHidden = !settings.showStartButton
+
         let rightStack = NSStackView(views: [showDesktopButton])
         rightStack.orientation = .horizontal
         rightStack.spacing = 8
@@ -66,6 +83,13 @@ final class TaskbarContentView: NSView {
         NSLayoutConstraint.activate([
             showDesktopButton.widthAnchor.constraint(equalToConstant: 36),
             showDesktopButton.heightAnchor.constraint(equalToConstant: max(taskbarHeight - 4, 1)),
+        ])
+
+        startMenuButton.translatesAutoresizingMaskIntoConstraints = false
+        startSeparator.translatesAutoresizingMaskIntoConstraints = false
+        NSLayoutConstraint.activate([
+            startMenuButton.widthAnchor.constraint(equalToConstant: 36),
+            startMenuButton.heightAnchor.constraint(equalToConstant: max(taskbarHeight - 4, 1)),
         ])
 
         let separator = NSView()
@@ -79,6 +103,8 @@ final class TaskbarContentView: NSView {
             contentStackView.orientation = .horizontal
             contentStackView.alignment = .centerY
             contentStackView.spacing = 8
+            contentStackView.addArrangedSubview(startMenuButton)
+            contentStackView.addArrangedSubview(startSeparator)
             contentStackView.addArrangedSubview(appStackView)
             contentStackView.addArrangedSubview(separator)
             contentStackView.addArrangedSubview(rightStack)
@@ -103,6 +129,9 @@ final class TaskbarContentView: NSView {
 
                 separator.widthAnchor.constraint(equalToConstant: 1),
                 separator.heightAnchor.constraint(lessThanOrEqualTo: contentStackView.heightAnchor, multiplier: 0.5),
+
+                startSeparator.widthAnchor.constraint(equalToConstant: 1),
+                startSeparator.heightAnchor.constraint(lessThanOrEqualTo: contentStackView.heightAnchor, multiplier: 0.5),
             ]
 
             switch settings.barAlignment {
@@ -136,17 +165,23 @@ final class TaskbarContentView: NSView {
             switch settings.barAlignment {
             case .center:
                 contentStackView.addArrangedSubview(leftSpacer)
+                contentStackView.addArrangedSubview(startMenuButton)
+                contentStackView.addArrangedSubview(startSeparator)
                 contentStackView.addArrangedSubview(appStackView)
                 contentStackView.addArrangedSubview(separator)
                 contentStackView.addArrangedSubview(rightStack)
                 contentStackView.addArrangedSubview(rightSpacer)
             case .left:
+                contentStackView.addArrangedSubview(startMenuButton)
+                contentStackView.addArrangedSubview(startSeparator)
                 contentStackView.addArrangedSubview(appStackView)
                 contentStackView.addArrangedSubview(separator)
                 contentStackView.addArrangedSubview(rightStack)
                 contentStackView.addArrangedSubview(rightSpacer)
             case .right:
                 contentStackView.addArrangedSubview(leftSpacer)
+                contentStackView.addArrangedSubview(startMenuButton)
+                contentStackView.addArrangedSubview(startSeparator)
                 contentStackView.addArrangedSubview(appStackView)
                 contentStackView.addArrangedSubview(separator)
                 contentStackView.addArrangedSubview(rightStack)
@@ -172,6 +207,9 @@ final class TaskbarContentView: NSView {
 
                 separator.widthAnchor.constraint(equalToConstant: 1),
                 separator.heightAnchor.constraint(lessThanOrEqualTo: contentStackView.heightAnchor, multiplier: 0.5),
+
+                startSeparator.widthAnchor.constraint(equalToConstant: 1),
+                startSeparator.heightAnchor.constraint(lessThanOrEqualTo: contentStackView.heightAnchor, multiplier: 0.5),
             ]
         }
 
@@ -293,6 +331,9 @@ final class TaskbarContentView: NSView {
         }
 
         showDesktopButton?.isShowingDesktop = windowManager.isShowingDesktop
+        let showStart = settings.showStartButton
+        startMenuButton?.isHidden = !showStart
+        startSeparator?.isHidden = !showStart
     }
 
     override func resetCursorRects() {
@@ -321,6 +362,20 @@ final class TaskbarContentView: NSView {
         } else {
             windowManager.showDesktop()
         }
+    }
+
+    @objc private func startMenuClicked(_ sender: StartMenuButton) {
+        let source = CGEventSource(stateID: .hidSystemState)
+        let cmdDown = CGEvent(keyboardEventSource: source, virtualKey: 0x37, keyDown: true)
+        let spaceDown = CGEvent(keyboardEventSource: source, virtualKey: 0x31, keyDown: true)
+        spaceDown?.flags = .maskCommand
+        let spaceUp = CGEvent(keyboardEventSource: source, virtualKey: 0x31, keyDown: false)
+        spaceUp?.flags = .maskCommand
+        let cmdUp = CGEvent(keyboardEventSource: source, virtualKey: 0x37, keyDown: false)
+        cmdDown?.post(tap: .cgSessionEventTap)
+        spaceDown?.post(tap: .cgSessionEventTap)
+        spaceUp?.post(tap: .cgSessionEventTap)
+        cmdUp?.post(tap: .cgSessionEventTap)
     }
 
     private func showContextMenu(for index: Int) {

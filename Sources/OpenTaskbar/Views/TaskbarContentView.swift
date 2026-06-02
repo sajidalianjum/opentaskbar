@@ -7,7 +7,6 @@ final class TaskbarContentView: NSView {
     private var backgroundView: NSVisualEffectView!
     private var appStackView: NSStackView!
     private var contentStackView: NSStackView!
-    private var showDesktopButton: ShowDesktopButton!
     private var solidBackgroundView: NSView?
 
     private var startMenuButton: StartMenuButton!
@@ -66,11 +65,6 @@ final class TaskbarContentView: NSView {
         insertionIndicator.translatesAutoresizingMaskIntoConstraints = false
         addSubview(insertionIndicator)
 
-        showDesktopButton = ShowDesktopButton()
-        showDesktopButton.target = self
-        showDesktopButton.action = #selector(showDesktopClicked(_:))
-        showDesktopButton.toolTip = "Show Desktop"
-
         startMenuButton = StartMenuButton()
         startMenuButton.target = self
         startMenuButton.action = #selector(startMenuClicked(_:))
@@ -84,30 +78,12 @@ final class TaskbarContentView: NSView {
         startSeparator.setContentCompressionResistancePriority(.required, for: .horizontal)
         startSeparator.isHidden = !settings.showStartButton
 
-        let rightStack = NSStackView(views: [showDesktopButton])
-        rightStack.orientation = .horizontal
-        rightStack.spacing = 8
-        rightStack.alignment = .centerY
-        rightStack.setContentHuggingPriority(.required, for: .horizontal)
-
-        showDesktopButton.translatesAutoresizingMaskIntoConstraints = false
-        NSLayoutConstraint.activate([
-            showDesktopButton.widthAnchor.constraint(equalToConstant: 36),
-            showDesktopButton.heightAnchor.constraint(equalToConstant: max(taskbarHeight - 4, 1)),
-        ])
-
         startMenuButton.translatesAutoresizingMaskIntoConstraints = false
         startSeparator.translatesAutoresizingMaskIntoConstraints = false
         NSLayoutConstraint.activate([
             startMenuButton.widthAnchor.constraint(equalToConstant: 36),
             startMenuButton.heightAnchor.constraint(equalToConstant: max(taskbarHeight - 4, 1)),
         ])
-
-        let separator = NSView()
-        separator.wantsLayer = true
-        separator.layer?.backgroundColor = NSColor.separatorColor.withAlphaComponent(0.3).cgColor
-        separator.setContentHuggingPriority(.required, for: .horizontal)
-        separator.setContentCompressionResistancePriority(.required, for: .horizontal)
 
         if settings.compactBar {
             contentStackView = NSStackView()
@@ -117,8 +93,6 @@ final class TaskbarContentView: NSView {
             contentStackView.addArrangedSubview(startMenuButton)
             contentStackView.addArrangedSubview(startSeparator)
             contentStackView.addArrangedSubview(appStackView)
-            contentStackView.addArrangedSubview(separator)
-            contentStackView.addArrangedSubview(rightStack)
             contentStackView.setContentHuggingPriority(.required, for: .horizontal)
 
             addSubview(backgroundView)
@@ -126,7 +100,6 @@ final class TaskbarContentView: NSView {
 
             backgroundView.translatesAutoresizingMaskIntoConstraints = false
             contentStackView.translatesAutoresizingMaskIntoConstraints = false
-            separator.translatesAutoresizingMaskIntoConstraints = false
 
             let padding: CGFloat = 8
 
@@ -137,9 +110,6 @@ final class TaskbarContentView: NSView {
                 backgroundView.bottomAnchor.constraint(equalTo: bottomAnchor),
 
                 contentStackView.centerYAnchor.constraint(equalTo: centerYAnchor),
-
-                separator.widthAnchor.constraint(equalToConstant: 1),
-                separator.heightAnchor.constraint(lessThanOrEqualTo: contentStackView.heightAnchor, multiplier: 0.5),
 
                 startSeparator.widthAnchor.constraint(equalToConstant: 1),
                 startSeparator.heightAnchor.constraint(lessThanOrEqualTo: contentStackView.heightAnchor, multiplier: 0.5),
@@ -179,23 +149,17 @@ final class TaskbarContentView: NSView {
                 contentStackView.addArrangedSubview(startMenuButton)
                 contentStackView.addArrangedSubview(startSeparator)
                 contentStackView.addArrangedSubview(appStackView)
-                contentStackView.addArrangedSubview(separator)
-                contentStackView.addArrangedSubview(rightStack)
                 contentStackView.addArrangedSubview(rightSpacer)
             case .left:
                 contentStackView.addArrangedSubview(startMenuButton)
                 contentStackView.addArrangedSubview(startSeparator)
                 contentStackView.addArrangedSubview(appStackView)
-                contentStackView.addArrangedSubview(separator)
-                contentStackView.addArrangedSubview(rightStack)
                 contentStackView.addArrangedSubview(rightSpacer)
             case .right:
                 contentStackView.addArrangedSubview(leftSpacer)
                 contentStackView.addArrangedSubview(startMenuButton)
                 contentStackView.addArrangedSubview(startSeparator)
                 contentStackView.addArrangedSubview(appStackView)
-                contentStackView.addArrangedSubview(separator)
-                contentStackView.addArrangedSubview(rightStack)
             }
 
             addSubview(backgroundView)
@@ -203,7 +167,6 @@ final class TaskbarContentView: NSView {
 
             backgroundView.translatesAutoresizingMaskIntoConstraints = false
             contentStackView.translatesAutoresizingMaskIntoConstraints = false
-            separator.translatesAutoresizingMaskIntoConstraints = false
 
             activeConstraints = [
                 backgroundView.leadingAnchor.constraint(equalTo: leadingAnchor),
@@ -215,9 +178,6 @@ final class TaskbarContentView: NSView {
                 contentStackView.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -8),
                 contentStackView.topAnchor.constraint(equalTo: topAnchor),
                 contentStackView.bottomAnchor.constraint(equalTo: bottomAnchor),
-
-                separator.widthAnchor.constraint(equalToConstant: 1),
-                separator.heightAnchor.constraint(lessThanOrEqualTo: contentStackView.heightAnchor, multiplier: 0.5),
 
                 startSeparator.widthAnchor.constraint(equalToConstant: 1),
                 startSeparator.heightAnchor.constraint(lessThanOrEqualTo: contentStackView.heightAnchor, multiplier: 0.5),
@@ -353,7 +313,6 @@ final class TaskbarContentView: NSView {
             }
         }
 
-        showDesktopButton?.isShowingDesktop = windowManager.isShowingDesktop
         let showStart = settings.showStartButton
         startMenuButton?.isHidden = !showStart
         startSeparator?.isHidden = !showStart
@@ -377,14 +336,6 @@ final class TaskbarContentView: NSView {
 
     @objc private func appButtonClicked(_ sender: AppButtonView) {
         windowManager.activateApp(at: sender.index)
-    }
-
-    @objc private func showDesktopClicked(_ sender: ShowDesktopButton) {
-        if windowManager.isShowingDesktop {
-            windowManager.restoreDesktop()
-        } else {
-            windowManager.showDesktop()
-        }
     }
 
     @objc private func startMenuClicked(_ sender: StartMenuButton) {

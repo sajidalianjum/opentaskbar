@@ -10,15 +10,10 @@ final class WindowManager {
     private let pollInterval: TimeInterval = 1.0
     private var nextInsertionOrder = 0
 
-    private var minimizedWindowIDs: Set<CGWindowID> = []
     private var lastFocusedWindow: [String: CGWindowID] = [:]
     private var pidWindowCounts: [pid_t: Int] = [:]
     private var recentlyDestroyedPIDs: Set<pid_t> = []
     private var appsSeenWithWindows: Set<String> = []
-
-    var isShowingDesktop: Bool {
-        !minimizedWindowIDs.isEmpty
-    }
 
     var onAppGroupsChanged: (() -> Void)?
 
@@ -241,11 +236,6 @@ final class WindowManager {
 
         appGroups = updatedGroups.filter { !$0.windows.isEmpty || settings.isPinned($0.bundleIdentifier) }
 
-        if !minimizedWindowIDs.isEmpty {
-            let allMinimizedIDs = Set(updatedGroups.flatMap { $0.windows.filter(\.isMinimized).map(\.windowID) })
-            minimizedWindowIDs = minimizedWindowIDs.intersection(allMinimizedIDs)
-        }
-
         recentlyDestroyedPIDs.removeAll()
         pidWindowCounts = [:]
         for group in updatedGroups {
@@ -403,35 +393,6 @@ final class WindowManager {
         DispatchQueue.main.async { [weak self] in
             self?.onAppGroupsChanged?()
         }
-    }
-
-    func showDesktop() {
-        minimizedWindowIDs.removeAll()
-        for group in appGroups {
-            guard let app = group.runningApplication else { continue }
-            for window in group.windows where !window.isMinimized {
-                if let element = accessibilityService.windowElement(for: window.windowID, pid: app.processIdentifier) {
-                    accessibilityService.minimizeWindow(element)
-                    minimizedWindowIDs.insert(window.windowID)
-                }
-            }
-        }
-        refreshAppGroups()
-    }
-
-    func restoreDesktop() {
-        let ids = minimizedWindowIDs
-        minimizedWindowIDs.removeAll()
-        for windowID in ids {
-            for group in appGroups {
-                guard let app = group.runningApplication else { continue }
-                if group.windows.contains(where: { $0.windowID == windowID }),
-                   let element = accessibilityService.windowElement(for: windowID, pid: app.processIdentifier) {
-                    accessibilityService.unminimizeWindow(element)
-                }
-            }
-        }
-        refreshAppGroups()
     }
 
     func recordWindowFocus(bundleIdentifier: String, windowID: CGWindowID) {

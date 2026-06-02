@@ -302,7 +302,7 @@ final class WindowManager {
 
     private func taskbarTop(for screen: NSScreen) -> CGFloat {
         let height = ScreenGeometry.taskbarHeight(forIconSize: CGFloat(TaskbarSettings.shared.iconSize))
-        let rect = ScreenGeometry.taskbarRect(for: screen, height: height)
+        let rect = ScreenGeometry.taskbarRect(for: screen, height: height, compactBar: TaskbarSettings.shared.compactBar)
         return rect.maxY
     }
 

@@ -301,6 +301,9 @@ final class TaskbarContentView: NSView {
                 button.onNeedsRefresh = { [weak self] windowID in
                     self?.windowManager.removeWindow(withID: windowID)
                 }
+                button.onFocusChanged = { [weak self] windowID, bundleID in
+                    self?.windowManager.recordWindowFocus(bundleIdentifier: bundleID, windowID: windowID)
+                }
 
                 appButtons.append(button)
                 appStackView.addArrangedSubview(button)
@@ -321,6 +324,9 @@ final class TaskbarContentView: NSView {
                     }
                     newButton.onNeedsRefresh = { [weak self] windowID in
                         self?.windowManager.removeWindow(withID: windowID)
+                    }
+                    newButton.onFocusChanged = { [weak self] windowID, bundleID in
+                        self?.windowManager.recordWindowFocus(bundleIdentifier: bundleID, windowID: windowID)
                     }
 
                     appStackView.removeArrangedSubview(oldButton)

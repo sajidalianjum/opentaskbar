@@ -22,6 +22,7 @@ final class AppButtonView: NSView {
     var action: Selector?
     var rightAction: ((Int) -> Void)?
     var onNeedsRefresh: ((CGWindowID) -> Void)?
+    var onFocusChanged: ((CGWindowID, String) -> Void)?
 
     init(appGroup: AppGroup, index: Int, showName: Bool) {
         self.appGroup = appGroup
@@ -204,8 +205,14 @@ final class AppButtonView: NSView {
             screenPoint = NSPoint(x: buttonRectInScreen.midX, y: buttonRectInScreen.maxY)
         }
 
-        popover.onWindowClosed = { [weak self] windowID in
-            self?.onNeedsRefresh?(windowID)
+        let capturedOnNeedsRefresh = onNeedsRefresh
+        popover.onWindowClosed = { windowID in
+            capturedOnNeedsRefresh?(windowID)
+        }
+        let capturedBundleID = bundleIdentifier
+        let capturedOnFocusChanged = onFocusChanged
+        popover.onWindowActivated = { windowID, _ in
+            capturedOnFocusChanged?(windowID, capturedBundleID)
         }
         popover.show(windows: appGroup.windows, appIcon: appGroup.icon, anchorPoint: screenPoint, screen: screen)
     }

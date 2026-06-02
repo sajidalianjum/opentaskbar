@@ -17,6 +17,7 @@ final class WindowListPopover: NSWindow {
     private let stackView: NSStackView
 
     var onWindowClosed: ((CGWindowID) -> Void)?
+    var onWindowActivated: ((CGWindowID, pid_t) -> Void)?
 
     init() {
         containerView = NSView()
@@ -239,6 +240,7 @@ final class WindowListPopover: NSWindow {
             }
         }
 
+        onWindowActivated?(window.windowID, window.pid)
         hide()
     }
 

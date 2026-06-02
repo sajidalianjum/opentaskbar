@@ -11,6 +11,7 @@ final class WindowManager {
     private var nextInsertionOrder = 0
 
     private var minimizedWindowIDs: Set<CGWindowID> = []
+    private var lastFocusedWindow: [String: CGWindowID] = [:]
 
     var isShowingDesktop: Bool {
         !minimizedWindowIDs.isEmpty
@@ -23,6 +24,16 @@ final class WindowManager {
     init() {
         axObserverManager = AXObserverManager(axService: accessibilityService)
         setupObservers()
+
+        MenuItemActions.shared.onWindowActivated = { [weak self] windowID, pid in
+            guard let self else { return }
+            let bundleID = self.appGroups.first(where: {
+                $0.runningApplication?.processIdentifier == pid
+            })?.bundleIdentifier
+            if let bundleID {
+                self.recordWindowFocus(bundleIdentifier: bundleID, windowID: windowID)
+            }
+        }
     }
 
     func start() {
@@ -201,6 +212,9 @@ final class WindowManager {
 
     private func handleAppTerminated(_ app: NSRunningApplication) {
         axObserverManager.removeObserver(for: app.processIdentifier)
+        if let bundleID = app.bundleIdentifier {
+            lastFocusedWindow.removeValue(forKey: bundleID)
+        }
         appGroups.removeAll { $0.runningApplication?.processIdentifier == app.processIdentifier }
         notifyChanged()
     }
@@ -264,6 +278,10 @@ final class WindowManager {
         refreshAppGroups()
     }
 
+    func recordWindowFocus(bundleIdentifier: String, windowID: CGWindowID) {
+        lastFocusedWindow[bundleIdentifier] = windowID
+    }
+
     func activateApp(at index: Int) {
         guard index < appGroups.count else { return }
         let group = appGroups[index]
@@ -274,8 +292,16 @@ final class WindowManager {
 
         let visibleWindows = group.windows.filter { !$0.isMinimized }
 
+        let preferredWindow: WindowInfo?
+        if let lastID = lastFocusedWindow[group.bundleIdentifier] {
+            preferredWindow = visibleWindows.first { $0.windowID == lastID }
+                ?? group.windows.first { $0.windowID == lastID }
+        } else {
+            preferredWindow = nil
+        }
+
         if isFrontmost && visibleWindows.count <= 1 {
-            if let window = visibleWindows.first ?? group.windows.first {
+            if let window = preferredWindow ?? visibleWindows.first ?? group.windows.first {
                 if window.isMinimized {
                     let element = accessibilityService.windowElement(for: window.windowID, pid: app.processIdentifier)
                     if let element {
@@ -286,7 +312,7 @@ final class WindowManager {
             return
         }
 
-        if let window = visibleWindows.first ?? group.windows.first {
+        if let window = preferredWindow ?? visibleWindows.first ?? group.windows.first {
             if window.isMinimized {
                 let element = accessibilityService.windowElement(for: window.windowID, pid: app.processIdentifier)
                 if let element {
@@ -300,6 +326,7 @@ final class WindowManager {
                     app.activate()
                 }
             }
+            recordWindowFocus(bundleIdentifier: group.bundleIdentifier, windowID: window.windowID)
         } else {
             app.activate()
         }
@@ -402,6 +429,8 @@ final class WindowManager {
 final class MenuItemActions: NSObject {
     static let shared = MenuItemActions()
 
+    var onWindowActivated: ((CGWindowID, pid_t) -> Void)?
+
     @objc func activateWindow(_ sender: NSMenuItem) {
         guard let info = sender.representedObject as? [String: Int],
               let windowID = info["windowID"],
@@ -413,6 +442,7 @@ final class MenuItemActions: NSObject {
                 axService.raiseWindow(element, app: app)
             }
         }
+        onWindowActivated?(CGWindowID(windowID), pid_t(pid))
     }
 
     @objc func closeAllWindows(_ sender: NSMenuItem) {

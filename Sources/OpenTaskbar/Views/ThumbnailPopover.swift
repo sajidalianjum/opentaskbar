@@ -259,11 +259,42 @@ final class ThumbnailPopover: NSWindow {
     }
 
     private func closeWindow(_ window: WindowInfo) {
+        guard let index = windows.firstIndex(where: { $0.windowID == window.windowID }),
+              index < cards.count else { return }
+
         let service = AccessibilityService()
         if let element = service.windowElement(for: window.windowID, pid: window.pid) {
             service.closeWindow(element)
         }
+
+        windows.remove(at: index)
+        let removedCard = cards.remove(at: index)
+        removedCard.removeFromSuperview()
+
+        updatePopoverSize()
+
+        if windows.count <= 1 {
+            hide()
+        }
+
         onWindowClosed?(window.windowID)
+    }
+
+    private func updatePopoverSize() {
+        guard !windows.isEmpty else {
+            hide()
+            return
+        }
+        let count = CGFloat(windows.count)
+        let contentWidth = Self.popoverPadding * 2 + Self.cardWidth * count + Self.cardSpacing * max(count - 1, 0)
+        let clampedWidth = min(contentWidth, Self.maxPopoverWidth)
+        let contentHeight = Self.popoverPadding * 2 + Self.cardHeight
+
+        var frame = self.frame
+        frame.size.width = clampedWidth
+        frame.size.height = contentHeight
+        setFrame(frame, display: true, animate: true)
+        invalidateShadow()
     }
 }
 

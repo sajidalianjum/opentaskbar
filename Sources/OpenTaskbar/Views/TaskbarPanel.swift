@@ -24,7 +24,7 @@ final class TaskbarPanel: NSPanel {
     init(screen: NSScreen, windowManager: WindowManager) {
         self.windowManager = windowManager
         let height = ScreenGeometry.taskbarHeight(forIconSize: CGFloat(TaskbarSettings.shared.iconSize))
-        let rect = ScreenGeometry.taskbarRect(for: screen, height: height, compactBar: TaskbarSettings.shared.compactBar)
+        let rect = ScreenGeometry.taskbarRect(for: screen, height: height, compactBar: TaskbarSettings.shared.compactBar, dockReservesSpace: TaskbarSettings.shared.dockMode == .coexist)
 
         super.init(
             contentRect: rect,
@@ -85,7 +85,7 @@ final class TaskbarPanel: NSPanel {
 
     func updateFrame(for screen: NSScreen) {
         let height = ScreenGeometry.taskbarHeight(forIconSize: CGFloat(settings.iconSize))
-        let rect = ScreenGeometry.taskbarRect(for: screen, height: height, compactBar: settings.compactBar)
+        let rect = ScreenGeometry.taskbarRect(for: screen, height: height, compactBar: settings.compactBar, dockReservesSpace: settings.dockMode == .coexist)
         setFrame(rect, display: true, animate: true)
     }
 

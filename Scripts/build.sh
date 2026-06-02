@@ -15,6 +15,12 @@ if [ ! -f "${UNIVERSAL_BINARY}" ]; then
 fi
 
 echo "Creating app bundle..."
+echo "Stopping running instance if any..."
+pkill -x "${APP_NAME}" 2>/dev/null || true
+sleep 0.5
+
+echo "Removing previous app bundle to avoid popup..."
+rm -rf "${APP_BUNDLE}"
 mkdir -p "${APP_BUNDLE}/Contents/MacOS"
 mkdir -p "${APP_BUNDLE}/Contents/Resources"
 

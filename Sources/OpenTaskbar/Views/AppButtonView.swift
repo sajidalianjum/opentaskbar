@@ -71,15 +71,20 @@ final class AppButtonView: NSView {
 
         activeIndicator = NSView()
         activeIndicator.wantsLayer = true
-        activeIndicator.layer?.cornerRadius = 1.5
         addSubview(activeIndicator)
 
         if !appGroup.windows.isEmpty && appGroup.isActive {
+            activeIndicator.layer?.cornerRadius = 1.5
             activeIndicator.layer?.backgroundColor = NSColor.controlAccentColor.cgColor
             activeIndicator.frame.size = NSSize(width: 16, height: 3)
-        } else if appGroup.isRunning {
+        } else if appGroup.isRunning && !appGroup.windows.isEmpty {
+            activeIndicator.layer?.cornerRadius = 1.5
             activeIndicator.layer?.backgroundColor = NSColor.secondaryLabelColor.withAlphaComponent(0.5).cgColor
             activeIndicator.frame.size = NSSize(width: 6, height: 3)
+        } else if appGroup.isRunning {
+            activeIndicator.layer?.cornerRadius = 2
+            activeIndicator.layer?.backgroundColor = NSColor.secondaryLabelColor.withAlphaComponent(0.3).cgColor
+            activeIndicator.frame.size = NSSize(width: 4, height: 4)
         } else {
             activeIndicator.isHidden = true
         }
@@ -132,7 +137,7 @@ final class AppButtonView: NSView {
             activeIndicator.centerXAnchor.constraint(equalTo: centerXAnchor),
             activeIndicator.bottomAnchor.constraint(equalTo: bottomAnchor, constant: -2),
             activeIndicator.widthAnchor.constraint(equalToConstant: !appGroup.windows.isEmpty && appGroup.isActive ? 16 : 6),
-            activeIndicator.heightAnchor.constraint(equalToConstant: 3),
+            activeIndicator.heightAnchor.constraint(equalToConstant: (appGroup.isRunning && appGroup.windows.isEmpty) ? 4 : 3),
         ])
 
         if showName, let nameLabel {

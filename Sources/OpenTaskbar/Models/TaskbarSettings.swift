@@ -64,10 +64,6 @@ final class TaskbarSettings {
         didSet { UserDefaults.standard.set(quitOnLastWindowClose, forKey: "quitOnLastWindowClose"); postChange() }
     }
 
-    @Published var constrainWindows: Bool {
-        didSet { UserDefaults.standard.set(constrainWindows, forKey: "constrainWindows"); postChange() }
-    }
-
     @Published var customBackgroundColorData: Data {
         didSet { UserDefaults.standard.set(customBackgroundColorData, forKey: "customBackgroundColor"); postChange() }
     }
@@ -103,7 +99,6 @@ final class TaskbarSettings {
         self.barSpacing = defaults.object(forKey: "barSpacing") as? Double ?? 4.0
         self.iconSize = defaults.object(forKey: "iconSize") as? Double ?? 32.0
         self.quitOnLastWindowClose = defaults.object(forKey: "quitOnLastWindowClose") as? Bool ?? false
-        self.constrainWindows = defaults.object(forKey: "constrainWindows") as? Bool ?? true
         self.backgroundTheme = BackgroundTheme(rawValue: defaults.string(forKey: "backgroundTheme") ?? "") ?? .system
         if let saved = defaults.data(forKey: "customBackgroundColor") {
             self.customBackgroundColorData = saved

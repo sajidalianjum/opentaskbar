@@ -111,13 +111,6 @@ final class SettingsWindowController {
         view.addSubview(quitOnCloseCheck)
         quitOnCloseCheck.frame = NSRect(x: padding, y: y, width: 300, height: 20)
 
-        y -= 35
-
-        let constrainCheck = NSButton(checkboxWithTitle: "Keep Windows Above Taskbar", target: self, action: #selector(constrainChanged(_:)))
-        constrainCheck.state = settings.constrainWindows ? .on : .off
-        view.addSubview(constrainCheck)
-        constrainCheck.frame = NSRect(x: padding, y: y, width: 300, height: 20)
-
         y -= 40
 
         let spacingLabel = NSTextField(labelWithString: "Bar Spacing:")
@@ -256,10 +249,6 @@ final class SettingsWindowController {
         settings.quitOnLastWindowClose = sender.state == .on
     }
 
-    @objc private func constrainChanged(_ sender: NSButton) {
-        settings.constrainWindows = sender.state == .on
-    }
-
     @objc private func spacingChanged(_ sender: NSSlider) {
         settings.barSpacing = sender.doubleValue
         if let window,
@@ -310,7 +299,6 @@ final class SettingsWindowController {
         settings.barSpacing = 4.0
         settings.iconSize = 32.0
         settings.quitOnLastWindowClose = false
-        settings.constrainWindows = true
         settings.backgroundTheme = .system
         settings.customBackgroundColor = NSColor(calibratedRed: 0.15, green: 0.15, blue: 0.2, alpha: 1.0)
         window?.close()

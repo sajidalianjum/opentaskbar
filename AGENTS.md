@@ -56,11 +56,11 @@ OpenTaskbar/
 │   └── Views/
 │       ├── TaskbarPanel.swift      # NSPanel: borderless, statusBar level, click-through, per-screen
 │       ├── TaskbarContentView.swift# NSVisualEffectView + NSStackView + start/center/right sections, theme support, drag-drop reorder, insertion indicator
-│       ├── AppButtonView.swift     # App icon, name, active indicator bar, count badge, hover, right-click, drag source, window list popover on hover
+│       ├── AppButtonView.swift     # App icon, name, active indicator bar, count badge, hover, right-click, drag source, window list or thumbnail popover on hover (based on showThumbnails setting)
 │       ├── StartMenuButton.swift   # SF Symbol "magnifyingglass" button, triggers Cmd+Space via CGEvent
 │       ├── ShowDesktopButton.swift # SF Symbol "compress" button for minimize-all, toggled visual state
 │       ├── WindowListPopover.swift # Floating NSWindow with per-window rows (icon, title, close button), activate/close/hover-dismiss
-│       ├── ThumbnailPopover.swift  # Floating NSWindow with thumbnail + title (legacy, superseded by WindowListPopover when thumbnails off)
+│       ├── ThumbnailPopover.swift  # Floating NSWindow with per-window thumbnail cards in a horizontal row, close button on hover, async thumbnail loading via ThumbnailService
 │       └── SettingsWindowController.swift # 420×520 preferences window (NSScrollView + FlippedView, popup buttons, sliders, checkboxes, color well, reset)
 ├── Package.swift                   # Swift 5.9, macOS 14, single executable target
 └── AGENTS.md                       # This file
@@ -94,6 +94,9 @@ AXObserver callbacks     → AXObserverManager → WindowManager
                                   ↓
                          AppButtonView hover → WindowListPopover.show()
                          (when showThumbnails==false && hasMultipleWindows)
+                                  ↓
+                         AppButtonView hover → ThumbnailPopover.show()
+                         (when showThumbnails==true)
 ```
 
 **Settings propagation:**
@@ -175,7 +178,7 @@ swift build -c release --arch arm64 --arch x86_64
 9. **No localization** — all strings hardcoded in English
 10. **No SwiftUI `@main`** — uses classic `NSApplicationMain` pattern
 11. **`StartMenuButton`** simulates Cmd+Space via `CGEvent` — fragile if Spotlight is remapped or disabled, and requires accessibility permissions
-12. **`WindowListPopover`** only shown when `showThumbnails` is `false`; there's no toggle to show both simultaneously
+12. **`WindowListPopover` and `ThumbnailPopover`** are mutually exclusive based on `showThumbnails`; no toggle to show both simultaneously
 13. **`customBackgroundColor`** persisted via `NSKeyedArchiver`/`NSKeyedUnarchiver` — no secure coding, can crash if stored data is corrupted
 14. **Settings window** does not resize dynamically when toggling custom color row visibility
 
@@ -203,6 +206,7 @@ swift build -c release --arch arm64 --arch x86_64
 - **Per-screen panels:** `AppDelegate` creates a `TaskbarPanel` per `NSScreen`, updates on screen changes.
 - **`StartMenuButton`** simulates Cmd+Space via `CGEventPost` to open Spotlight — fragile if user has remapped the shortcut.
 - **`WindowListPopover`** replaces thumbnail hover when `showThumbnails` is `false`. It's a full `NSWindow` with per-row activate and close buttons, auto-hides on mouse exit with a 250ms delay.
+- **`ThumbnailPopover`** shown on hover when `showThumbnails` is `true`. Displays per-window thumbnail cards in a horizontal row with app icon placeholders, async capture via `ThumbnailService`, close button on card hover, and click-to-activate. Auto-hides on mouse exit with a 250ms delay. Requires Screen Recording permission.
 - **Drag-to-reorder** apps via `NSDraggingSession` — `AppButtonView` is the drag source, `TaskbarContentView` handles drop. Bundle order and pinned order are both maintained.
 - **Pin/unpin** via context menu — pinned apps appear even when not running, sorted by pin order before running apps.
 - **Background theme** (`system`/`dark`/`light`/`custom`) — custom theme uses luminance-based text contrast switching.

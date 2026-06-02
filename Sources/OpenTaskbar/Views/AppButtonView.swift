@@ -15,7 +15,8 @@ final class AppButtonView: NSView {
     private var trackingArea: NSTrackingArea?
     private var mouseDownLocation: NSPoint?
 
-    private static let sharedPopover = WindowListPopover()
+    private static let sharedWindowListPopover = WindowListPopover()
+    private static let sharedThumbnailPopover = ThumbnailPopover()
 
     var target: AnyObject?
     var action: Selector?
@@ -143,7 +144,7 @@ final class AppButtonView: NSView {
         hoverOverlay.isHidden = false
         layer?.backgroundColor = NSColor.controlAccentColor.withAlphaComponent(0.05).cgColor
 
-        showWindowListIfNeeded()
+        showHoverPopover()
     }
 
     override func mouseExited(with event: NSEvent) {
@@ -151,14 +152,52 @@ final class AppButtonView: NSView {
         hoverOverlay.isHidden = true
         layer?.backgroundColor = nil
 
-        Self.sharedPopover.scheduleHide()
+        Self.sharedWindowListPopover.scheduleHide()
+        Self.sharedThumbnailPopover.scheduleHide()
     }
 
-    private func showWindowListIfNeeded() {
+    private func showHoverPopover() {
+        guard !appGroup.windows.isEmpty else { return }
         let settings = TaskbarSettings.shared
-        guard !settings.showThumbnails, appGroup.hasMultipleWindows else { return }
 
-        let popover = Self.sharedPopover
+        if settings.showThumbnails {
+            showThumbnailPopover()
+        } else if appGroup.hasMultipleWindows {
+            showWindowListPopover()
+        }
+    }
+
+    private func showWindowListPopover() {
+        let popover = Self.sharedWindowListPopover
+        popover.cancelHideTimer()
+
+        guard let screen = window?.screen ?? NSScreen.main else { return }
+
+        let buttonRectInScreen = convert(bounds, to: nil)
+        let screenPoint: NSPoint
+        if let windowFrame = window?.frame {
+            screenPoint = NSPoint(
+                x: windowFrame.origin.x + buttonRectInScreen.midX,
+                y: windowFrame.origin.y + buttonRectInScreen.maxY
+            )
+        } else {
+            screenPoint = NSPoint(x: buttonRectInScreen.midX, y: buttonRectInScreen.maxY)
+        }
+
+        let capturedOnNeedsRefresh = onNeedsRefresh
+        popover.onWindowClosed = { windowID in
+            capturedOnNeedsRefresh?(windowID)
+        }
+        let capturedBundleID = bundleIdentifier
+        let capturedOnFocusChanged = onFocusChanged
+        popover.onWindowActivated = { windowID, _ in
+            capturedOnFocusChanged?(windowID, capturedBundleID)
+        }
+        popover.show(windows: appGroup.windows, appIcon: appGroup.icon, anchorPoint: screenPoint, screen: screen)
+    }
+
+    private func showThumbnailPopover() {
+        let popover = Self.sharedThumbnailPopover
         popover.cancelHideTimer()
 
         guard let screen = window?.screen ?? NSScreen.main else { return }

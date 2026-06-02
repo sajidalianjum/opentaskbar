@@ -334,7 +334,11 @@ final class SettingsWindowController {
     }
 
     @objc private func thumbnailsChanged(_ sender: NSButton) {
-        settings.showThumbnails = sender.state == .on
+        let enabled = sender.state == .on
+        if enabled && !PermissionsManager.shared.isScreenRecordingGranted {
+            PermissionsManager.shared.requestScreenRecording()
+        }
+        settings.showThumbnails = enabled
     }
 
     @objc private func namesChanged(_ sender: NSButton) {

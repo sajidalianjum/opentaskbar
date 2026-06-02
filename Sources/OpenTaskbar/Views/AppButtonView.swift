@@ -9,8 +9,6 @@ final class AppButtonView: NSView {
     private var iconView: NSImageView!
     private var nameLabel: NSTextField?
     private var activeIndicator: NSView!
-    private var countBadge: NSView?
-    private var countLabel: NSTextField?
     private var hoverOverlay: NSView!
 
     private var isHovering = false
@@ -89,36 +87,13 @@ final class AppButtonView: NSView {
             activeIndicator.isHidden = true
         }
 
-        if appGroup.hasMultipleWindows {
-            setupCountBadge()
-        }
-
         setupConstraints()
         setupTrackingArea()
-    }
-
-    private func setupCountBadge() {
-        countBadge = NSView()
-        countBadge?.wantsLayer = true
-        countBadge?.layer?.cornerRadius = 8
-        countBadge?.layer?.backgroundColor = NSColor.controlAccentColor.cgColor
-
-        countLabel = NSTextField(labelWithString: "\(appGroup.windowCount)")
-        countLabel?.font = NSFont.systemFont(ofSize: 10, weight: .bold)
-        countLabel?.textColor = .white
-        countLabel?.alignment = .center
-
-        if let badge = countBadge, let label = countLabel {
-            addSubview(badge)
-            addSubview(label)
-        }
     }
 
     private func setupConstraints() {
         [iconView, activeIndicator, hoverOverlay].forEach { $0.translatesAutoresizingMaskIntoConstraints = false }
         nameLabel?.translatesAutoresizingMaskIntoConstraints = false
-        countBadge?.translatesAutoresizingMaskIntoConstraints = false
-        countLabel?.translatesAutoresizingMaskIntoConstraints = false
 
         let iconLeading: CGFloat = 8
         let iconHeight = CGFloat(TaskbarSettings.shared.iconSize)
@@ -145,18 +120,6 @@ final class AppButtonView: NSView {
                 nameLabel.leadingAnchor.constraint(equalTo: iconView.trailingAnchor, constant: 6),
                 nameLabel.centerYAnchor.constraint(equalTo: centerYAnchor),
                 nameLabel.trailingAnchor.constraint(lessThanOrEqualTo: trailingAnchor, constant: -8),
-            ])
-        }
-
-        if let badge = countBadge, let label = countLabel {
-            NSLayoutConstraint.activate([
-                badge.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -4),
-                badge.topAnchor.constraint(equalTo: topAnchor, constant: 2),
-                badge.widthAnchor.constraint(equalToConstant: 16),
-                badge.heightAnchor.constraint(equalToConstant: 16),
-
-                label.centerXAnchor.constraint(equalTo: badge.centerXAnchor),
-                label.centerYAnchor.constraint(equalTo: badge.centerYAnchor),
             ])
         }
     }

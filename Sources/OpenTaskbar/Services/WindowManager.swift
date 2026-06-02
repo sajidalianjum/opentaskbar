@@ -398,7 +398,15 @@ final class WindowManager {
         }
 
         if group.windows.isEmpty {
-            app.activate(options: .activateAllWindows)
+            Task {
+                if let appURL = NSWorkspace.shared.urlForApplication(withBundleIdentifier: group.bundleIdentifier) {
+                    let config = NSWorkspace.OpenConfiguration()
+                    config.activates = true
+                    NSWorkspace.shared.open(appURL, configuration: config)
+                } else {
+                    NSWorkspace.shared.runningApplications.first(where: { $0.bundleIdentifier == group.bundleIdentifier })?.activate(options: .activateAllWindows)
+                }
+            }
             return
         }
 

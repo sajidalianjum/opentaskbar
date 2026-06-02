@@ -347,6 +347,15 @@ final class WindowManager {
             return
         }
 
+        if group.windows.isEmpty {
+            if let appURL = NSWorkspace.shared.urlForApplication(withBundleIdentifier: group.bundleIdentifier) {
+                let config = NSWorkspace.OpenConfiguration()
+                config.activates = true
+                NSWorkspace.shared.openApplication(at: appURL, configuration: config)
+            }
+            return
+        }
+
         let isFrontmost = NSWorkspace.shared.frontmostApplication?.processIdentifier == app.processIdentifier
 
         let visibleWindows = group.windows.filter { !$0.isMinimized }
@@ -367,8 +376,8 @@ final class WindowManager {
                         accessibilityService.unminimizeWindow(element)
                     }
                 }
+                return
             }
-            return
         }
 
         if let window = preferredWindow ?? visibleWindows.first ?? group.windows.first {

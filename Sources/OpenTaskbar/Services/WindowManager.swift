@@ -7,7 +7,7 @@ final class WindowManager {
     private let workspaceMonitor = WorkspaceMonitor()
     private(set) var axObserverManager: AXObserverManager
     private var pollTimer: Timer?
-    private let pollInterval: TimeInterval = 2.0
+    private let pollInterval: TimeInterval = 1.0
     private var nextInsertionOrder = 0
 
     private var minimizedWindowIDs: Set<CGWindowID> = []

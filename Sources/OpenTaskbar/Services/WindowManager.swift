@@ -14,6 +14,7 @@ final class WindowManager {
     private var lastFocusedWindow: [String: CGWindowID] = [:]
     private var pidWindowCounts: [pid_t: Int] = [:]
     private var recentlyDestroyedPIDs: Set<pid_t> = []
+    private var appsSeenWithWindows: Set<String> = []
 
     var isShowingDesktop: Bool {
         !minimizedWindowIDs.isEmpty
@@ -223,9 +224,17 @@ final class WindowManager {
             return lhs.insertionOrder < rhs.insertionOrder
         }
 
+        for group in updatedGroups {
+            if !group.windows.isEmpty {
+                appsSeenWithWindows.insert(group.bundleIdentifier)
+            }
+        }
+
         if settings.quitOnLastWindowClose {
             for group in updatedGroups where group.windows.isEmpty {
-                group.runningApplication?.terminate()
+                if appsSeenWithWindows.contains(group.bundleIdentifier) {
+                    group.runningApplication?.terminate()
+                }
             }
         }
 
@@ -281,6 +290,7 @@ final class WindowManager {
         axObserverManager.removeObserver(for: app.processIdentifier)
         if let bundleID = app.bundleIdentifier {
             lastFocusedWindow.removeValue(forKey: bundleID)
+            appsSeenWithWindows.remove(bundleID)
         }
         refreshAppGroups()
     }
@@ -373,7 +383,7 @@ final class WindowManager {
             if let appURL = NSWorkspace.shared.urlForApplication(withBundleIdentifier: group.bundleIdentifier) {
                 let config = NSWorkspace.OpenConfiguration()
                 config.activates = true
-                NSWorkspace.shared.openApplication(at: appURL, configuration: config)
+                NSWorkspace.shared.open(appURL, configuration: config)
             }
             return
         }
@@ -382,7 +392,7 @@ final class WindowManager {
             if let appURL = NSWorkspace.shared.urlForApplication(withBundleIdentifier: group.bundleIdentifier) {
                 let config = NSWorkspace.OpenConfiguration()
                 config.activates = true
-                NSWorkspace.shared.openApplication(at: appURL, configuration: config)
+                NSWorkspace.shared.open(appURL, configuration: config)
             }
             return
         }

@@ -8,6 +8,10 @@ final class WindowManager {
     private(set) var axObserverManager: AXObserverManager
     private var pollTimer: Timer?
     private let pollInterval: TimeInterval = 2.0
+    private var constrainTimer: Timer?
+    private let constrainInterval: TimeInterval = 0.3
+    private let ownPID = ProcessInfo.processInfo.processIdentifier
+    private var constrainDebounceWorkItem: DispatchWorkItem?
     private var nextInsertionOrder = 0
 
     private var minimizedWindowIDs: Set<CGWindowID> = []
@@ -29,6 +33,7 @@ final class WindowManager {
         refreshAppGroups()
         workspaceMonitor.start()
         startPolling()
+        startConstraining()
     }
 
     func stop() {
@@ -36,6 +41,8 @@ final class WindowManager {
         axObserverManager.removeAllObservers()
         pollTimer?.invalidate()
         pollTimer = nil
+        constrainTimer?.invalidate()
+        constrainTimer = nil
     }
 
     private func setupObservers() {
@@ -68,6 +75,19 @@ final class WindowManager {
             self?.refreshAppGroups()
         }
 
+        axObserverManager.onWindowMoved = { [weak self] (pid: pid_t, element: AXUIElement) in
+            self?.constrainDebounceWorkItem?.cancel()
+            let workItem = DispatchWorkItem { [weak self] in
+                guard let self else { return }
+                guard TaskbarSettings.shared.constrainWindows else { return }
+                guard let currentFrame = self.accessibilityService.frame(for: element)
+                else { return }
+                self.constrainWindow(element: element, currentFrame: currentFrame, pid: pid)
+            }
+            self?.constrainDebounceWorkItem = workItem
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.15, execute: workItem)
+        }
+
         TaskbarSettings.shared.$showAppNames
             .receive(on: RunLoop.main)
             .sink { [weak self] _ in
@@ -80,6 +100,64 @@ final class WindowManager {
         pollTimer = Timer.scheduledTimer(withTimeInterval: pollInterval, repeats: true) { [weak self] _ in
             self?.pollWindows()
         }
+    }
+
+    private func startConstraining() {
+        constrainTimer = Timer.scheduledTimer(withTimeInterval: constrainInterval, repeats: true) { [weak self] _ in
+            self?.constrainWindowsToTaskbarArea()
+        }
+    }
+
+    func constrainWindowsToTaskbarArea() {
+        guard TaskbarSettings.shared.constrainWindows else { return }
+
+        for group in appGroups {
+            guard let app = group.runningApplication else { continue }
+            let pid = app.processIdentifier
+
+            for window in group.windows {
+                guard !window.isMinimized,
+                      !window.isFullscreen,
+                      window.frame.width > 0,
+                      window.frame.height > 0
+                else { continue }
+
+                guard let element = accessibilityService.windowElement(for: window.windowID, pid: pid),
+                      let currentFrame = accessibilityService.frame(for: element)
+                else { continue }
+
+                constrainWindow(element: element, currentFrame: currentFrame, pid: pid)
+            }
+        }
+    }
+
+    private func constrainWindow(element: AXUIElement, currentFrame: CGRect, pid: pid_t) {
+        guard pid != ownPID,
+              currentFrame.width > 0,
+              currentFrame.height > 0
+        else { return }
+
+        let windowCenter = CGPoint(x: currentFrame.midX, y: currentFrame.midY)
+        let screens = NSScreen.screens
+        guard let screen = screens.first(where: { $0.frame.contains(windowCenter) })
+                             ?? screens.first(where: { $0.frame.intersects(currentFrame) })
+        else { return }
+
+        let taskbarHeight = ScreenGeometry.taskbarHeight(forIconSize: CGFloat(TaskbarSettings.shared.iconSize))
+        let taskbarRect = ScreenGeometry.taskbarRect(for: screen, height: taskbarHeight)
+        let taskbarTop = taskbarRect.maxY
+        let windowBottom = currentFrame.minY
+
+        guard windowBottom < taskbarTop else { return }
+
+        let originalTop = currentFrame.maxY
+        var newFrame = currentFrame
+        newFrame.origin.y = taskbarTop
+        newFrame.size.height = originalTop - taskbarTop
+
+        guard newFrame.size.height >= 100 else { return }
+
+        accessibilityService.setFrame(element, frame: newFrame)
     }
 
     private func pollWindows() {
@@ -167,6 +245,7 @@ final class WindowManager {
         }
 
         notifyChanged()
+        constrainWindowsToTaskbarArea()
     }
 
     private func mergeWindows(axWindows: [WindowInfo], cgWindows: [WindowInfo]) -> [WindowInfo] {
@@ -211,6 +290,7 @@ final class WindowManager {
         } else {
             updateActiveStates()
         }
+        constrainWindowsToTaskbarArea()
     }
 
     private func updateActiveStates() {

@@ -131,6 +131,35 @@ final class AccessibilityService {
         AXUIElementSetAttributeValue(element, "AXFullScreen" as CFString, (!isFullscreen) as CFBoolean)
     }
 
+    func frame(for element: AXUIElement) -> CGRect? {
+        var positionRef: CFTypeRef?
+        var sizeRef: CFTypeRef?
+        guard AXUIElementCopyAttributeValue(element, kAXPositionAttribute as CFString, &positionRef) == .success,
+              AXUIElementCopyAttributeValue(element, kAXSizeAttribute as CFString, &sizeRef) == .success,
+              let posValue = positionRef,
+              let sizeValue = sizeRef
+        else { return nil }
+        var point = CGPoint.zero
+        var size = CGSize.zero
+        guard AXValueGetType(posValue as! AXValue) == .cgPoint,
+              AXValueGetType(sizeValue as! AXValue) == .cgSize
+        else { return nil }
+        AXValueGetValue(posValue as! AXValue, .cgPoint, &point)
+        AXValueGetValue(sizeValue as! AXValue, .cgSize, &size)
+        return CGRect(origin: point, size: size)
+    }
+
+    func setFrame(_ element: AXUIElement, frame: CGRect) {
+        var point = frame.origin
+        var size = frame.size
+        if let axPoint = AXValueCreate(.cgPoint, &point) {
+            AXUIElementSetAttributeValue(element, kAXPositionAttribute as CFString, axPoint)
+        }
+        if let axSize = AXValueCreate(.cgSize, &size) {
+            AXUIElementSetAttributeValue(element, kAXSizeAttribute as CFString, axSize)
+        }
+    }
+
     func windowElement(for windowID: CGWindowID, pid: pid_t) -> AXUIElement? {
         let appElement = AXUIElementCreateApplication(pid)
         var value: CFTypeRef?

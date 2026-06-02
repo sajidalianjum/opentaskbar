@@ -41,7 +41,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         for screen in NSScreen.screens {
             let panel = TaskbarPanel(screen: screen, windowManager: windowManager)
             taskbarPanels[screen] = panel
-            panel.orderFront(nil)
+            panel.orderFrontRegardless()
         }
 
         NotificationCenter.default.addObserver(
@@ -60,7 +60,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         for screen in currentScreens.subtracting(existingScreens) {
             let panel = TaskbarPanel(screen: screen, windowManager: windowManager)
             taskbarPanels[screen] = panel
-            panel.orderFront(nil)
+            panel.orderFrontRegardless()
         }
 
         for screen in existingScreens.subtracting(currentScreens) {

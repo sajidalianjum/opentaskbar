@@ -12,6 +12,7 @@ final class AXObserverManager {
     var onTitleChanged: ((pid_t, AXUIElement) -> Void)?
     var onWindowMinimized: ((pid_t, AXUIElement) -> Void)?
     var onWindowUnminimized: ((pid_t, AXUIElement) -> Void)?
+    var onWindowMoved: ((pid_t, AXUIElement) -> Void)?
 
     init(axService: AccessibilityService) {
         self.axService = axService
@@ -88,7 +89,9 @@ final class AXObserverManager {
             kAXTitleChangedNotification as CFString,
             kAXWindowMiniaturizedNotification as CFString,
             kAXWindowDeminiaturizedNotification as CFString,
-            kAXUIElementDestroyedNotification as CFString
+            kAXUIElementDestroyedNotification as CFString,
+            "AXPositionChanged" as CFString,
+            "AXSizeChanged" as CFString
         ]
 
         for notification in windowNotifications {
@@ -113,6 +116,9 @@ final class AXObserverManager {
 
         case kAXWindowDeminiaturizedNotification:
             onWindowUnminimized?(pid, element)
+
+        case "AXPositionChanged", "AXSizeChanged":
+            onWindowMoved?(pid, element)
 
         default:
             break

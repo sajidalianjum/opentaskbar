@@ -69,8 +69,12 @@ final class WindowManager {
         workspaceMonitor.onAppActivated = { [weak self] app in
             self?.handleAppActivated(app)
         }
-        workspaceMonitor.onAppDeactivated = { [weak self] _ in
-            self?.updateActiveStates()
+        workspaceMonitor.onAppDeactivated = { [weak self] app in
+            guard let self else { return }
+            if self.pidWindowCounts[app.processIdentifier] == 1 {
+                self.recentlyDestroyedPIDs.insert(app.processIdentifier)
+            }
+            self.refreshAppGroups()
         }
 
         axObserverManager.onWindowCreated = { [weak self] (_: pid_t, _: AXUIElement) in
@@ -244,7 +248,7 @@ final class WindowManager {
             }
         }
 
-        notifyChanged()
+        updateActiveStates()
     }
 
     private func mergeWindows(axWindows: [WindowInfo], cgWindows: [WindowInfo]) -> [WindowInfo] {

@@ -13,6 +13,8 @@ final class TaskbarContentView: NSView {
     private var startMenuButton: StartMenuButton!
     private var startSeparator: NSView!
     private var appButtons: [AppButtonView] = []
+    private var insertionIndicator: NSView!
+    private var draggedBundleID: String?
 
     private var activeConstraints: [NSLayoutConstraint] = []
 
@@ -54,6 +56,15 @@ final class TaskbarContentView: NSView {
         appStackView.spacing = CGFloat(settings.barSpacing)
         appStackView.setContentHuggingPriority(.defaultHigh, for: .horizontal)
         appStackView.setContentCompressionResistancePriority(.required, for: .horizontal)
+        registerForDraggedTypes([.string])
+
+        insertionIndicator = NSView()
+        insertionIndicator.wantsLayer = true
+        insertionIndicator.layer?.backgroundColor = NSColor.controlAccentColor.cgColor
+        insertionIndicator.layer?.cornerRadius = 1.5
+        insertionIndicator.isHidden = true
+        insertionIndicator.translatesAutoresizingMaskIntoConstraints = false
+        addSubview(insertionIndicator)
 
         showDesktopButton = ShowDesktopButton()
         showDesktopButton.target = self
@@ -393,6 +404,84 @@ final class TaskbarContentView: NSView {
     private func showContextMenu(for index: Int) {
         let menu = windowManager.contextMenu(forAppAt: index)
         menu.popUp(positioning: nil, at: NSEvent.mouseLocation, in: nil)
+    }
+
+    private func updateButtonIndices() {
+        for (i, button) in appButtons.enumerated() {
+            button.index = i
+        }
+    }
+
+    private func showInsertionIndicator(at xPosition: CGFloat) {
+        insertionIndicator.isHidden = false
+        let barHeight = taskbarHeight
+        insertionIndicator.frame = NSRect(
+            x: xPosition - 1.5,
+            y: (bounds.height - barHeight + 8),
+            width: 3,
+            height: barHeight - 16
+        )
+    }
+
+    private func hideInsertionIndicator() {
+        insertionIndicator.isHidden = true
+    }
+
+    private func insertionIndex(for localPoint: NSPoint) -> Int {
+        for (i, button) in appButtons.enumerated() {
+            let buttonFrame = button.convert(button.bounds, to: self)
+            if localPoint.x < buttonFrame.midX {
+                return i
+            }
+        }
+        return appButtons.count
+    }
+
+    override func draggingEntered(_ sender: NSDraggingInfo) -> NSDragOperation {
+        guard let string = sender.draggingPasteboard.string(forType: .string),
+              let bundleID = string.split(separator: ":").first.map(String.init) else { return [] }
+        draggedBundleID = bundleID
+        return .move
+    }
+
+    override func draggingUpdated(_ sender: NSDraggingInfo) -> NSDragOperation {
+        let location = sender.draggingLocation
+        let localPoint = convert(location, from: nil)
+        let index = insertionIndex(for: localPoint)
+
+        var xPos: CGFloat = 0
+        if index < appButtons.count {
+            xPos = appButtons[index].convert(appButtons[index].bounds, to: self).minX
+        } else if let lastButton = appButtons.last {
+            xPos = lastButton.convert(lastButton.bounds, to: self).maxX
+        }
+        showInsertionIndicator(at: xPos)
+
+        return .move
+    }
+
+    override func draggingExited(_ sender: NSDraggingInfo?) {
+        hideInsertionIndicator()
+        draggedBundleID = nil
+    }
+
+    override func prepareForDragOperation(_ sender: NSDraggingInfo) -> Bool {
+        return draggedBundleID != nil
+    }
+
+    override func performDragOperation(_ sender: NSDraggingInfo) -> Bool {
+        hideInsertionIndicator()
+        defer { draggedBundleID = nil }
+        guard let string = sender.draggingPasteboard.string(forType: .string),
+              let sourceIndex = Int(string.split(separator: ":").last.map(String.init) ?? ""),
+              sourceIndex < appButtons.count else { return false }
+
+        let localPoint = convert(sender.draggingLocation, from: nil)
+        let destinationIndex = insertionIndex(for: localPoint)
+        guard sourceIndex != destinationIndex else { return false }
+
+        windowManager.moveApp(from: sourceIndex, to: destinationIndex)
+        return true
     }
 
     deinit {

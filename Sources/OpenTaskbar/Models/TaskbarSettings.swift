@@ -72,6 +72,29 @@ final class TaskbarSettings {
         didSet { UserDefaults.standard.set(customBackgroundColorData, forKey: "customBackgroundColor"); postChange() }
     }
 
+    @Published var pinnedBundleIdentifiers: [String] {
+        didSet { UserDefaults.standard.set(pinnedBundleIdentifiers, forKey: "pinnedBundleIdentifiers"); postChange() }
+    }
+
+    func isPinned(_ bundleID: String) -> Bool {
+        pinnedBundleIdentifiers.contains(bundleID)
+    }
+
+    func togglePin(_ bundleID: String) {
+        if isPinned(bundleID) {
+            pinnedBundleIdentifiers.removeAll { $0 == bundleID }
+        } else {
+            pinnedBundleIdentifiers.append(bundleID)
+        }
+    }
+
+    func movePin(from sourceIndex: Int, to destinationIndex: Int) {
+        guard sourceIndex >= 0, sourceIndex < pinnedBundleIdentifiers.count,
+              destinationIndex >= 0, destinationIndex < pinnedBundleIdentifiers.count else { return }
+        let id = pinnedBundleIdentifiers.remove(at: sourceIndex)
+        pinnedBundleIdentifiers.insert(id, at: destinationIndex)
+    }
+
     var customBackgroundColor: NSColor {
         get {
             if let color = try? NSKeyedUnarchiver.unarchivedObject(ofClass: NSColor.self, from: customBackgroundColorData) {
@@ -87,9 +110,21 @@ final class TaskbarSettings {
     }
 
     private var lastChangeKey: String?
+    private var suppressPostChange = false
 
     private func postChange() {
+        guard !suppressPostChange else { return }
         NotificationCenter.default.post(name: TaskbarSettings.settingsDidChange, object: self)
+    }
+
+    func reorderPinned(bundleID: String, to newIndex: Int) {
+        suppressPostChange = true
+        var updated = pinnedBundleIdentifiers
+        updated.removeAll { $0 == bundleID }
+        let clampedIndex = min(newIndex, updated.count)
+        updated.insert(bundleID, at: clampedIndex)
+        pinnedBundleIdentifiers = updated
+        suppressPostChange = false
     }
 
     private init() {
@@ -105,6 +140,7 @@ final class TaskbarSettings {
         self.iconSize = defaults.object(forKey: "iconSize") as? Double ?? 32.0
         self.quitOnLastWindowClose = defaults.object(forKey: "quitOnLastWindowClose") as? Bool ?? false
         self.backgroundTheme = BackgroundTheme(rawValue: defaults.string(forKey: "backgroundTheme") ?? "") ?? .system
+        self.pinnedBundleIdentifiers = defaults.stringArray(forKey: "pinnedBundleIdentifiers") ?? []
         if let saved = defaults.data(forKey: "customBackgroundColor") {
             self.customBackgroundColorData = saved
         } else {

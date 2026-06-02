@@ -1,7 +1,7 @@
 import AppKit
 
 final class AppButtonView: NSView {
-    let index: Int
+    var index: Int
     let bundleIdentifier: String
     private let appGroup: AppGroup
     private var showName: Bool
@@ -15,6 +15,7 @@ final class AppButtonView: NSView {
 
     private var isHovering = false
     private var trackingArea: NSTrackingArea?
+    private var mouseDownLocation: NSPoint?
 
     private static let sharedPopover = WindowListPopover()
 
@@ -218,10 +219,32 @@ final class AppButtonView: NSView {
     }
 
     override func mouseDown(with event: NSEvent) {
+        mouseDownLocation = event.locationInWindow
         layer?.backgroundColor = NSColor.controlAccentColor.withAlphaComponent(0.12).cgColor
     }
 
+    override func mouseDragged(with event: NSEvent) {
+        guard let startLocation = mouseDownLocation else { return }
+        let currentLocation = event.locationInWindow
+        let distance = hypot(currentLocation.x - startLocation.x, currentLocation.y - startLocation.y)
+        guard distance > 5 else { return }
+
+        let pasteboardItem = NSPasteboardItem()
+        pasteboardItem.setString("\(bundleIdentifier):\(index)", forType: .string)
+
+        let draggingItem = NSDraggingItem(pasteboardWriter: pasteboardItem)
+        if let rep = bitmapImageRepForCachingDisplay(in: bounds) {
+            cacheDisplay(in: bounds, to: rep)
+            let dragImage = NSImage(size: bounds.size)
+            dragImage.addRepresentation(rep)
+            draggingItem.setDraggingFrame(bounds, contents: dragImage)
+        }
+        let session = beginDraggingSession(with: [draggingItem], event: event, source: self)
+        session.animatesToStartingPositionsOnCancelOrFail = true
+    }
+
     override func mouseUp(with event: NSEvent) {
+        mouseDownLocation = nil
         if isHovering {
             layer?.backgroundColor = NSColor.controlAccentColor.withAlphaComponent(0.05).cgColor
         } else {
@@ -255,5 +278,11 @@ final class AppButtonView: NSView {
             accentColor.setFill()
             NSBezierPath(roundedRect: bounds.insetBy(dx: 1, dy: 1), xRadius: 5, yRadius: 5).fill()
         }
+    }
+}
+
+extension AppButtonView: NSDraggingSource {
+    func draggingSession(_ session: NSDraggingSession, sourceOperationMaskFor context: NSDraggingContext) -> NSDragOperation {
+        return .move
     }
 }

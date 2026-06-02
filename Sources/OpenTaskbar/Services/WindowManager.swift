@@ -34,6 +34,14 @@ final class WindowManager {
                 self.recordWindowFocus(bundleIdentifier: bundleID, windowID: windowID)
             }
         }
+
+        MenuItemActions.shared.onTogglePin = { [weak self] bundleID in
+            if TaskbarSettings.shared.isPinned(bundleID) {
+                self?.unpinApp(bundleIdentifier: bundleID)
+            } else {
+                self?.pinApp(bundleIdentifier: bundleID)
+            }
+        }
     }
 
     func start() {
@@ -131,10 +139,12 @@ final class WindowManager {
         let existingMap = Dictionary(uniqueKeysWithValues: appGroups.map { ($0.bundleIdentifier, $0) })
 
         var updatedGroups: [AppGroup] = []
+        var runningBundleIDs = Set<String>()
 
         for app in runningApps {
             let pid = app.processIdentifier
             let bundleID = app.bundleIdentifier ?? "unknown-\(pid)"
+            runningBundleIDs.insert(bundleID)
             let appWindows = cgWindows.filter { $0.pid == pid }
 
             let axWindows = accessibilityService.windowsForPID(pid)
@@ -162,15 +172,58 @@ final class WindowManager {
             updatedGroups.append(group)
         }
 
-        updatedGroups.sort { $0.insertionOrder < $1.insertionOrder }
+        let settings = TaskbarSettings.shared
+        let pinnedIDs = settings.pinnedBundleIdentifiers
+        for pinnedID in pinnedIDs {
+            guard !runningBundleIDs.contains(pinnedID) else { continue }
 
-        if TaskbarSettings.shared.quitOnLastWindowClose {
+            var appName = pinnedID
+            var icon = NSImage()
+
+            if let appURL = NSWorkspace.shared.urlForApplication(withBundleIdentifier: pinnedID) {
+                if let localizedName = try? appURL.resourceValues(forKeys: [.localizedNameKey]).localizedName {
+                    appName = localizedName
+                } else {
+                    appName = FileManager.default.displayName(atPath: appURL.path)
+                }
+                icon = NSWorkspace.shared.icon(forFile: appURL.path)
+            } else {
+                settings.pinnedBundleIdentifiers.removeAll { $0 == pinnedID }
+                continue
+            }
+
+            let group = AppGroup(
+                bundleIdentifier: pinnedID,
+                localizedName: appName,
+                icon: icon,
+                runningApplication: nil,
+                windows: [],
+                isActive: false,
+                insertionOrder: -1
+            )
+            updatedGroups.append(group)
+        }
+
+        updatedGroups.sort { lhs, rhs in
+            let lhsIsPinned = settings.isPinned(lhs.bundleIdentifier)
+            let rhsIsPinned = settings.isPinned(rhs.bundleIdentifier)
+            if lhsIsPinned && rhsIsPinned {
+                let li = settings.pinnedBundleIdentifiers.firstIndex(of: lhs.bundleIdentifier) ?? Int.max
+                let ri = settings.pinnedBundleIdentifiers.firstIndex(of: rhs.bundleIdentifier) ?? Int.max
+                return li < ri
+            }
+            if lhsIsPinned { return true }
+            if rhsIsPinned { return false }
+            return lhs.insertionOrder < rhs.insertionOrder
+        }
+
+        if settings.quitOnLastWindowClose {
             for group in updatedGroups where group.windows.isEmpty {
                 group.runningApplication?.terminate()
             }
         }
 
-        appGroups = updatedGroups.filter { !$0.windows.isEmpty }
+        appGroups = updatedGroups.filter { !$0.windows.isEmpty || settings.isPinned($0.bundleIdentifier) }
 
         if !minimizedWindowIDs.isEmpty {
             let allMinimizedIDs = Set(updatedGroups.flatMap { $0.windows.filter(\.isMinimized).map(\.windowID) })
@@ -215,8 +268,7 @@ final class WindowManager {
         if let bundleID = app.bundleIdentifier {
             lastFocusedWindow.removeValue(forKey: bundleID)
         }
-        appGroups.removeAll { $0.runningApplication?.processIdentifier == app.processIdentifier }
-        notifyChanged()
+        refreshAppGroups()
     }
 
     private func handleAppActivated(_ app: NSRunningApplication) {
@@ -286,7 +338,14 @@ final class WindowManager {
         guard index < appGroups.count else { return }
         let group = appGroups[index]
 
-        guard let app = group.runningApplication else { return }
+        guard let app = group.runningApplication else {
+            if let appURL = NSWorkspace.shared.urlForApplication(withBundleIdentifier: group.bundleIdentifier) {
+                let config = NSWorkspace.OpenConfiguration()
+                config.activates = true
+                NSWorkspace.shared.openApplication(at: appURL, configuration: config)
+            }
+            return
+        }
 
         let isFrontmost = NSWorkspace.shared.frontmostApplication?.processIdentifier == app.processIdentifier
 
@@ -407,7 +466,15 @@ final class WindowManager {
 
         menu.addItem(NSMenuItem.separator())
 
+        let isPinned = TaskbarSettings.shared.isPinned(group.bundleIdentifier)
+        let pinItem = NSMenuItem(title: isPinned ? "Unpin from taskbar" : "Pin to taskbar", action: #selector(MenuItemActions.shared.togglePin(_:)), keyEquivalent: "")
+        pinItem.target = MenuItemActions.shared
+        pinItem.representedObject = ["bundleID": group.bundleIdentifier]
+        menu.addItem(pinItem)
+
         if group.isRunning {
+            menu.addItem(NSMenuItem.separator())
+
             let quitItem = NSMenuItem(title: "Quit \(appName)", action: #selector(MenuItemActions.shared.quitApp(_:)), keyEquivalent: "q")
             quitItem.target = MenuItemActions.shared
             quitItem.representedObject = ["bundleID": group.bundleIdentifier]
@@ -421,7 +488,37 @@ final class WindowManager {
         for i in appGroups.indices {
             appGroups[i].windows.removeAll { $0.windowID == windowID }
         }
-        appGroups.removeAll { $0.windows.isEmpty }
+        appGroups.removeAll { $0.windows.isEmpty && !TaskbarSettings.shared.isPinned($0.bundleIdentifier) }
+        notifyChanged()
+    }
+
+    func pinApp(bundleIdentifier: String) {
+        guard !TaskbarSettings.shared.isPinned(bundleIdentifier) else { return }
+        TaskbarSettings.shared.pinnedBundleIdentifiers.append(bundleIdentifier)
+        refreshAppGroups()
+    }
+
+    func unpinApp(bundleIdentifier: String) {
+        TaskbarSettings.shared.pinnedBundleIdentifiers.removeAll { $0 == bundleIdentifier }
+        refreshAppGroups()
+    }
+
+    func moveApp(from sourceIndex: Int, to destinationIndex: Int) {
+        guard sourceIndex < appGroups.count, destinationIndex < appGroups.count, sourceIndex != destinationIndex else { return }
+        let group = appGroups[sourceIndex]
+        appGroups.remove(at: sourceIndex)
+        let adjustedDest = sourceIndex < destinationIndex ? destinationIndex - 1 : destinationIndex
+        appGroups.insert(group, at: adjustedDest)
+
+        let pinnedIDs = TaskbarSettings.shared.pinnedBundleIdentifiers
+        let movedBundleID = group.bundleIdentifier
+        if TaskbarSettings.shared.isPinned(movedBundleID) {
+            let pinnedCount = pinnedIDs.count
+            if destinationIndex < pinnedCount {
+                TaskbarSettings.shared.reorderPinned(bundleID: movedBundleID, to: destinationIndex)
+            }
+        }
+
         notifyChanged()
     }
 }
@@ -430,6 +527,7 @@ final class MenuItemActions: NSObject {
     static let shared = MenuItemActions()
 
     var onWindowActivated: ((CGWindowID, pid_t) -> Void)?
+    var onTogglePin: ((String) -> Void)?
 
     @objc func activateWindow(_ sender: NSMenuItem) {
         guard let info = sender.representedObject as? [String: Int],
@@ -466,5 +564,11 @@ final class MenuItemActions: NSObject {
         for app in runningApps {
             app.terminate()
         }
+    }
+
+    @objc func togglePin(_ sender: NSMenuItem) {
+        guard let info = sender.representedObject as? [String: String],
+              let bundleID = info["bundleID"] else { return }
+        onTogglePin?(bundleID)
     }
 }

@@ -12,6 +12,8 @@ final class WindowManager {
 
     private var minimizedWindowIDs: Set<CGWindowID> = []
     private var lastFocusedWindow: [String: CGWindowID] = [:]
+    private var pidWindowCounts: [pid_t: Int] = [:]
+    private var recentlyDestroyedPIDs: Set<pid_t> = []
 
     var isShowingDesktop: Bool {
         !minimizedWindowIDs.isEmpty
@@ -150,6 +152,10 @@ final class WindowManager {
             let axWindows = accessibilityService.windowsForPID(pid)
             var mergedWindows = mergeWindows(axWindows: axWindows, cgWindows: appWindows)
 
+            if recentlyDestroyedPIDs.contains(pid) && axWindows.isEmpty {
+                mergedWindows = []
+            }
+
             mergedWindows.sort { $0.windowID < $1.windowID }
 
             let order: Int
@@ -230,6 +236,14 @@ final class WindowManager {
             minimizedWindowIDs = minimizedWindowIDs.intersection(allMinimizedIDs)
         }
 
+        recentlyDestroyedPIDs.removeAll()
+        pidWindowCounts = [:]
+        for group in updatedGroups {
+            if let pid = group.runningApplication?.processIdentifier {
+                pidWindowCounts[pid] = group.windows.count
+            }
+        }
+
         notifyChanged()
     }
 
@@ -290,6 +304,23 @@ final class WindowManager {
     }
 
     private func removeWindow(for pid: pid_t) {
+        recentlyDestroyedPIDs.insert(pid)
+
+        guard let prevCount = pidWindowCounts[pid], prevCount == 1 else {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) { [weak self] in
+                self?.refreshAppGroups()
+            }
+            return
+        }
+
+        for i in appGroups.indices where appGroups[i].runningApplication?.processIdentifier == pid {
+            appGroups[i].windows.removeAll()
+            break
+        }
+        appGroups.removeAll { $0.windows.isEmpty && !TaskbarSettings.shared.isPinned($0.bundleIdentifier) }
+        pidWindowCounts.removeValue(forKey: pid)
+        updateActiveStates()
+
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) { [weak self] in
             self?.refreshAppGroups()
         }

@@ -316,6 +316,10 @@ extension ThumbnailPopover {
             closeButton.bezelStyle = .smallSquare
             closeButton.isBordered = false
             closeButton.image = NSImage(systemSymbolName: "xmark.circle.fill", accessibilityDescription: "Close")
+            if let image = closeButton.image {
+                let config = NSImage.SymbolConfiguration(pointSize: 18, weight: .medium)
+                closeButton.image = image.withSymbolConfiguration(config)
+            }
             closeButton.imagePosition = .imageOnly
             closeButton.contentTintColor = NSColor.systemGray.withAlphaComponent(0.7)
             closeButton.isHidden = true
@@ -339,10 +343,10 @@ extension ThumbnailPopover {
                 titleLabel.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -4),
                 titleLabel.heightAnchor.constraint(equalToConstant: 16),
 
-                closeButton.topAnchor.constraint(equalTo: topAnchor, constant: 1),
-                closeButton.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -1),
-                closeButton.widthAnchor.constraint(equalToConstant: 18),
-                closeButton.heightAnchor.constraint(equalToConstant: 18),
+                closeButton.topAnchor.constraint(equalTo: topAnchor, constant: 2),
+                closeButton.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -2),
+                closeButton.widthAnchor.constraint(equalToConstant: 26),
+                closeButton.heightAnchor.constraint(equalToConstant: 26),
             ])
 
             closeButton.target = self

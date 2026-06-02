@@ -45,10 +45,21 @@ final class ThumbnailService {
                 return captureWithCGWindowList(windowID: windowID)
             }
 
+            let windowFrame = scWindow.frame
+            let windowAR = windowFrame.width / windowFrame.height
+            let targetAR = thumbnailSize.width / thumbnailSize.height
+            let maxW = thumbnailSize.width * 2
+            let maxH = thumbnailSize.height * 2
+
             let filter = SCContentFilter(desktopIndependentWindow: scWindow)
             let config = SCStreamConfiguration()
-            config.width = Int(thumbnailSize.width * 2)
-            config.height = Int(thumbnailSize.height * 2)
+            if windowAR > targetAR {
+                config.width = Int(maxW)
+                config.height = Int(maxW / windowAR)
+            } else {
+                config.height = Int(maxH)
+                config.width = Int(maxH * windowAR)
+            }
 
             let sampleBuffer = try await SCScreenshotManager.captureSampleBuffer(
                 contentFilter: filter,
@@ -61,7 +72,16 @@ final class ThumbnailService {
             let context = CIContext()
             guard let cgImage = context.createCGImage(ciImage, from: ciImage.extent) else { return nil }
 
-            return NSImage(cgImage: cgImage, size: thumbnailSize)
+            let cgWidth = CGFloat(cgImage.width)
+            let cgHeight = CGFloat(cgImage.height)
+            let ar = cgWidth / cgHeight
+            let targetSize: NSSize
+            if ar > targetAR {
+                targetSize = NSSize(width: thumbnailSize.width, height: thumbnailSize.width / ar)
+            } else {
+                targetSize = NSSize(width: thumbnailSize.height * ar, height: thumbnailSize.height)
+            }
+            return NSImage(cgImage: cgImage, size: targetSize)
         } catch {
             return captureWithCGWindowList(windowID: windowID)
         }

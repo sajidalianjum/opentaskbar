@@ -2,7 +2,7 @@
 
 ## Project Overview
 
-OpenTaskbar is a macOS app (Swift 5.9, AppKit, macOS 14.0+) that replaces the native Dock with a customizable Windows-style taskbar. It shows running apps with active-state indicators, window badges, hover thumbnails (ScreenCaptureKit) or a window list popover, right-click menus with pin/unpin and close actions, a Spotlight-triggering Start Menu button, a "Show Desktop" button, drag-to-reorder apps, and per-app window cycling.
+OpenTaskbar is a macOS app (Swift 5.9, AppKit, macOS 14.0+) that replaces the native Dock with a customizable Windows-style taskbar. It shows running apps with active-state indicators, window badges, hover thumbnails (ScreenCaptureKit) or a window list popover, right-click menus with pin/unpin and close actions, a Spotlight-triggering Start Menu button, drag-to-reorder apps, and per-app window cycling.
 
 **Key constraint:** Requires Accessibility permissions. Screen Recording required for thumbnails.
 
@@ -42,7 +42,7 @@ OpenTaskbar/
 │   │   ├── AppGroup.swift          # Bundle grouping: windows[WindowInfo], icon, active state, insertionOrder, isRunning, isPinned, hasMultipleWindows (Hashable)
 │   │   └── TaskbarSettings.swift   # Singleton, @Published + NotificationCenter, UserDefaults persistence (dockMode, barAlignment, compactBar, barSpacing, iconSize, showStartButton, showAppNames, showThumbnails, showOnAllScreens, backgroundTheme, quitOnLastWindowClose, customBackgroundColor, pinnedBundleIdentifiers)
 │   ├── Services/
-│   │   ├── WindowManager.swift     # Central orchestrator: app groups, polling (1s), show/hide desktop, activate/cycle apps, context menus, drag-to-reorder, pin/unpin, focus tracking, MenuItemActions singleton
+│   │   ├── WindowManager.swift     # Central orchestrator: app groups, polling (1s), activate/cycle apps, context menus, drag-to-reorder, pin/unpin, focus tracking, MenuItemActions singleton
 │   │   ├── AccessibilityService.swift# AX wrappers: raise/minimize/unminimize/close/toggle-fullscreen windows, windowsForPID, windowElement lookup
 │   │   ├── AXObserverManager.swift # Per-PID AXObserver C callbacks for window events
 │   │   ├── WorkspaceMonitor.swift  # NSWorkspace notifications (launch/terminate/activate/deactivate/screens)
@@ -58,7 +58,6 @@ OpenTaskbar/
 │       ├── TaskbarContentView.swift# NSVisualEffectView + NSStackView + start/center/right sections, theme support, drag-drop reorder, insertion indicator
 │       ├── AppButtonView.swift     # App icon, name, active indicator bar, count badge, hover, right-click, drag source, window list or thumbnail popover on hover (based on showThumbnails setting)
 │       ├── StartMenuButton.swift   # SF Symbol "magnifyingglass" button, triggers Cmd+Space via CGEvent
-│       ├── ShowDesktopButton.swift # SF Symbol "compress" button for minimize-all, toggled visual state
 │       ├── WindowListPopover.swift # Floating NSWindow with per-window rows (icon, title, close button), activate/close/hover-dismiss
 │       ├── ThumbnailPopover.swift  # Floating NSWindow with per-window thumbnail cards in a horizontal row, close button on hover, async thumbnail loading via ThumbnailService
 │       └── SettingsWindowController.swift # 420×520 preferences window (NSScrollView + FlippedView, popup buttons, sliders, checkboxes, color well, reset)
@@ -172,15 +171,14 @@ swift build -c release --arch arm64 --arch x86_64
 3. **SettingsWindowController** uses manual frame layout helpers (`FlippedView`, `labeled()`/`sliderRow()`/`checkbox()` functions), not a proper Auto Layout constraints-based layout
 4. **1s poll timer** compares full window sets each cycle; could be optimized to avoid full refresh when nothing changed
 5. **`MenuItemActions`** is a singleton (`shared`) that creates its own `AccessibilityService` instance rather than sharing the one from `WindowManager`; callback wiring is fragile
-6. **Show Desktop** tracked minimized set can race with user minimize/unminimize
-7. **No tests** — no test target in Package.swift, no test files
-8. **No CI** — no GitHub Actions or similar
-9. **No localization** — all strings hardcoded in English
-10. **No SwiftUI `@main`** — uses classic `NSApplicationMain` pattern
-11. **`StartMenuButton`** simulates Cmd+Space via `CGEvent` — fragile if Spotlight is remapped or disabled, and requires accessibility permissions
-12. **`WindowListPopover` and `ThumbnailPopover`** are mutually exclusive based on `showThumbnails`; no toggle to show both simultaneously
-13. **`customBackgroundColor`** persisted via `NSKeyedArchiver`/`NSKeyedUnarchiver` — no secure coding, can crash if stored data is corrupted
-14. **Settings window** does not resize dynamically when toggling custom color row visibility
+6. **No tests** — no test target in Package.swift, no test files
+7. **No CI** — no GitHub Actions or similar
+8. **No localization** — all strings hardcoded in English
+9. **No SwiftUI `@main`** — uses classic `NSApplicationMain` pattern
+10. **`StartMenuButton`** simulates Cmd+Space via `CGEvent` — fragile if Spotlight is remapped or disabled, and requires accessibility permissions
+11. **`WindowListPopover` and `ThumbnailPopover`** are mutually exclusive based on `showThumbnails`; no toggle to show both simultaneously
+12. **`customBackgroundColor`** persisted via `NSKeyedArchiver`/`NSKeyedUnarchiver` — no secure coding, can crash if stored data is corrupted
+13. **Settings window** does not resize dynamically when toggling custom color row visibility
 
 ---
 

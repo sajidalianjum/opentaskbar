@@ -153,64 +153,13 @@ final class WindowListPopover: NSWindow {
     }
 
     private func applyTheme() {
-        let settings = TaskbarSettings.shared
-
-        switch settings.backgroundTheme {
-        case .system:
-            solidBackgroundView?.isHidden = true
-            visualEffect.isHidden = false
-            visualEffect.material = .sidebar
-            visualEffect.blendingMode = .behindWindow
-            visualEffect.state = .active
-            visualEffect.appearance = nil
-            contentView!.appearance = nil
-
-        case .dark:
-            solidBackgroundView?.isHidden = true
-            visualEffect.isHidden = false
-            visualEffect.material = .sidebar
-            visualEffect.blendingMode = .behindWindow
-            visualEffect.state = .active
-            visualEffect.appearance = NSAppearance(named: .darkAqua)
-            contentView!.appearance = nil
-
-        case .light:
-            solidBackgroundView?.isHidden = true
-            visualEffect.isHidden = false
-            visualEffect.material = .sidebar
-            visualEffect.blendingMode = .behindWindow
-            visualEffect.state = .active
-            visualEffect.appearance = NSAppearance(named: .aqua)
-            contentView!.appearance = nil
-
-        case .custom:
-            visualEffect.isHidden = true
-            if solidBackgroundView == nil {
-                let solid = NSView()
-                solid.wantsLayer = true
-                solid.layer?.masksToBounds = true
-                solid.translatesAutoresizingMaskIntoConstraints = false
-                contentView!.addSubview(solid, positioned: .below, relativeTo: visualEffect)
-                NSLayoutConstraint.activate([
-                    solid.leadingAnchor.constraint(equalTo: contentView!.leadingAnchor),
-                    solid.trailingAnchor.constraint(equalTo: contentView!.trailingAnchor),
-                    solid.topAnchor.constraint(equalTo: contentView!.topAnchor),
-                    solid.bottomAnchor.constraint(equalTo: contentView!.bottomAnchor),
-                ])
-                solidBackgroundView = solid
-            }
-            solidBackgroundView?.isHidden = false
-            let color = settings.customBackgroundColor
-            solidBackgroundView?.layer?.backgroundColor = color.cgColor
-
-            let srgb = color.usingColorSpace(.sRGB) ?? color
-            let luminance = 0.299 * srgb.redComponent + 0.587 * srgb.greenComponent + 0.114 * srgb.blueComponent
-            if luminance > 0.5 {
-                contentView!.appearance = NSAppearance(named: .aqua)
-            } else {
-                contentView!.appearance = NSAppearance(named: .darkAqua)
-            }
-        }
+        ThemeManager.apply(
+            to: visualEffect,
+            solidView: &solidBackgroundView,
+            parent: contentView!,
+            material: .sidebar,
+            cornerRadius: contentView!.layer?.cornerRadius ?? 0
+        )
     }
 
     private func activateWindow(at index: Int) {

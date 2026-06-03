@@ -190,64 +190,13 @@ final class TaskbarContentView: NSView {
     }
 
     private func applyTheme() {
-        switch settings.backgroundTheme {
-        case .system:
-            solidBackgroundView?.isHidden = true
-            backgroundView.isHidden = false
-            backgroundView.material = .sidebar
-            backgroundView.blendingMode = .behindWindow
-            backgroundView.state = .active
-            backgroundView.appearance = nil
-            self.appearance = nil
-
-        case .dark:
-            solidBackgroundView?.isHidden = true
-            backgroundView.isHidden = false
-            backgroundView.material = .sidebar
-            backgroundView.blendingMode = .behindWindow
-            backgroundView.state = .active
-            backgroundView.appearance = NSAppearance(named: .darkAqua)
-            self.appearance = nil
-
-        case .light:
-            solidBackgroundView?.isHidden = true
-            backgroundView.isHidden = false
-            backgroundView.material = .sidebar
-            backgroundView.blendingMode = .behindWindow
-            backgroundView.state = .active
-            backgroundView.appearance = NSAppearance(named: .aqua)
-            self.appearance = nil
-
-        case .custom:
-            backgroundView.isHidden = true
-            if solidBackgroundView == nil {
-                let solid = NSView()
-                solid.wantsLayer = true
-                solid.layer?.cornerRadius = backgroundView.layer?.cornerRadius ?? 0
-                solid.layer?.masksToBounds = true
-                addSubview(solid)
-                solid.translatesAutoresizingMaskIntoConstraints = false
-                NSLayoutConstraint.activate([
-                    solid.leadingAnchor.constraint(equalTo: backgroundView.leadingAnchor),
-                    solid.trailingAnchor.constraint(equalTo: backgroundView.trailingAnchor),
-                    solid.topAnchor.constraint(equalTo: backgroundView.topAnchor),
-                    solid.bottomAnchor.constraint(equalTo: backgroundView.bottomAnchor),
-                ])
-                solidBackgroundView = solid
-            }
-            solidBackgroundView?.isHidden = false
-            let color = settings.customBackgroundColor
-            solidBackgroundView?.layer?.backgroundColor = color.cgColor
-            solidBackgroundView?.layer?.cornerRadius = backgroundView.layer?.cornerRadius ?? 0
-
-            let srgb = color.usingColorSpace(.sRGB) ?? color
-            let luminance = 0.299 * srgb.redComponent + 0.587 * srgb.greenComponent + 0.114 * srgb.blueComponent
-            if luminance > 0.5 {
-                self.appearance = NSAppearance(named: .aqua)
-            } else {
-                self.appearance = NSAppearance(named: .darkAqua)
-            }
-        }
+        ThemeManager.apply(
+            to: backgroundView,
+            solidView: &solidBackgroundView,
+            parent: self,
+            material: .sidebar,
+            cornerRadius: backgroundView.layer?.cornerRadius ?? 0
+        )
     }
 
     func reloadData() {

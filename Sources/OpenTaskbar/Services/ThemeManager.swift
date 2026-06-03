@@ -47,7 +47,7 @@ final class ThemeManager {
                 solid.wantsLayer = true
                 solid.layer?.masksToBounds = true
                 solid.translatesAutoresizingMaskIntoConstraints = false
-                parent.addSubview(solid)
+                parent.addSubview(solid, positioned: .below, relativeTo: effectView)
                 NSLayoutConstraint.activate([
                     solid.leadingAnchor.constraint(equalTo: effectView.leadingAnchor),
                     solid.trailingAnchor.constraint(equalTo: effectView.trailingAnchor),

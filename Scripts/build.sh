@@ -7,11 +7,11 @@ APP_NAME="OpenTaskbar"
 APP_BUNDLE="${PROJECT_DIR}/build/${APP_NAME}.app"
 
 echo "Building ${APP_NAME}..."
-swift build -c release --arch arm64 --arch x86_64 2>/dev/null || swift build -c release
+swift build -c release
 
-UNIVERSAL_BINARY="${BUILD_DIR}/${APP_NAME}"
+UNIVERSAL_BINARY="${BUILD_DIR}/apple/Products/Release/${APP_NAME}"
 if [ ! -f "${UNIVERSAL_BINARY}" ]; then
-    UNIVERSAL_BINARY="${PROJECT_DIR}/.build/apple/Products/Release/${APP_NAME}"
+    UNIVERSAL_BINARY="${BUILD_DIR}/${APP_NAME}"
 fi
 
 echo "Creating app bundle..."

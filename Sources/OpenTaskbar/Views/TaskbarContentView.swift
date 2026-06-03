@@ -73,7 +73,7 @@ final class TaskbarContentView: NSView {
 
         startSeparator = NSView()
         startSeparator.wantsLayer = true
-        startSeparator.layer?.backgroundColor = NSColor.separatorColor.withAlphaComponent(0.3).cgColor
+        startSeparator.layer?.backgroundColor = NSColor(red: 66/255, green: 97/255, blue: 123/255, alpha: 0.9).cgColor
         startSeparator.setContentHuggingPriority(.required, for: .horizontal)
         startSeparator.setContentCompressionResistancePriority(.required, for: .horizontal)
         startSeparator.isHidden = !settings.showStartButton

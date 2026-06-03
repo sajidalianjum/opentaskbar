@@ -15,6 +15,9 @@ final class SettingsWindowController {
     private weak var spacingValueLabel: NSTextField?
     private weak var iconSizeValueLabel: NSTextField?
     private weak var translucentCheckbox: NSButton?
+    private weak var reduceLabel: NSTextField?
+    private var reduceLabelHeight: NSLayoutConstraint?
+    private var accessibilityObserver: NSObjectProtocol?
 
     private init() {}
 
@@ -56,6 +59,16 @@ final class SettingsWindowController {
         ])
 
         setupControls(in: contentView)
+
+        if accessibilityObserver == nil {
+            accessibilityObserver = NSWorkspace.shared.notificationCenter.addObserver(
+                forName: NSWorkspace.accessibilityDisplayOptionsDidChangeNotification,
+                object: nil,
+                queue: .main
+            ) { [weak self] _ in
+                self?.updateReduceTransparencyUI()
+            }
+        }
 
         self.window = window
         window.makeKeyAndOrderFront(nil)
@@ -257,21 +270,31 @@ final class SettingsWindowController {
         self.translucentCheckbox = translucentCheckbox
         view.addSubview(translucentCheckbox)
 
-        let infoButton = NSButton(title: "", target: self, action: #selector(translucentInfoClicked))
-        infoButton.bezelStyle = .helpButton
-        infoButton.translatesAutoresizingMaskIntoConstraints = false
-        view.addSubview(infoButton)
-
         NSLayoutConstraint.activate([
             translucentCheckbox.topAnchor.constraint(equalTo: prev?.bottomAnchor ?? view.topAnchor, constant: rowGap),
             translucentCheckbox.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: hPad),
-
-            infoButton.centerYAnchor.constraint(equalTo: translucentCheckbox.centerYAnchor),
-            infoButton.leadingAnchor.constraint(equalTo: translucentCheckbox.trailingAnchor, constant: 4),
-            infoButton.widthAnchor.constraint(equalToConstant: 20),
-            infoButton.heightAnchor.constraint(equalToConstant: 20),
         ])
-        prev = translucentCheckbox
+
+        let reduceLabel = NSTextField(labelWithString: "")
+        reduceLabel.font = NSFont.systemFont(ofSize: 11)
+        reduceLabel.textColor = NSColor.secondaryLabelColor
+        reduceLabel.translatesAutoresizingMaskIntoConstraints = false
+        view.addSubview(reduceLabel)
+
+        let reduceLabelHeight = reduceLabel.heightAnchor.constraint(equalToConstant: 0)
+        self.reduceLabel = reduceLabel
+        self.reduceLabelHeight = reduceLabelHeight
+
+        NSLayoutConstraint.activate([
+            reduceLabel.topAnchor.constraint(equalTo: translucentCheckbox.bottomAnchor, constant: 4),
+            reduceLabel.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: hPad + 24),
+            reduceLabel.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -hPad),
+            reduceLabelHeight,
+        ])
+
+        updateReduceTransparencyUI()
+
+        prev = reduceLabel
 
         let iconSlider = NSSlider()
         iconSlider.minValue = 16
@@ -399,14 +422,6 @@ final class SettingsWindowController {
         settings.translucentBar = sender.state == .on
     }
 
-    @objc private func translucentInfoClicked() {
-        let alert = NSAlert()
-        alert.messageText = "Translucent Bar"
-        alert.informativeText = "For the translucent effect to work properly, make sure \"Reduce Transparency\" is turned off in macOS System Settings → Accessibility → Display."
-        alert.addButton(withTitle: "OK")
-        alert.runModal()
-    }
-
     @objc private func themeChanged(_ sender: NSPopUpButton) {
         let selected: TaskbarSettings.BackgroundTheme
         switch sender.indexOfSelectedItem {
@@ -423,14 +438,29 @@ final class SettingsWindowController {
         colorRowHeight?.constant = isCustom ? 24 : 0
 
         let isSystem = selected == .system
-        translucentCheckbox?.isEnabled = !isSystem
         if isSystem {
             translucentCheckbox?.state = settings.translucentBar ? .on : .off
         }
+        updateReduceTransparencyUI()
     }
 
     @objc private func customColorChanged(_ sender: NSColorWell) {
         settings.customBackgroundColor = sender.color
+    }
+
+    private func updateReduceTransparencyUI() {
+        let reduced = NSWorkspace.shared.accessibilityDisplayShouldReduceTransparency
+        if reduced {
+            reduceLabel?.stringValue = "\"Reduce Transparency\" is on — translucent effect unavailable"
+            reduceLabelHeight?.constant = 14
+            reduceLabel?.isHidden = false
+            translucentCheckbox?.isEnabled = false
+        } else {
+            reduceLabel?.stringValue = ""
+            reduceLabelHeight?.constant = 0
+            reduceLabel?.isHidden = true
+            translucentCheckbox?.isEnabled = settings.backgroundTheme != .system
+        }
     }
 
     @objc private func resetDefaults() {

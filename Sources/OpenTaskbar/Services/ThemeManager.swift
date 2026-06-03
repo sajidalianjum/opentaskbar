@@ -29,7 +29,7 @@ final class ThemeManager {
             effectView.blendingMode = .behindWindow
             effectView.state = .active
             effectView.appearance = NSAppearance(named: .darkAqua)
-            parent.appearance = nil
+            parent.appearance = NSAppearance(named: .darkAqua)
 
         case .light:
             solidView?.isHidden = true
@@ -38,7 +38,7 @@ final class ThemeManager {
             effectView.blendingMode = .behindWindow
             effectView.state = .active
             effectView.appearance = NSAppearance(named: .aqua)
-            parent.appearance = nil
+            parent.appearance = NSAppearance(named: .aqua)
 
         case .custom:
             effectView.isHidden = true

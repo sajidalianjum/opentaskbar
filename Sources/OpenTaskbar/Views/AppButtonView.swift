@@ -78,18 +78,45 @@ final class AppButtonView: NSView {
             activeIndicator.frame.size = NSSize(width: 16, height: 3)
         } else if appGroup.isRunning && !appGroup.windows.isEmpty {
             activeIndicator.layer?.cornerRadius = 1.5
-            activeIndicator.layer?.backgroundColor = NSColor.secondaryLabelColor.withAlphaComponent(0.5).cgColor
             activeIndicator.frame.size = NSSize(width: 6, height: 3)
         } else if appGroup.isRunning {
             activeIndicator.layer?.cornerRadius = 2
-            activeIndicator.layer?.backgroundColor = NSColor.secondaryLabelColor.withAlphaComponent(0.3).cgColor
             activeIndicator.frame.size = NSSize(width: 4, height: 4)
         } else {
             activeIndicator.isHidden = true
         }
 
+        updateIndicatorColors()
+
         setupConstraints()
         setupTrackingArea()
+    }
+
+    private var isDarkAppearance: Bool {
+        effectiveAppearance.bestMatch(from: [.darkAqua, .aqua]) == .darkAqua
+    }
+
+    private func indicatorColor(darkAlpha: CGFloat) -> CGColor {
+        NSColor(red: 66/255, green: 97/255, blue: 123/255, alpha: darkAlpha).cgColor
+    }
+
+    private func updateIndicatorColors() {
+        if !appGroup.windows.isEmpty && appGroup.isActive {
+            activeIndicator.layer?.backgroundColor = NSColor.controlAccentColor.cgColor
+        } else if appGroup.isRunning && !appGroup.windows.isEmpty {
+            activeIndicator.layer?.backgroundColor = isDarkAppearance
+                ? indicatorColor(darkAlpha: 0.9)
+                : NSColor.secondaryLabelColor.withAlphaComponent(0.5).cgColor
+        } else if appGroup.isRunning {
+            activeIndicator.layer?.backgroundColor = isDarkAppearance
+                ? indicatorColor(darkAlpha: 0.7)
+                : NSColor.secondaryLabelColor.withAlphaComponent(0.3).cgColor
+        }
+    }
+
+    override func viewDidChangeEffectiveAppearance() {
+        super.viewDidChangeEffectiveAppearance()
+        updateIndicatorColors()
     }
 
     private func setupConstraints() {
@@ -112,7 +139,7 @@ final class AppButtonView: NSView {
 
             activeIndicator.centerXAnchor.constraint(equalTo: centerXAnchor),
             activeIndicator.bottomAnchor.constraint(equalTo: bottomAnchor, constant: -2),
-            activeIndicator.widthAnchor.constraint(equalToConstant: !appGroup.windows.isEmpty && appGroup.isActive ? 16 : 6),
+            activeIndicator.widthAnchor.constraint(equalToConstant: !appGroup.windows.isEmpty && appGroup.isActive ? 16 : (appGroup.isRunning && appGroup.windows.isEmpty) ? 4 : 6),
             activeIndicator.heightAnchor.constraint(equalToConstant: (appGroup.isRunning && appGroup.windows.isEmpty) ? 4 : 3),
         ])
 

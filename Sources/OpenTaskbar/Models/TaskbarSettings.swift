@@ -61,7 +61,13 @@ final class TaskbarSettings {
     }
 
     @Published var backgroundTheme: BackgroundTheme {
-        didSet { UserDefaults.standard.set(backgroundTheme.rawValue, forKey: "backgroundTheme"); postChange() }
+        didSet {
+            UserDefaults.standard.set(backgroundTheme.rawValue, forKey: "backgroundTheme")
+            if backgroundTheme == .system {
+                translucentBar = !NSWorkspace.shared.accessibilityDisplayShouldReduceTransparency
+            }
+            postChange()
+        }
     }
 
     @Published var quitOnLastWindowClose: Bool {
@@ -70,6 +76,10 @@ final class TaskbarSettings {
 
     @Published var constrainZoomedWindows: Bool {
         didSet { UserDefaults.standard.set(constrainZoomedWindows, forKey: "constrainZoomedWindows"); postChange() }
+    }
+
+    @Published var translucentBar: Bool {
+        didSet { UserDefaults.standard.set(translucentBar, forKey: "translucentBar"); postChange() }
     }
 
     @Published var customBackgroundColorData: Data {
@@ -115,6 +125,7 @@ final class TaskbarSettings {
 
     private var lastChangeKey: String?
     private var suppressPostChange = false
+    private var accessibilityObserver: NSObjectProtocol?
 
     private func postChange() {
         guard !suppressPostChange else { return }
@@ -144,6 +155,7 @@ final class TaskbarSettings {
         self.iconSize = defaults.object(forKey: "iconSize") as? Double ?? 32.0
         self.quitOnLastWindowClose = defaults.object(forKey: "quitOnLastWindowClose") as? Bool ?? false
         self.constrainZoomedWindows = defaults.object(forKey: "constrainZoomedWindows") as? Bool ?? false
+        self.translucentBar = defaults.object(forKey: "translucentBar") as? Bool ?? !NSWorkspace.shared.accessibilityDisplayShouldReduceTransparency
         self.backgroundTheme = BackgroundTheme(rawValue: defaults.string(forKey: "backgroundTheme") ?? "") ?? .system
         self.pinnedBundleIdentifiers = defaults.stringArray(forKey: "pinnedBundleIdentifiers") ?? []
         if let saved = defaults.data(forKey: "customBackgroundColor") {
@@ -151,6 +163,15 @@ final class TaskbarSettings {
         } else {
             let defaultColor = NSColor(calibratedRed: 0.15, green: 0.15, blue: 0.2, alpha: 1.0)
             self.customBackgroundColorData = (try? NSKeyedArchiver.archivedData(withRootObject: defaultColor, requiringSecureCoding: false)) ?? Data()
+        }
+
+        accessibilityObserver = NSWorkspace.shared.notificationCenter.addObserver(
+            forName: NSWorkspace.accessibilityDisplayOptionsDidChangeNotification,
+            object: nil,
+            queue: .main
+        ) { [weak self] _ in
+            guard let self, self.backgroundTheme == .system else { return }
+            self.translucentBar = !NSWorkspace.shared.accessibilityDisplayShouldReduceTransparency
         }
     }
 }

@@ -12,36 +12,56 @@ final class ThemeManager {
     ) {
         let settings = TaskbarSettings.shared
 
-        switch settings.backgroundTheme {
-        case .system:
-            solidView?.isHidden = true
+        if settings.translucentBar {
             effectView.isHidden = false
             effectView.material = material
             effectView.blendingMode = .behindWindow
             effectView.state = .active
-            effectView.appearance = nil
-            parent.appearance = nil
+            effectView.layer?.backgroundColor = nil
 
-        case .dark:
-            solidView?.isHidden = true
-            effectView.isHidden = false
-            effectView.material = material
-            effectView.blendingMode = .behindWindow
-            effectView.state = .active
-            effectView.appearance = NSAppearance(named: .darkAqua)
-            parent.appearance = NSAppearance(named: .darkAqua)
+            switch settings.backgroundTheme {
+            case .system:
+                solidView?.isHidden = true
+                effectView.appearance = nil
+                parent.appearance = nil
 
-        case .light:
-            solidView?.isHidden = true
-            effectView.isHidden = false
-            effectView.material = material
-            effectView.blendingMode = .behindWindow
-            effectView.state = .active
-            effectView.appearance = NSAppearance(named: .aqua)
-            parent.appearance = NSAppearance(named: .aqua)
+            case .dark:
+                solidView?.isHidden = true
+                effectView.appearance = NSAppearance(named: .darkAqua)
+                parent.appearance = NSAppearance(named: .darkAqua)
 
-        case .custom:
+            case .light:
+                solidView?.isHidden = true
+                effectView.appearance = NSAppearance(named: .aqua)
+                parent.appearance = NSAppearance(named: .aqua)
+
+            case .custom:
+                solidView?.isHidden = true
+                let color = settings.customBackgroundColor
+                effectView.layer?.backgroundColor = color.withAlphaComponent(0.35).cgColor
+                effectView.appearance = Self.appearance(for: color)
+                parent.appearance = Self.appearance(for: color)
+            }
+        } else {
             effectView.isHidden = true
+
+            let opaqueColor: NSColor
+            switch settings.backgroundTheme {
+            case .system:
+                let isDark = parent.effectiveAppearance.bestMatch(from: [.darkAqua, .aqua]) == .darkAqua
+                opaqueColor = isDark ? NSColor(calibratedWhite: 0.08, alpha: 1.0) : NSColor(calibratedWhite: 0.92, alpha: 1.0)
+                parent.appearance = nil
+            case .dark:
+                opaqueColor = NSColor(calibratedWhite: 0.08, alpha: 1.0)
+                parent.appearance = NSAppearance(named: .darkAqua)
+            case .light:
+                opaqueColor = NSColor(calibratedWhite: 0.92, alpha: 1.0)
+                parent.appearance = NSAppearance(named: .aqua)
+            case .custom:
+                opaqueColor = settings.customBackgroundColor
+                parent.appearance = Self.appearance(for: opaqueColor)
+            }
+
             if solidView == nil {
                 let solid = NSView()
                 solid.wantsLayer = true
@@ -57,10 +77,8 @@ final class ThemeManager {
                 solidView = solid
             }
             solidView?.isHidden = false
-            let color = settings.customBackgroundColor
-            solidView?.layer?.backgroundColor = color.cgColor
+            solidView?.layer?.backgroundColor = opaqueColor.cgColor
             solidView?.layer?.cornerRadius = cornerRadius
-            parent.appearance = Self.appearance(for: color)
         }
     }
 

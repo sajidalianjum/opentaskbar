@@ -14,6 +14,7 @@ final class SettingsWindowController {
     private var colorRowHeight: NSLayoutConstraint?
     private weak var spacingValueLabel: NSTextField?
     private weak var iconSizeValueLabel: NSTextField?
+    private weak var translucentCheckbox: NSButton?
 
     private init() {}
 
@@ -249,6 +250,29 @@ final class SettingsWindowController {
         cRow.isHidden = hidden
         prev = cRow
 
+        let translucentCheckbox = NSButton(checkboxWithTitle: "Translucent Bar", target: self, action: #selector(translucentChanged(_:)))
+        translucentCheckbox.state = settings.translucentBar ? .on : .off
+        translucentCheckbox.isEnabled = settings.backgroundTheme != .system
+        translucentCheckbox.translatesAutoresizingMaskIntoConstraints = false
+        self.translucentCheckbox = translucentCheckbox
+        view.addSubview(translucentCheckbox)
+
+        let infoButton = NSButton(title: "", target: self, action: #selector(translucentInfoClicked))
+        infoButton.bezelStyle = .helpButton
+        infoButton.translatesAutoresizingMaskIntoConstraints = false
+        view.addSubview(infoButton)
+
+        NSLayoutConstraint.activate([
+            translucentCheckbox.topAnchor.constraint(equalTo: prev?.bottomAnchor ?? view.topAnchor, constant: rowGap),
+            translucentCheckbox.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: hPad),
+
+            infoButton.centerYAnchor.constraint(equalTo: translucentCheckbox.centerYAnchor),
+            infoButton.leadingAnchor.constraint(equalTo: translucentCheckbox.trailingAnchor, constant: 4),
+            infoButton.widthAnchor.constraint(equalToConstant: 20),
+            infoButton.heightAnchor.constraint(equalToConstant: 20),
+        ])
+        prev = translucentCheckbox
+
         let iconSlider = NSSlider()
         iconSlider.minValue = 16
         iconSlider.maxValue = 64
@@ -371,6 +395,18 @@ final class SettingsWindowController {
         iconSizeValueLabel?.stringValue = "\(Int(sender.doubleValue))pt"
     }
 
+    @objc private func translucentChanged(_ sender: NSButton) {
+        settings.translucentBar = sender.state == .on
+    }
+
+    @objc private func translucentInfoClicked() {
+        let alert = NSAlert()
+        alert.messageText = "Translucent Bar"
+        alert.informativeText = "For the translucent effect to work properly, make sure \"Reduce Transparency\" is turned off in macOS System Settings → Accessibility → Display."
+        alert.addButton(withTitle: "OK")
+        alert.runModal()
+    }
+
     @objc private func themeChanged(_ sender: NSPopUpButton) {
         let selected: TaskbarSettings.BackgroundTheme
         switch sender.indexOfSelectedItem {
@@ -385,6 +421,12 @@ final class SettingsWindowController {
         let isCustom = selected == .custom
         colorRow?.isHidden = !isCustom
         colorRowHeight?.constant = isCustom ? 24 : 0
+
+        let isSystem = selected == .system
+        translucentCheckbox?.isEnabled = !isSystem
+        if isSystem {
+            translucentCheckbox?.state = settings.translucentBar ? .on : .off
+        }
     }
 
     @objc private func customColorChanged(_ sender: NSColorWell) {
@@ -403,6 +445,7 @@ final class SettingsWindowController {
         settings.iconSize = 32.0
         settings.quitOnLastWindowClose = false
         settings.constrainZoomedWindows = false
+        settings.translucentBar = !NSWorkspace.shared.accessibilityDisplayShouldReduceTransparency
         settings.backgroundTheme = .system
         settings.customBackgroundColor = NSColor(calibratedRed: 0.15, green: 0.15, blue: 0.2, alpha: 1.0)
         window?.close()

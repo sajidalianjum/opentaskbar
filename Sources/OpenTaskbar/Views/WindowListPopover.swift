@@ -51,8 +51,8 @@ final class WindowListPopover: NSWindow {
 
         stackView.translatesAutoresizingMaskIntoConstraints = false
 
-        visualEffect.addSubview(stackView)
         contentView!.addSubview(visualEffect)
+        contentView!.addSubview(stackView)
 
         let trackingView = PopoverTrackingView()
         trackingView.popover = self
@@ -60,10 +60,10 @@ final class WindowListPopover: NSWindow {
         contentView!.addSubview(trackingView)
 
         NSLayoutConstraint.activate([
-            stackView.leadingAnchor.constraint(equalTo: visualEffect.leadingAnchor, constant: WindowListPopover.padding),
-            stackView.trailingAnchor.constraint(equalTo: visualEffect.trailingAnchor, constant: -WindowListPopover.padding),
-            stackView.topAnchor.constraint(equalTo: visualEffect.topAnchor, constant: WindowListPopover.padding),
-            stackView.bottomAnchor.constraint(equalTo: visualEffect.bottomAnchor, constant: -WindowListPopover.padding),
+            stackView.leadingAnchor.constraint(equalTo: contentView!.leadingAnchor, constant: WindowListPopover.padding),
+            stackView.trailingAnchor.constraint(equalTo: contentView!.trailingAnchor, constant: -WindowListPopover.padding),
+            stackView.topAnchor.constraint(equalTo: contentView!.topAnchor, constant: WindowListPopover.padding),
+            stackView.bottomAnchor.constraint(equalTo: contentView!.bottomAnchor, constant: -WindowListPopover.padding),
 
             visualEffect.leadingAnchor.constraint(equalTo: contentView!.leadingAnchor),
             visualEffect.trailingAnchor.constraint(equalTo: contentView!.trailingAnchor),

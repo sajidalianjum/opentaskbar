@@ -53,8 +53,8 @@ final class ThumbnailPopover: NSWindow {
 
         stackView.translatesAutoresizingMaskIntoConstraints = false
 
-        visualEffect.addSubview(stackView)
         contentView!.addSubview(visualEffect)
+        contentView!.addSubview(stackView)
 
         let trackingView = PopoverTrackingView()
         trackingView.popover = self
@@ -62,10 +62,10 @@ final class ThumbnailPopover: NSWindow {
         contentView!.addSubview(trackingView)
 
         NSLayoutConstraint.activate([
-            stackView.leadingAnchor.constraint(equalTo: visualEffect.leadingAnchor, constant: Self.popoverPadding),
-            stackView.trailingAnchor.constraint(equalTo: visualEffect.trailingAnchor, constant: -Self.popoverPadding),
-            stackView.topAnchor.constraint(equalTo: visualEffect.topAnchor, constant: Self.popoverPadding),
-            stackView.bottomAnchor.constraint(equalTo: visualEffect.bottomAnchor, constant: -Self.popoverPadding),
+            stackView.leadingAnchor.constraint(equalTo: contentView!.leadingAnchor, constant: Self.popoverPadding),
+            stackView.trailingAnchor.constraint(equalTo: contentView!.trailingAnchor, constant: -Self.popoverPadding),
+            stackView.topAnchor.constraint(equalTo: contentView!.topAnchor, constant: Self.popoverPadding),
+            stackView.bottomAnchor.constraint(equalTo: contentView!.bottomAnchor, constant: -Self.popoverPadding),
 
             visualEffect.leadingAnchor.constraint(equalTo: contentView!.leadingAnchor),
             visualEffect.trailingAnchor.constraint(equalTo: contentView!.trailingAnchor),

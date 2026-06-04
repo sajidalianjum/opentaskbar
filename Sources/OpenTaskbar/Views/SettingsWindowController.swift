@@ -239,7 +239,7 @@ final class SettingsWindowController {
         cWell.translatesAutoresizingMaskIntoConstraints = false
         cRow.addSubview(cWell)
 
-        let cHeight = cRow.heightAnchor.constraint(equalToConstant: 24)
+        let cHeight = cRow.heightAnchor.constraint(equalToConstant: settings.backgroundTheme == .custom ? 24 : 0)
         colorRow = cRow
         colorRowHeight = cHeight
 

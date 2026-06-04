@@ -130,14 +130,6 @@ final class TaskbarContentView: NSView {
                 ])
             }
         } else {
-            let leftSpacer = NSView()
-            leftSpacer.setContentHuggingPriority(.defaultLow, for: .horizontal)
-            leftSpacer.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
-
-            let rightSpacer = NSView()
-            rightSpacer.setContentHuggingPriority(.defaultLow, for: .horizontal)
-            rightSpacer.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
-
             contentStackView = NSStackView()
             contentStackView.orientation = .horizontal
             contentStackView.alignment = .centerY
@@ -145,17 +137,22 @@ final class TaskbarContentView: NSView {
 
             switch settings.barAlignment {
             case .center:
-                contentStackView.addArrangedSubview(leftSpacer)
                 contentStackView.addArrangedSubview(startMenuButton)
                 contentStackView.addArrangedSubview(startSeparator)
                 contentStackView.addArrangedSubview(appStackView)
-                contentStackView.addArrangedSubview(rightSpacer)
+                contentStackView.setContentHuggingPriority(.required, for: .horizontal)
             case .left:
+                let rightSpacer = NSView()
+                rightSpacer.setContentHuggingPriority(.defaultLow, for: .horizontal)
+                rightSpacer.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
                 contentStackView.addArrangedSubview(startMenuButton)
                 contentStackView.addArrangedSubview(startSeparator)
                 contentStackView.addArrangedSubview(appStackView)
                 contentStackView.addArrangedSubview(rightSpacer)
             case .right:
+                let leftSpacer = NSView()
+                leftSpacer.setContentHuggingPriority(.defaultLow, for: .horizontal)
+                leftSpacer.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
                 contentStackView.addArrangedSubview(leftSpacer)
                 contentStackView.addArrangedSubview(startMenuButton)
                 contentStackView.addArrangedSubview(startSeparator)
@@ -174,14 +171,23 @@ final class TaskbarContentView: NSView {
                 backgroundView.topAnchor.constraint(equalTo: topAnchor),
                 backgroundView.bottomAnchor.constraint(equalTo: bottomAnchor),
 
-                contentStackView.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 8),
-                contentStackView.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -8),
                 contentStackView.topAnchor.constraint(equalTo: topAnchor),
                 contentStackView.bottomAnchor.constraint(equalTo: bottomAnchor),
 
                 startSeparator.widthAnchor.constraint(equalToConstant: 1),
                 startSeparator.heightAnchor.constraint(lessThanOrEqualTo: contentStackView.heightAnchor, multiplier: 0.5),
             ]
+
+            if settings.barAlignment == .center {
+                activeConstraints.append(contentStackView.centerXAnchor.constraint(equalTo: centerXAnchor))
+                contentStackView.leadingAnchor.constraint(greaterThanOrEqualTo: leadingAnchor, constant: 8).isActive = true
+                contentStackView.trailingAnchor.constraint(lessThanOrEqualTo: trailingAnchor, constant: -8).isActive = true
+            } else {
+                activeConstraints.append(contentsOf: [
+                    contentStackView.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 8),
+                    contentStackView.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -8),
+                ])
+            }
         }
 
         NSLayoutConstraint.activate(activeConstraints)

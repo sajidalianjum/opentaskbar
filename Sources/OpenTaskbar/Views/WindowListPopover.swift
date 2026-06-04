@@ -128,6 +128,7 @@ final class WindowListPopover: NSWindow {
         windowRows.removeAll()
         stackView.arrangedSubviews.forEach { $0.removeFromSuperview() }
         orderOut(nil)
+        TooltipWindow.shared.hide()
     }
 
     func scheduleHide(delay: TimeInterval = 0.25) {
@@ -263,6 +264,7 @@ private final class WindowRowView: NSView {
     private let iconImageView: NSImageView
     private let closeButton: NSButton
     private var trackingArea: NSTrackingArea?
+    private var tooltipWorkItem: DispatchWorkItem?
 
     var onActivate: ((Int) -> Void)?
     var onClose: (() -> Void)?
@@ -278,7 +280,6 @@ private final class WindowRowView: NSView {
         titleLabel.maximumNumberOfLines = 1
         titleLabel.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
         titleLabel.textColor = windowInfo.isMinimized ? .tertiaryLabelColor : .labelColor
-        titleLabel.toolTip = windowInfo.documentPath ?? (windowInfo.title.isEmpty ? nil : windowInfo.title)
 
         let iconCopy = appIcon.copy() as! NSImage
         iconImageView = NSImageView(image: iconCopy)
@@ -354,14 +355,37 @@ private final class WindowRowView: NSView {
     override func mouseEntered(with event: NSEvent) {
         layer?.backgroundColor = NSColor.controlAccentColor.withAlphaComponent(0.1).cgColor
         closeButton.isHidden = false
+
+        let tooltipText = windowInfo.documentPath ?? (windowInfo.title.isEmpty ? nil : windowInfo.title)
+        guard let text = tooltipText else { return }
+
+        tooltipWorkItem?.cancel()
+        let item = DispatchWorkItem { [weak self] in
+            guard let self, let window = self.window, let screen = window.screen ?? NSScreen.main else { return }
+            let rowFrameInWindow = self.convert(self.bounds, to: nil)
+            let screenOrigin = window.convertPoint(toScreen: .zero)
+            let screenPoint = NSPoint(
+                x: screenOrigin.x + rowFrameInWindow.midX,
+                y: screenOrigin.y + rowFrameInWindow.maxY
+            )
+            TooltipWindow.shared.show(text: text, at: screenPoint, screen: screen)
+        }
+        tooltipWorkItem = item
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5, execute: item)
     }
 
     override func mouseExited(with event: NSEvent) {
         layer?.backgroundColor = nil
         closeButton.isHidden = true
+        tooltipWorkItem?.cancel()
+        tooltipWorkItem = nil
+        TooltipWindow.shared.hide()
     }
 
     override func mouseUp(with event: NSEvent) {
+        tooltipWorkItem?.cancel()
+        tooltipWorkItem = nil
+        TooltipWindow.shared.hide()
         onActivate?(index)
     }
 

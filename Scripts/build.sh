@@ -6,6 +6,9 @@ BUILD_DIR="${PROJECT_DIR}/.build/release"
 APP_NAME="OpenTaskbar"
 APP_BUNDLE="${PROJECT_DIR}/build/${APP_NAME}.app"
 
+echo "Generating status bar icons..."
+"${PROJECT_DIR}/myscripts/generate_status_icon.sh" 2>/dev/null || echo "  (skipped — svg2png not installed)"
+
 echo "Building ${APP_NAME}..."
 swift build -c release
 
@@ -27,6 +30,9 @@ mkdir -p "${APP_BUNDLE}/Contents/Resources"
 cp "${UNIVERSAL_BINARY}" "${APP_BUNDLE}/Contents/MacOS/${APP_NAME}"
 cp "${PROJECT_DIR}/Resources/Info.plist" "${APP_BUNDLE}/Contents/Info.plist"
 cp "${PROJECT_DIR}/Resources/OpenTaskbar.icns" "${APP_BUNDLE}/Contents/Resources/OpenTaskbar.icns"
+cp "${PROJECT_DIR}/Resources/status-icon.png" "${APP_BUNDLE}/Contents/Resources/" 2>/dev/null || true
+cp "${PROJECT_DIR}/Resources/status-icon@2x.png" "${APP_BUNDLE}/Contents/Resources/" 2>/dev/null || true
+cp "${PROJECT_DIR}/Resources/status-icon@3x.png" "${APP_BUNDLE}/Contents/Resources/" 2>/dev/null || true
 
 echo "Code signing..."
 codesign --force --deep --sign "OpenTaskbarDev" "${APP_BUNDLE}"

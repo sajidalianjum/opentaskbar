@@ -28,10 +28,19 @@ OpenTaskbar is a macOS app (Swift 5.9, AppKit, macOS 14.0+) that replaces the na
 OpenTaskbar/
 ├── Resources/
 │   ├── Info.plist                  # Bundle metadata, LSUIElement=true, permissions prompts
-│   └── OpenTaskbar.entitlements    # com.apple.security.automation.accessibility
+│   ├── OpenTaskbar.entitlements    # com.apple.security.automation.accessibility
+│   ├── status-icon.png             # Status bar icon 18×18 (generated)
+│   ├── status-icon@2x.png          # Status bar icon 36×36 (generated)
+│   ├── status-icon@3x.png          # Status bar icon 54×54 (generated)
+│   └── OpenTaskbar.icns            # Full app icon
 ├── Scripts/
 │   ├── build.sh                    # swift build -c release + codesign → .app bundle
 │   └── run.sh                      # build.sh + open the .app bundle
+├── myscripts/
+│   ├── opentaskbar.svg             # Full app icon SVG source
+│   ├── optaskbar-statusicon.svg    # Status bar icon SVG source (18×18pt template)
+│   ├── svg2icns.sh                 # SVG → .icns converter
+│   └── generate_status_icon.sh    # SVG → status bar PNGs (18/36/54px)
 ├── Sources/OpenTaskbar/
 │   ├── App/
 │   │   ├── main.swift              # NSApplication, .accessory activation policy
@@ -143,6 +152,8 @@ swift build -c release --arch arm64 --arch x86_64
 # Run (debug binary)
 .build/debug/OpenTaskbar
 ```
+
+**Status bar icon:** SVG source at `myscripts/optaskbar-statusicon.svg`. Run `myscripts/generate_status_icon.sh` (or `Scripts/build.sh` which runs it automatically) to regenerate PNGs at 18×18 (1x), 36×36 (@2x), 54×54 (@3x) into `Resources/`. Requires `brew install svg2png`.
 
 **No tests, no CI, no linter/formatter currently exist.**
 

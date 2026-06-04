@@ -98,11 +98,28 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
     }
 
+    private func loadStatusBarIcon() -> NSImage? {
+        guard let resources = Bundle.main.resourceURL else { return nil }
+
+        let scale = Int(NSScreen.main?.backingScaleFactor ?? 2)
+        let suffix: String
+        switch scale {
+        case 1: suffix = ""
+        case 2: suffix = "@2x"
+        default: suffix = "@3x"
+        }
+
+        let url = resources.appendingPathComponent("status-icon\(suffix).png")
+        guard let image = NSImage(contentsOf: url) else { return nil }
+        image.size = NSSize(width: 18, height: 18)
+        image.isTemplate = true
+        return image
+    }
+
     private func setupStatusItem() {
         let item = NSStatusBar.system.statusItem(withLength: NSStatusItem.squareLength)
         if let button = item.button {
-            button.image = NSImage(systemSymbolName: "menubar.dock.rectangle", accessibilityDescription: "OpenTaskbar")
-            button.image?.isTemplate = true
+            button.image = loadStatusBarIcon()
         }
 
         let menu = NSMenu()

@@ -63,6 +63,7 @@ final class TooltipWindow: NSWindow {
 
     func show(text: String, at screenPoint: NSPoint, screen: NSScreen) {
         label.stringValue = text
+        appearance = NSApp.effectiveAppearance
 
         let font = NSFont.systemFont(ofSize: 11, weight: .regular)
         let textSize = (text as NSString).size(withAttributes: [.font: font])

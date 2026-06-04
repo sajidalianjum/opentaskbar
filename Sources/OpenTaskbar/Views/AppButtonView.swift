@@ -73,7 +73,12 @@ final class AppButtonView: NSView {
         activeIndicator.wantsLayer = true
         addSubview(activeIndicator)
 
-        if !appGroup.windows.isEmpty && appGroup.isActive {
+        if appGroup.isLaunching {
+            activeIndicator.layer?.cornerRadius = 1.5
+            activeIndicator.layer?.backgroundColor = NSColor.controlAccentColor.withAlphaComponent(0.7).cgColor
+            activeIndicator.frame.size = NSSize(width: 16, height: 4)
+            addPulseAnimation()
+        } else if !appGroup.windows.isEmpty && appGroup.isActive {
             activeIndicator.layer?.cornerRadius = 1.5
             activeIndicator.layer?.backgroundColor = NSColor.controlAccentColor.cgColor
             activeIndicator.frame.size = NSSize(width: 16, height: 3)
@@ -102,7 +107,9 @@ final class AppButtonView: NSView {
     }
 
     private func updateIndicatorColors() {
-        if !appGroup.windows.isEmpty && appGroup.isActive {
+        if appGroup.isLaunching {
+            activeIndicator.layer?.backgroundColor = NSColor.controlAccentColor.withAlphaComponent(0.7).cgColor
+        } else if !appGroup.windows.isEmpty && appGroup.isActive {
             activeIndicator.layer?.backgroundColor = NSColor.controlAccentColor.cgColor
         } else if appGroup.isRunning && !appGroup.windows.isEmpty {
             activeIndicator.layer?.backgroundColor = isDarkAppearance
@@ -113,6 +120,29 @@ final class AppButtonView: NSView {
                 ? indicatorColor(darkAlpha: 0.7)
                 : NSColor.secondaryLabelColor.withAlphaComponent(0.3).cgColor
         }
+    }
+
+    deinit {
+        iconView?.layer?.removeAllAnimations()
+        activeIndicator?.layer?.removeAllAnimations()
+    }
+
+    private func addPulseAnimation() {
+        let pulse = CABasicAnimation(keyPath: "opacity")
+        pulse.fromValue = 1.0
+        pulse.toValue = 0.3
+        pulse.duration = 0.8
+        pulse.autoreverses = true
+        pulse.repeatCount = .infinity
+        activeIndicator.layer?.add(pulse, forKey: "indicatorPulse")
+
+        let iconPulse = CABasicAnimation(keyPath: "opacity")
+        iconPulse.fromValue = 1.0
+        iconPulse.toValue = 0.5
+        iconPulse.duration = 0.8
+        iconPulse.autoreverses = true
+        iconPulse.repeatCount = .infinity
+        iconView.layer?.add(iconPulse, forKey: "iconPulse")
     }
 
     override func viewDidChangeEffectiveAppearance() {
@@ -127,6 +157,22 @@ final class AppButtonView: NSView {
         let iconLeading: CGFloat = 8
         let iconHeight = CGFloat(TaskbarSettings.shared.iconSize)
 
+        let indicatorWidth: CGFloat
+        let indicatorHeight: CGFloat
+        if appGroup.isLaunching {
+            indicatorWidth = 16
+            indicatorHeight = 4
+        } else if !appGroup.windows.isEmpty && appGroup.isActive {
+            indicatorWidth = 16
+            indicatorHeight = 3
+        } else if appGroup.isRunning && appGroup.windows.isEmpty {
+            indicatorWidth = 4
+            indicatorHeight = 4
+        } else {
+            indicatorWidth = 6
+            indicatorHeight = 3
+        }
+
         NSLayoutConstraint.activate([
             hoverOverlay.leadingAnchor.constraint(equalTo: leadingAnchor),
             hoverOverlay.trailingAnchor.constraint(equalTo: trailingAnchor),
@@ -140,8 +186,8 @@ final class AppButtonView: NSView {
 
             activeIndicator.centerXAnchor.constraint(equalTo: centerXAnchor),
             activeIndicator.bottomAnchor.constraint(equalTo: bottomAnchor, constant: -2),
-            activeIndicator.widthAnchor.constraint(equalToConstant: !appGroup.windows.isEmpty && appGroup.isActive ? 16 : (appGroup.isRunning && appGroup.windows.isEmpty) ? 4 : 6),
-            activeIndicator.heightAnchor.constraint(equalToConstant: (appGroup.isRunning && appGroup.windows.isEmpty) ? 4 : 3),
+            activeIndicator.widthAnchor.constraint(equalToConstant: indicatorWidth),
+            activeIndicator.heightAnchor.constraint(equalToConstant: indicatorHeight),
         ])
 
         if showName, let nameLabel {

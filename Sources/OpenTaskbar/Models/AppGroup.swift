@@ -25,6 +25,8 @@ struct AppGroup: Hashable {
         TaskbarSettings.shared.isPinned(bundleIdentifier)
     }
 
+    var isLaunching: Bool = false
+
     func hash(into hasher: inout Hasher) {
         hasher.combine(bundleIdentifier)
     }

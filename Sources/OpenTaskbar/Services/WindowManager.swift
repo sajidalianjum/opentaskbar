@@ -13,6 +13,9 @@ final class WindowManager {
     private var lastFocusedWindow: [String: CGWindowID] = [:]
     private var appsSeenWithWindows: Set<String> = []
     private var titleChangeWorkItem: DispatchWorkItem?
+    private var launchingBundleIDs: Set<String> = []
+    private var launchTimeouts: [String: Date] = [:]
+    private let launchTimeoutDuration: TimeInterval = 8.0
 
     var onAppGroupsChanged: (() -> Void)?
 
@@ -132,6 +135,8 @@ final class WindowManager {
     }
 
     func refreshAppGroups() {
+        cleanupExpiredLaunches()
+
         let runningApps = NSWorkspace.shared.runningApplications.filter { app in
             app.activationPolicy == .regular
         }
@@ -205,6 +210,18 @@ final class WindowManager {
             updatedGroups.append(group)
         }
 
+        for i in updatedGroups.indices {
+            let bundleID = updatedGroups[i].bundleIdentifier
+            if launchingBundleIDs.contains(bundleID) {
+                if !updatedGroups[i].windows.isEmpty {
+                    launchingBundleIDs.remove(bundleID)
+                    launchTimeouts.removeValue(forKey: bundleID)
+                } else {
+                    updatedGroups[i].isLaunching = true
+                }
+            }
+        }
+
         updatedGroups.sort { lhs, rhs in
             let lhsIsPinned = settings.isPinned(lhs.bundleIdentifier)
             let rhsIsPinned = settings.isPinned(rhs.bundleIdentifier)
@@ -232,7 +249,7 @@ final class WindowManager {
             }
         }
 
-        appGroups = updatedGroups.filter { !$0.windows.isEmpty || settings.isPinned($0.bundleIdentifier) }
+        appGroups = updatedGroups.filter { !$0.windows.isEmpty || settings.isPinned($0.bundleIdentifier) || $0.isLaunching }
 
         constrainZoomedWindows()
         notifyChanged()
@@ -322,6 +339,12 @@ final class WindowManager {
 
     private func handleAppLaunched(_ app: NSRunningApplication) {
         axObserverManager.addObserver(for: app.processIdentifier)
+        if let bundleID = app.bundleIdentifier {
+            if !appGroups.contains(where: { $0.bundleIdentifier == bundleID && !$0.windows.isEmpty }) {
+                launchingBundleIDs.insert(bundleID)
+                launchTimeouts[bundleID] = Date().addingTimeInterval(launchTimeoutDuration)
+            }
+        }
         refreshAppGroups()
         DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) { [weak self] in
             self?.axObserverManager.addObserver(for: app.processIdentifier)
@@ -334,8 +357,20 @@ final class WindowManager {
         if let bundleID = app.bundleIdentifier {
             lastFocusedWindow.removeValue(forKey: bundleID)
             appsSeenWithWindows.remove(bundleID)
+            launchingBundleIDs.remove(bundleID)
+            launchTimeouts.removeValue(forKey: bundleID)
         }
         refreshAppGroups()
+    }
+
+    private func cleanupExpiredLaunches() {
+        let now = Date()
+        for (bundleID, timeout) in launchTimeouts {
+            if now >= timeout {
+                launchingBundleIDs.remove(bundleID)
+                launchTimeouts.removeValue(forKey: bundleID)
+            }
+        }
     }
 
     private func handleAppActivated(_ app: NSRunningApplication) {
@@ -378,8 +413,13 @@ final class WindowManager {
         }
 
         guard let app = group.runningApplication else {
+            let bundleID = group.bundleIdentifier
+            if launchingBundleIDs.contains(bundleID) { return }
+            launchingBundleIDs.insert(bundleID)
+            launchTimeouts[bundleID] = Date().addingTimeInterval(launchTimeoutDuration)
+            refreshAppGroups()
             Task {
-                if let appURL = NSWorkspace.shared.urlForApplication(withBundleIdentifier: group.bundleIdentifier) {
+                if let appURL = NSWorkspace.shared.urlForApplication(withBundleIdentifier: bundleID) {
                     let config = NSWorkspace.OpenConfiguration()
                     config.activates = true
                     NSWorkspace.shared.open(appURL, configuration: config)

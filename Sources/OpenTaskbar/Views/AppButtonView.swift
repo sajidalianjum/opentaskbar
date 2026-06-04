@@ -54,6 +54,7 @@ final class AppButtonView: NSView {
 
         iconView = NSImageView(image: scaledIcon)
         iconView.imageScaling = .scaleProportionallyUpOrDown
+        iconView.unregisterDraggedTypes()
         addSubview(iconView)
 
         if showName {
@@ -302,6 +303,16 @@ final class AppButtonView: NSView {
     override func resetCursorRects() {
         super.resetCursorRects()
         addCursorRect(bounds, cursor: .arrow)
+    }
+
+    func setDragHovering(_ hovering: Bool) {
+        if hovering {
+            hoverOverlay.isHidden = false
+            layer?.backgroundColor = NSColor.controlAccentColor.withAlphaComponent(0.05).cgColor
+        } else {
+            hoverOverlay.isHidden = true
+            layer?.backgroundColor = nil
+        }
     }
 
     override func draw(_ dirtyRect: NSRect) {

@@ -14,6 +14,9 @@ final class TaskbarContentView: NSView {
     private var appButtons: [AppButtonView] = []
     private var insertionIndicator: NSView!
     private var draggedBundleID: String?
+    private var isFileDrag = false
+    private var fileDragHoveredIndex: Int?
+    private var springLoadTimer: Timer?
 
     private var activeConstraints: [NSLayoutConstraint] = []
 
@@ -55,7 +58,7 @@ final class TaskbarContentView: NSView {
         appStackView.spacing = CGFloat(settings.barSpacing)
         appStackView.setContentHuggingPriority(.defaultHigh, for: .horizontal)
         appStackView.setContentCompressionResistancePriority(.required, for: .horizontal)
-        registerForDraggedTypes([.string])
+        registerForDraggedTypes([.string, .fileURL])
 
         insertionIndicator = NSView()
         insertionIndicator.wantsLayer = true
@@ -344,6 +347,10 @@ final class TaskbarContentView: NSView {
     }
 
     override func draggingEntered(_ sender: NSDraggingInfo) -> NSDragOperation {
+        if sender.draggingPasteboard.canReadObject(forClasses: [NSURL.self], options: nil) {
+            isFileDrag = true
+            return .copy
+        }
         guard let string = sender.draggingPasteboard.string(forType: .string),
               let bundleID = string.split(separator: ":").first.map(String.init) else { return [] }
         draggedBundleID = bundleID
@@ -351,6 +358,25 @@ final class TaskbarContentView: NSView {
     }
 
     override func draggingUpdated(_ sender: NSDraggingInfo) -> NSDragOperation {
+        if isFileDrag {
+            let localPoint = convert(sender.draggingLocation, from: nil)
+            let idx = buttonIndex(at: localPoint)
+
+            if idx != fileDragHoveredIndex {
+                if let prev = fileDragHoveredIndex, prev < appButtons.count {
+                    appButtons[prev].setDragHovering(false)
+                }
+                fileDragHoveredIndex = idx
+                if let idx = idx, idx < appButtons.count {
+                    appButtons[idx].setDragHovering(true)
+                    startSpringLoadTimer(for: idx)
+                } else {
+                    cancelSpringLoadTimer()
+                }
+            }
+            return .copy
+        }
+
         let location = sender.draggingLocation
         let localPoint = convert(location, from: nil)
         let index = insertionIndex(for: localPoint)
@@ -367,15 +393,39 @@ final class TaskbarContentView: NSView {
     }
 
     override func draggingExited(_ sender: NSDraggingInfo?) {
+        if isFileDrag {
+            isFileDrag = false
+            cancelSpringLoadTimer()
+            clearFileDragHoverState()
+            return
+        }
         hideInsertionIndicator()
         draggedBundleID = nil
     }
 
     override func prepareForDragOperation(_ sender: NSDraggingInfo) -> Bool {
-        return draggedBundleID != nil
+        return isFileDrag || draggedBundleID != nil
     }
 
     override func performDragOperation(_ sender: NSDraggingInfo) -> Bool {
+        if isFileDrag {
+            isFileDrag = false
+            cancelSpringLoadTimer()
+            defer { clearFileDragHoverState() }
+
+            guard let idx = fileDragHoveredIndex, idx < appButtons.count else { return false }
+            let bundleID = appButtons[idx].bundleIdentifier
+            guard let urls = sender.draggingPasteboard.readObjects(forClasses: [NSURL.self], options: nil) as? [URL], !urls.isEmpty else { return false }
+
+            if let appURL = NSWorkspace.shared.urlForApplication(withBundleIdentifier: bundleID) {
+                let config = NSWorkspace.OpenConfiguration()
+                config.activates = true
+                NSWorkspace.shared.open(urls, withApplicationAt: appURL, configuration: config)
+                return true
+            }
+            return false
+        }
+
         hideInsertionIndicator()
         defer { draggedBundleID = nil }
         guard let string = sender.draggingPasteboard.string(forType: .string),
@@ -388,6 +438,36 @@ final class TaskbarContentView: NSView {
 
         windowManager.moveApp(from: sourceIndex, to: destinationIndex)
         return true
+    }
+
+    private func buttonIndex(at localPoint: NSPoint) -> Int? {
+        for (i, button) in appButtons.enumerated() {
+            let buttonFrame = button.convert(button.bounds, to: self)
+            if buttonFrame.contains(localPoint) {
+                return i
+            }
+        }
+        return nil
+    }
+
+    private func startSpringLoadTimer(for index: Int) {
+        springLoadTimer?.invalidate()
+        springLoadTimer = Timer.scheduledTimer(withTimeInterval: 0.8, repeats: false) { [weak self] _ in
+            guard let self, index < self.appButtons.count else { return }
+            self.windowManager.activateApp(at: index)
+        }
+    }
+
+    private func cancelSpringLoadTimer() {
+        springLoadTimer?.invalidate()
+        springLoadTimer = nil
+    }
+
+    private func clearFileDragHoverState() {
+        if let prev = fileDragHoveredIndex, prev < appButtons.count {
+            appButtons[prev].setDragHovering(false)
+        }
+        fileDragHoveredIndex = nil
     }
 
     deinit {

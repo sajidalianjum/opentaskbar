@@ -40,7 +40,7 @@ OpenTaskbar/
 │   ├── Models/
 │   │   ├── WindowInfo.swift        # CGWindowID, pid, title, frame, minimized, fullscreen, layer, alpha, ownerName, isValid (Hashable)
 │   │   ├── AppGroup.swift          # Bundle grouping: windows[WindowInfo], icon, active state, insertionOrder, isRunning, isPinned, hasMultipleWindows (Hashable)
-│   │   └── TaskbarSettings.swift   # Singleton, @Published + NotificationCenter, UserDefaults persistence (dockMode, barAlignment, compactBar, barSpacing, iconSize, showStartButton, showAppNames, showThumbnails, showOnAllScreens, backgroundTheme, quitOnLastWindowClose, customBackgroundColor, pinnedBundleIdentifiers)
+│   │   └── TaskbarSettings.swift   # Singleton, @Published + NotificationCenter, UserDefaults persistence (dockMode, barAlignment, barSpacing, iconSize, showStartButton, showAppNames, showThumbnails, showOnAllScreens, backgroundTheme, quitOnLastWindowClose, customBackgroundColor, pinnedBundleIdentifiers)
 │   ├── Services/
 │   │   ├── WindowManager.swift     # Central orchestrator: app groups, polling (1s), activate/cycle apps, context menus, drag-to-reorder, pin/unpin, focus tracking, MenuItemActions singleton
 │   │   ├── AccessibilityService.swift# AX wrappers: raise/minimize/unminimize/close/toggle-fullscreen windows, windowsForPID, windowElement lookup

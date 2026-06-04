@@ -171,19 +171,6 @@ final class SettingsWindowController {
         // ─── General ───
         section("General")
 
-        let dockSelect = NSPopUpButton()
-        dockSelect.addItem(withTitle: "Coexist with Dock")
-        dockSelect.addItem(withTitle: "Auto-hide Dock")
-        dockSelect.addItem(withTitle: "Fully Hide Dock")
-        switch settings.dockMode {
-        case .coexist: dockSelect.selectItem(at: 0)
-        case .autohide: dockSelect.selectItem(at: 1)
-        case .hidden: dockSelect.selectItem(at: 2)
-        }
-        dockSelect.target = self
-        dockSelect.action = #selector(dockModeChanged(_:))
-        labeled("Dock Mode", control: dockSelect)
-
         let alignSelect = NSPopUpButton()
         alignSelect.addItem(withTitle: "Left")
         alignSelect.addItem(withTitle: "Center")
@@ -197,7 +184,7 @@ final class SettingsWindowController {
         alignSelect.action = #selector(alignmentChanged(_:))
         labeled("Bar Alignment", control: alignSelect)
 
-        checkbox("Compact Bar (wrap content only)", action: #selector(compactChanged(_:)), state: settings.compactBar ? .on : .off)
+        checkbox("Dock Mode (wrap content only)", action: #selector(dockModeChanged(_:)), state: settings.dockMode ? .on : .off)
 
         checkbox("Show on All Screens", action: #selector(allScreensChanged(_:)), state: settings.showOnAllScreens ? .on : .off)
 
@@ -352,21 +339,6 @@ final class SettingsWindowController {
         ])
     }
 
-    @objc private func dockModeChanged(_ sender: NSPopUpButton) {
-        switch sender.indexOfSelectedItem {
-        case 0: settings.dockMode = .coexist
-        case 1: settings.dockMode = .autohide
-        case 2: settings.dockMode = .hidden
-        default: break
-        }
-        let dockManager = DockManager()
-        switch settings.dockMode {
-        case .coexist: dockManager.restoreDock()
-        case .autohide: dockManager.autoHideDock()
-        case .hidden: dockManager.hideDock()
-        }
-    }
-
     @objc private func alignmentChanged(_ sender: NSPopUpButton) {
         switch sender.indexOfSelectedItem {
         case 0: settings.barAlignment = .left
@@ -376,8 +348,8 @@ final class SettingsWindowController {
         }
     }
 
-    @objc private func compactChanged(_ sender: NSButton) {
-        settings.compactBar = sender.state == .on
+    @objc private func dockModeChanged(_ sender: NSButton) {
+        settings.dockMode = sender.state == .on
     }
 
     @objc private func thumbnailsChanged(_ sender: NSButton) {
@@ -464,13 +436,12 @@ final class SettingsWindowController {
     }
 
     @objc private func resetDefaults() {
-        settings.dockMode = .hidden
         settings.showThumbnails = false
         settings.showAppNames = false
         settings.showStartButton = true
         settings.showOnAllScreens = true
         settings.barAlignment = .center
-        settings.compactBar = true
+        settings.dockMode = true
         settings.barSpacing = 4.0
         settings.iconSize = 32.0
         settings.quitOnLastWindowClose = false

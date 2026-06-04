@@ -46,7 +46,7 @@ final class TaskbarContentView: NSView {
         backgroundView.blendingMode = .behindWindow
         backgroundView.state = .active
         backgroundView.wantsLayer = true
-        backgroundView.layer?.cornerRadius = settings.compactBar ? 10 : 0
+        backgroundView.layer?.cornerRadius = settings.dockMode ? 10 : 0
         backgroundView.layer?.masksToBounds = true
 
         appStackView = NSStackView()
@@ -85,7 +85,7 @@ final class TaskbarContentView: NSView {
             startMenuButton.heightAnchor.constraint(equalToConstant: max(taskbarHeight - 4, 1)),
         ])
 
-        if settings.compactBar {
+        if settings.dockMode {
             contentStackView = NSStackView()
             contentStackView.orientation = .horizontal
             contentStackView.alignment = .centerY

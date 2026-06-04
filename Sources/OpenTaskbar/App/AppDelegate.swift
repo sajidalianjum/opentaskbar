@@ -4,15 +4,22 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var taskbarPanels: [NSScreen: TaskbarPanel] = [:]
     private let windowManager = WindowManager()
     private let dockManager = DockManager()
+    private let crashGuard: CrashGuard
     private let settings = TaskbarSettings.shared
     private var statusItem: NSStatusItem?
     private var permissionsCheckTimer: Timer?
+
+    override init() {
+        crashGuard = CrashGuard(dockManager: dockManager)
+    }
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         guard SingleInstanceLock.acquire() else {
             NSApp.terminate(nil)
             return
         }
+
+        crashGuard.install()
 
         let permissions = PermissionsManager.shared
         if !permissions.isAccessibilityGranted {
@@ -24,13 +31,31 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     func applicationWillTerminate(_ notification: Notification) {
+        CrashGuard.markCleanExit()
         SingleInstanceLock.release()
     }
 
     private func setupApp() {
-        if dockManager.hasSavedState() {
+        let crashed = !CrashGuard.isCleanExit() && dockManager.hasSavedState()
+
+        if crashed {
             dockManager.restoreDock()
+            CrashGuard.clearCleanExit()
+
+            let alert = NSAlert()
+            alert.messageText = "OpenTaskbar exited unexpectedly"
+            alert.informativeText = "Your Dock has been restored. Would you like to launch OpenTaskbar again?"
+            alert.addButton(withTitle: "Launch OpenTaskbar")
+            alert.addButton(withTitle: "Quit")
+            alert.alertStyle = .informational
+
+            let response = alert.runModal()
+            if response == .alertSecondButtonReturn {
+                NSApp.terminate(nil)
+                return
+            }
         }
+
         dockManager.hideDock()
         windowManager.start()
         createTaskbarPanels()

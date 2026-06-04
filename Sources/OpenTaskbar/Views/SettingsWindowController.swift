@@ -171,6 +171,14 @@ final class SettingsWindowController {
         // ─── General ───
         section("General")
 
+        let styleSelect = NSPopUpButton()
+        styleSelect.addItem(withTitle: "Dock")
+        styleSelect.addItem(withTitle: "Taskbar")
+        styleSelect.selectItem(at: settings.style == .dock ? 0 : 1)
+        styleSelect.target = self
+        styleSelect.action = #selector(styleChanged(_:))
+        labeled("Style", control: styleSelect)
+
         let alignSelect = NSPopUpButton()
         alignSelect.addItem(withTitle: "Left")
         alignSelect.addItem(withTitle: "Center")
@@ -183,8 +191,6 @@ final class SettingsWindowController {
         alignSelect.target = self
         alignSelect.action = #selector(alignmentChanged(_:))
         labeled("Bar Alignment", control: alignSelect)
-
-        checkbox("Dock Mode (wrap content only)", action: #selector(dockModeChanged(_:)), state: settings.dockMode ? .on : .off)
 
         checkbox("Show on All Screens", action: #selector(allScreensChanged(_:)), state: settings.showOnAllScreens ? .on : .off)
 
@@ -348,8 +354,8 @@ final class SettingsWindowController {
         }
     }
 
-    @objc private func dockModeChanged(_ sender: NSButton) {
-        settings.dockMode = sender.state == .on
+    @objc private func styleChanged(_ sender: NSPopUpButton) {
+        settings.style = sender.indexOfSelectedItem == 0 ? .dock : .taskbar
     }
 
     @objc private func thumbnailsChanged(_ sender: NSButton) {
@@ -441,7 +447,7 @@ final class SettingsWindowController {
         settings.showStartButton = true
         settings.showOnAllScreens = true
         settings.barAlignment = .center
-        settings.dockMode = true
+        settings.style = .dock
         settings.barSpacing = 4.0
         settings.iconSize = 32.0
         settings.quitOnLastWindowClose = false

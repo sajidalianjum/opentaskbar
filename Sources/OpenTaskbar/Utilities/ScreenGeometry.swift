@@ -1,18 +1,18 @@
 import AppKit
 
 enum ScreenGeometry {
-    static let dockModeBottomOffset: CGFloat = 6
+    static let dockStyleBottomOffset: CGFloat = 6
 
     static func taskbarHeight(forIconSize iconSize: CGFloat) -> CGFloat {
         iconSize + 12
     }
 
-    static func taskbarRect(for screen: NSScreen, height: CGFloat, dockMode: Bool = false) -> NSRect {
+    static func taskbarRect(for screen: NSScreen, height: CGFloat, isDockStyle: Bool = false) -> NSRect {
         let fullScreenFrame = screen.frame
         var yPosition = fullScreenFrame.origin.y
 
-        if dockMode {
-            yPosition += dockModeBottomOffset
+        if isDockStyle {
+            yPosition += dockStyleBottomOffset
         }
 
         return NSRect(

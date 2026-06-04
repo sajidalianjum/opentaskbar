@@ -16,6 +16,11 @@ final class TaskbarSettings {
         case custom
     }
 
+    enum TaskbarStyle: String {
+        case dock
+        case taskbar
+    }
+
     static let settingsDidChange = Notification.Name("TaskbarSettingsDidChange")
 
     @Published var showThumbnails: Bool {
@@ -34,8 +39,8 @@ final class TaskbarSettings {
         didSet { UserDefaults.standard.set(barAlignment.rawValue, forKey: "barAlignment"); postChange() }
     }
 
-    @Published var dockMode: Bool {
-        didSet { UserDefaults.standard.set(dockMode, forKey: "dockMode"); postChange() }
+    @Published var style: TaskbarStyle {
+        didSet { UserDefaults.standard.set(style.rawValue, forKey: "style"); postChange() }
     }
 
     @Published var barSpacing: Double {
@@ -139,7 +144,7 @@ final class TaskbarSettings {
         self.showAppNames = defaults.object(forKey: "showAppNames") as? Bool ?? false
         self.showOnAllScreens = defaults.object(forKey: "showOnAllScreens") as? Bool ?? true
         self.barAlignment = BarAlignment(rawValue: defaults.string(forKey: "barAlignment") ?? "") ?? .center
-        self.dockMode = defaults.object(forKey: "dockMode") as? Bool ?? true
+        self.style = TaskbarStyle(rawValue: defaults.string(forKey: "style") ?? "") ?? .dock
         self.barSpacing = defaults.object(forKey: "barSpacing") as? Double ?? 4.0
         self.iconSize = defaults.object(forKey: "iconSize") as? Double ?? 32.0
         self.quitOnLastWindowClose = defaults.object(forKey: "quitOnLastWindowClose") as? Bool ?? false

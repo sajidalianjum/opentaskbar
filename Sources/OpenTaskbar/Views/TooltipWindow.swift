@@ -63,7 +63,18 @@ final class TooltipWindow: NSWindow {
 
     func show(text: String, at screenPoint: NSPoint, screen: NSScreen) {
         label.stringValue = text
-        appearance = NSApp.effectiveAppearance
+
+        let settings = TaskbarSettings.shared
+        switch settings.backgroundTheme {
+        case .system:
+            appearance = nil
+        case .dark:
+            appearance = NSAppearance(named: .darkAqua)
+        case .light:
+            appearance = NSAppearance(named: .aqua)
+        case .custom:
+            appearance = ThemeManager.appearance(for: settings.customBackgroundColor)
+        }
 
         let font = NSFont.systemFont(ofSize: 11, weight: .regular)
         let textSize = (text as NSString).size(withAttributes: [.font: font])

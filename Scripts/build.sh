@@ -26,6 +26,7 @@ mkdir -p "${APP_BUNDLE}/Contents/Resources"
 
 cp "${UNIVERSAL_BINARY}" "${APP_BUNDLE}/Contents/MacOS/${APP_NAME}"
 cp "${PROJECT_DIR}/Resources/Info.plist" "${APP_BUNDLE}/Contents/Info.plist"
+cp "${PROJECT_DIR}/Resources/OpenTaskbar.icns" "${APP_BUNDLE}/Contents/Resources/OpenTaskbar.icns"
 
 echo "Code signing..."
 codesign --force --deep --sign "OpenTaskbarDev" "${APP_BUNDLE}"

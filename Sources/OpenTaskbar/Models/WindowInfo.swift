@@ -10,6 +10,7 @@ struct WindowInfo: Hashable {
     var layer: Int
     var alpha: Double
     var ownerName: String?
+    var documentPath: String? = nil
 
     var isValid: Bool {
         alpha > 0 && layer == 0 && frame.width > 50 && frame.height > 50

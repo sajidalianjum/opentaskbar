@@ -68,6 +68,15 @@ final class AccessibilityService {
                 isFullscreen = fullscreenRef as? Bool ?? false
             }
 
+            var documentPath: String?
+            var documentRef: CFTypeRef?
+            if AXUIElementCopyAttributeValue(element, "AXDocument" as CFString, &documentRef) == .success,
+               let docURL = documentRef as? String,
+               let url = URL(string: docURL),
+               url.isFileURL {
+                documentPath = url.path
+            }
+
             return WindowInfo(
                 windowID: windowID,
                 pid: pid,
@@ -77,7 +86,8 @@ final class AccessibilityService {
                 isFullscreen: isFullscreen,
                 layer: 0,
                 alpha: 1.0,
-                ownerName: nil
+                ownerName: nil,
+                documentPath: documentPath
             )
         }
     }

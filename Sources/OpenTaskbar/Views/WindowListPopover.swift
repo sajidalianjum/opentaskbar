@@ -278,6 +278,7 @@ private final class WindowRowView: NSView {
         titleLabel.maximumNumberOfLines = 1
         titleLabel.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
         titleLabel.textColor = windowInfo.isMinimized ? .tertiaryLabelColor : .labelColor
+        titleLabel.toolTip = windowInfo.documentPath ?? (windowInfo.title.isEmpty ? nil : windowInfo.title)
 
         let iconCopy = appIcon.copy() as! NSImage
         iconImageView = NSImageView(image: iconCopy)

@@ -177,19 +177,18 @@ swift build -c release --arch arm64 --arch x86_64
 
 ## Known Pain Points & Refactor Targets
 
-1. **`AppButtonView.reloadData()`** still creates new `AppButtonView` instances even on property-only changes (has a partial path when bundle IDs match, but still swaps view objects)
-2. **No window drag-to-reorder** on the taskbar (app-level drag-to-reorder exists; individual windows cannot be reordered)
-3. **SettingsWindowController** uses manual frame layout helpers (`FlippedView`, `labeled()`/`sliderRow()`/`checkbox()` functions), not a proper Auto Layout constraints-based layout
-4. **1s poll timer** compares full window sets each cycle; could be optimized to avoid full refresh when nothing changed
-5. **`MenuItemActions`** is a singleton (`shared`) that creates its own `AccessibilityService` instance rather than sharing the one from `WindowManager`; callback wiring is fragile
-6. **No tests** — no test target in Package.swift, no test files
-7. **No CI** — no GitHub Actions or similar
-8. **No localization** — all strings hardcoded in English
-9. **No SwiftUI `@main`** — uses classic `NSApplicationMain` pattern
-10. **`StartMenuButton`** simulates Cmd+Space via `CGEvent` — fragile if Spotlight is remapped or disabled, and requires accessibility permissions
-11. **`WindowListPopover` and `ThumbnailPopover`** are mutually exclusive based on `showThumbnails`; no toggle to show both simultaneously
-12. **`customBackgroundColor`** persisted via `NSKeyedArchiver`/`NSKeyedUnarchiver` — no secure coding, can crash if stored data is corrupted
-13. **Settings window** does not resize dynamically when toggling custom color row visibility
+1. **No window drag-to-reorder** on the taskbar (app-level drag-to-reorder exists; individual windows cannot be reordered)
+2. **SettingsWindowController** uses manual frame layout helpers (`FlippedView`, `labeled()`/`sliderRow()`/`checkbox()` functions), not a proper Auto Layout constraints-based layout
+3. **1s poll timer** compares full window sets each cycle; could be optimized to avoid full refresh when nothing changed
+4. **`MenuItemActions`** is a singleton (`shared`) that creates its own `AccessibilityService` instance rather than sharing the one from `WindowManager`; callback wiring is fragile
+5. **No tests** — no test target in Package.swift, no test files
+6. **No CI** — no GitHub Actions or similar
+7. **No localization** — all strings hardcoded in English
+8. **No SwiftUI `@main`** — uses classic `NSApplicationMain` pattern
+9. **`StartMenuButton`** simulates Cmd+Space via `CGEvent` — fragile if Spotlight is remapped or disabled, and requires accessibility permissions
+10. **`WindowListPopover` and `ThumbnailPopover`** are mutually exclusive based on `showThumbnails`; no toggle to show both simultaneously
+11. **`customBackgroundColor`** persisted via `NSKeyedArchiver`/`NSKeyedUnarchiver` — no secure coding, can crash if stored data is corrupted
+12. **Settings window** does not resize dynamically when toggling custom color row visibility
 
 ---
 
@@ -222,6 +221,12 @@ swift build -c release --arch arm64 --arch x86_64
 - **Compact bar mode** renders the taskbar as a floating pill with rounded corners instead of full-width bar.
 - **Settings** propagate via `NotificationCenter` (not Combine) — views observe `TaskbarSettings.settingsDidChange` and fully rebuild on any change.
 - **`MenuItemActions.shared`** is a standalone singleton with its own `AccessibilityService` — not shared with `WindowManager`'s instance.
+- **Animations** use `CABasicAnimation` / `CAKeyframeAnimation` exclusively (GPU render-server, zero main thread cost). No `animator()` proxy, no `NSAnimationContext`. All animations gated behind `TaskbarSettings.animationsEnabled` (default `true`). Three animation types:
+  - **Launch entry**: slide-up + fade-in on first appearance in taskbar (`viewDidMoveToWindow`). 300ms ease-out via `transform.translation.y` + `opacity`.
+  - **Minimize bounce**: 667ms 3-keyframe elastic (`transform.translation.y` drop→overshoot→settle + `transform.scale.y` squash/stretch).
+  - **Restore bounce**: inverse of minimize, same timing.
+  - Click feedback uses instant background color change (no animated scale — iOS-style press proved jerky).
+- **View reuse in `reloadData()`**: `TaskbarContentView.reloadData()` calls `button.updateAppGroupState(group)` for matching bundle IDs instead of creating/swapping views. Exit animation (200ms opacity fade + slide down) for removed app buttons.
 
 ---
 
@@ -233,6 +238,7 @@ swift build -c release --arch arm64 --arch x86_64
 - No new dependencies unless critical and approved
 - Use `@Published` + `NotificationCenter` for settings; NotificationCenter for cross-component broadcast (Combine is used minimally)
 - `[weak self]` in all escaping closures
+- **Animations:** Use `CABasicAnimation`/`CAKeyframeAnimation` on layer properties (`opacity`, `transform.translation.y`, `transform.scale`). Always gate behind `animationsEnabled`. Never use `animator()` proxy, `NSAnimationContext`, or infinite repeating animations. Set model value + add animation with `fromValue`/`toValue`. Capture `presentation()` before `removeAnimation` for smooth transitions. Reuse views via `updateAppGroupState()` — never recreate for state-only changes.
 
 ### When fixing bugs:
 - Check Accessibility permissions first (common root cause)

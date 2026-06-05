@@ -3,7 +3,7 @@ import AppKit
 final class AppButtonView: NSView {
     var index: Int
     let bundleIdentifier: String
-    private let appGroup: AppGroup
+    private var appGroup: AppGroup
     private var showName: Bool
 
     private var iconView: NSImageView!
@@ -14,6 +14,10 @@ final class AppButtonView: NSView {
     private var isHovering = false
     private var trackingArea: NSTrackingArea?
     private var mouseDownLocation: NSPoint?
+    private var didAnimateEntry: Bool
+    private var indicatorWidthConstraint: NSLayoutConstraint?
+    private var indicatorHeightConstraint: NSLayoutConstraint?
+    private var previousMinimizedIDs: Set<CGWindowID> = []
 
     private static let sharedWindowListPopover = WindowListPopover()
     private static let sharedThumbnailPopover = ThumbnailPopover()
@@ -24,11 +28,14 @@ final class AppButtonView: NSView {
     var onNeedsRefresh: ((CGWindowID) -> Void)?
     var onFocusChanged: ((CGWindowID, String) -> Void)?
 
-    init(appGroup: AppGroup, index: Int, showName: Bool) {
+    private var animEnabled: Bool { TaskbarSettings.shared.animationsEnabled }
+
+    init(appGroup: AppGroup, index: Int, showName: Bool, animateEntry: Bool = true) {
         self.appGroup = appGroup
         self.index = index
         self.bundleIdentifier = appGroup.bundleIdentifier
         self.showName = showName
+        self.didAnimateEntry = !animateEntry
         super.init(frame: .zero)
         setupView()
     }
@@ -73,11 +80,25 @@ final class AppButtonView: NSView {
         activeIndicator.wantsLayer = true
         addSubview(activeIndicator)
 
+        setupIndicator()
+
+        updateIndicatorColors()
+        setupConstraints()
+        setupTrackingArea()
+
+        iconView.wantsLayer = true
+        let f = iconView.frame
+        iconView.layer?.anchorPoint = CGPoint(x: 0.5, y: 0.5)
+        iconView.frame = f
+
+        previousMinimizedIDs = Set(appGroup.windows.filter(\.isMinimized).map(\.windowID))
+    }
+
+    private func setupIndicator() {
         if appGroup.isLaunching {
             activeIndicator.layer?.cornerRadius = 1.5
             activeIndicator.layer?.backgroundColor = NSColor.controlAccentColor.withAlphaComponent(0.7).cgColor
             activeIndicator.frame.size = NSSize(width: 16, height: 4)
-            addPulseAnimation()
         } else if !appGroup.windows.isEmpty && appGroup.isActive {
             activeIndicator.layer?.cornerRadius = 1.5
             activeIndicator.layer?.backgroundColor = NSColor.controlAccentColor.cgColor
@@ -91,11 +112,6 @@ final class AppButtonView: NSView {
         } else {
             activeIndicator.isHidden = true
         }
-
-        updateIndicatorColors()
-
-        setupConstraints()
-        setupTrackingArea()
     }
 
     private var isDarkAppearance: Bool {
@@ -125,93 +141,203 @@ final class AppButtonView: NSView {
     deinit {
         iconView?.layer?.removeAllAnimations()
         activeIndicator?.layer?.removeAllAnimations()
+        layer?.removeAllAnimations()
     }
 
-    private func addPulseAnimation() {
-        let pulse = CABasicAnimation(keyPath: "opacity")
-        pulse.fromValue = 1.0
-        pulse.toValue = 0.3
-        pulse.duration = 0.8
-        pulse.autoreverses = true
-        pulse.repeatCount = .infinity
-        activeIndicator.layer?.add(pulse, forKey: "indicatorPulse")
+    // ─── Entry Animation ────────────────────────────────────────────
 
-        let iconPulse = CABasicAnimation(keyPath: "opacity")
-        iconPulse.fromValue = 1.0
-        iconPulse.toValue = 0.5
-        iconPulse.duration = 0.8
-        iconPulse.autoreverses = true
-        iconPulse.repeatCount = .infinity
-        iconView.layer?.add(iconPulse, forKey: "iconPulse")
+    private func playEntryAnimation() {
+        guard animEnabled else {
+            layer?.opacity = 1
+            didAnimateEntry = true
+            return
+        }
+
+        let offset: CGFloat = 20
+        layer?.opacity = 0.01
+        layer?.transform = CATransform3DTranslate(CATransform3DIdentity, 0, offset, 0)
+
+        let fadeIn = CABasicAnimation(keyPath: "opacity")
+        fadeIn.fromValue = 0.01
+        fadeIn.toValue = 1.0
+        fadeIn.duration = 0.3
+        fadeIn.timingFunction = CAMediaTimingFunction(name: .easeOut)
+
+        let slideUp = CABasicAnimation(keyPath: "transform.translation.y")
+        slideUp.fromValue = offset
+        slideUp.toValue = 0
+        slideUp.duration = 0.3
+        slideUp.timingFunction = CAMediaTimingFunction(name: .easeOut)
+
+        layer?.opacity = 1
+        layer?.transform = CATransform3DIdentity
+
+        layer?.add(fadeIn, forKey: "entryFade")
+        layer?.add(slideUp, forKey: "entrySlide")
+
+        didAnimateEntry = true
     }
 
-    override func viewDidChangeEffectiveAppearance() {
-        super.viewDidChangeEffectiveAppearance()
-        updateIndicatorColors()
+    // ─── Mouse ──────────────────────────────────────────────────────
+
+    override func mouseDown(with event: NSEvent) {
+        mouseDownLocation = event.locationInWindow
+        layer?.backgroundColor = NSColor.controlAccentColor.withAlphaComponent(0.12).cgColor
     }
 
-    private func setupConstraints() {
-        [iconView, activeIndicator, hoverOverlay].forEach { $0.translatesAutoresizingMaskIntoConstraints = false }
-        nameLabel?.translatesAutoresizingMaskIntoConstraints = false
+    override func mouseUp(with event: NSEvent) {
+        mouseDownLocation = nil
 
-        let iconLeading: CGFloat = 8
-        let iconHeight = CGFloat(TaskbarSettings.shared.iconSize)
-
-        let indicatorWidth: CGFloat
-        let indicatorHeight: CGFloat
-        if appGroup.isLaunching {
-            indicatorWidth = 16
-            indicatorHeight = 4
-        } else if !appGroup.windows.isEmpty && appGroup.isActive {
-            indicatorWidth = 16
-            indicatorHeight = 3
-        } else if appGroup.isRunning && appGroup.windows.isEmpty {
-            indicatorWidth = 4
-            indicatorHeight = 4
+        if isHovering {
+            layer?.backgroundColor = NSColor.controlAccentColor.withAlphaComponent(0.05).cgColor
         } else {
-            indicatorWidth = 6
-            indicatorHeight = 3
+            layer?.backgroundColor = nil
         }
 
-        NSLayoutConstraint.activate([
-            hoverOverlay.leadingAnchor.constraint(equalTo: leadingAnchor),
-            hoverOverlay.trailingAnchor.constraint(equalTo: trailingAnchor),
-            hoverOverlay.topAnchor.constraint(equalTo: topAnchor),
-            hoverOverlay.bottomAnchor.constraint(equalTo: bottomAnchor),
-
-            iconView.leadingAnchor.constraint(equalTo: leadingAnchor, constant: iconLeading),
-            iconView.centerYAnchor.constraint(equalTo: centerYAnchor),
-            iconView.widthAnchor.constraint(equalToConstant: iconHeight),
-            iconView.heightAnchor.constraint(equalToConstant: iconHeight),
-
-            activeIndicator.centerXAnchor.constraint(equalTo: centerXAnchor),
-            activeIndicator.bottomAnchor.constraint(equalTo: bottomAnchor, constant: -2),
-            activeIndicator.widthAnchor.constraint(equalToConstant: indicatorWidth),
-            activeIndicator.heightAnchor.constraint(equalToConstant: indicatorHeight),
-        ])
-
-        if showName, let nameLabel {
-            NSLayoutConstraint.activate([
-                nameLabel.leadingAnchor.constraint(equalTo: iconView.trailingAnchor, constant: 6),
-                nameLabel.centerYAnchor.constraint(equalTo: centerYAnchor),
-                nameLabel.trailingAnchor.constraint(lessThanOrEqualTo: trailingAnchor, constant: -8),
-            ])
+        if let target = target as? NSObject, let action = action {
+            target.perform(action, with: self)
         }
     }
 
-    private func setupTrackingArea() {
-        if let existing = trackingArea {
-            removeTrackingArea(existing)
+    override func mouseDragged(with event: NSEvent) {
+        guard let startLocation = mouseDownLocation else { return }
+        let currentLocation = event.locationInWindow
+        let distance = hypot(currentLocation.x - startLocation.x, currentLocation.y - startLocation.y)
+        guard distance > 5 else { return }
+
+        let pasteboardItem = NSPasteboardItem()
+        pasteboardItem.setString("\(bundleIdentifier):\(index)", forType: .string)
+
+        let draggingItem = NSDraggingItem(pasteboardWriter: pasteboardItem)
+        if let rep = bitmapImageRepForCachingDisplay(in: bounds) {
+            cacheDisplay(in: bounds, to: rep)
+            let dragImage = NSImage(size: bounds.size)
+            dragImage.addRepresentation(rep)
+            draggingItem.setDraggingFrame(bounds, contents: dragImage)
         }
-        let newArea = NSTrackingArea(
-            rect: bounds,
-            options: [.mouseEnteredAndExited, .activeAlways, .inVisibleRect],
-            owner: self,
-            userInfo: nil
-        )
-        trackingArea = newArea
-        addTrackingArea(newArea)
+        let session = beginDraggingSession(with: [draggingItem], event: event, source: self)
+        session.animatesToStartingPositionsOnCancelOrFail = true
     }
+
+    // ─── Minimize / Restore Bounce ──────────────────────────────────
+
+    private func playMinimizeBounce() {
+        guard animEnabled else { return }
+
+        let bounce = CAKeyframeAnimation(keyPath: "transform.translation.y")
+        bounce.values = [0, 12, -4, 0]
+        bounce.keyTimes = [0, 0.25, 0.5, 1.0]
+        bounce.timingFunctions = [
+            CAMediaTimingFunction(name: .easeIn),
+            CAMediaTimingFunction(name: .easeOut),
+            CAMediaTimingFunction(name: .easeIn),
+        ]
+        bounce.duration = 0.667
+
+        let squash = CAKeyframeAnimation(keyPath: "transform.scale.y")
+        squash.values = [1.0, 0.85, 1.02, 1.0]
+        squash.keyTimes = [0, 0.25, 0.5, 1.0]
+        squash.timingFunctions = [
+            CAMediaTimingFunction(name: .easeIn),
+            CAMediaTimingFunction(name: .easeOut),
+            CAMediaTimingFunction(name: .easeIn),
+        ]
+        squash.duration = 0.667
+
+        layer?.add(bounce, forKey: "minimizeBounce")
+        layer?.add(squash, forKey: "minimizeSquash")
+    }
+
+    private func playRestoreBounce() {
+        guard animEnabled else { return }
+
+        let bounce = CAKeyframeAnimation(keyPath: "transform.translation.y")
+        bounce.values = [0, -12, 4, 0]
+        bounce.keyTimes = [0, 0.25, 0.5, 1.0]
+        bounce.timingFunctions = [
+            CAMediaTimingFunction(name: .easeIn),
+            CAMediaTimingFunction(name: .easeOut),
+            CAMediaTimingFunction(name: .easeIn),
+        ]
+        bounce.duration = 0.667
+
+        let squash = CAKeyframeAnimation(keyPath: "transform.scale.y")
+        squash.values = [1.0, 1.15, 0.98, 1.0]
+        squash.keyTimes = [0, 0.25, 0.5, 1.0]
+        squash.timingFunctions = [
+            CAMediaTimingFunction(name: .easeIn),
+            CAMediaTimingFunction(name: .easeOut),
+            CAMediaTimingFunction(name: .easeIn),
+        ]
+        squash.duration = 0.667
+
+        layer?.add(bounce, forKey: "restoreBounce")
+        layer?.add(squash, forKey: "restoreSquash")
+    }
+
+    // ─── In-Place State Update ──────────────────────────────────────
+
+    func updateAppGroupState(_ newGroup: AppGroup) {
+        let oldGroup = appGroup
+
+        let wasLaunching = oldGroup.isLaunching
+        let isNowLaunching = newGroup.isLaunching
+
+        let oldMinIDs = Set(oldGroup.windows.filter(\.isMinimized).map(\.windowID))
+        let newMinIDs = Set(newGroup.windows.filter(\.isMinimized).map(\.windowID))
+        let newlyMinimized = newMinIDs.subtracting(oldMinIDs)
+        let newlyUnminimized = oldMinIDs.subtracting(newMinIDs)
+
+        appGroup = newGroup
+
+        if !wasLaunching && isNowLaunching {
+            didAnimateEntry = false
+        }
+
+        let activeChanged = oldGroup.isActive != newGroup.isActive
+        let runningChanged = oldGroup.isRunning != newGroup.isRunning
+        let windowsChanged = oldGroup.windows.map(\.windowID) != newGroup.windows.map(\.windowID)
+
+        if newGroup.isLaunching && !didAnimateEntry {
+            playEntryAnimation()
+        } else if activeChanged || runningChanged || windowsChanged {
+            updateIndicatorColors()
+            activeIndicator.isHidden = !newGroup.isRunning && !newGroup.isLaunching
+        }
+
+        if activeChanged || runningChanged {
+            let w: CGFloat
+            let h: CGFloat
+            let cr: CGFloat
+            if newGroup.isLaunching {
+                w = 16; h = 4; cr = 1.5
+            } else if !newGroup.windows.isEmpty && newGroup.isActive {
+                w = 16; h = 3; cr = 1.5
+            } else if newGroup.isRunning && !newGroup.windows.isEmpty {
+                w = 6; h = 3; cr = 1.5
+            } else if newGroup.isRunning {
+                w = 4; h = 4; cr = 2
+            } else {
+                w = 4; h = 4; cr = 2
+            }
+            indicatorWidthConstraint?.constant = w
+            indicatorHeightConstraint?.constant = h
+            activeIndicator.layer?.cornerRadius = cr
+        }
+
+        if !newlyMinimized.isEmpty {
+            playMinimizeBounce()
+        }
+        if !newlyUnminimized.isEmpty {
+            playRestoreBounce()
+        }
+
+        if showName, let label = nameLabel {
+            label.textColor = newGroup.isActive ? .labelColor : .secondaryLabelColor
+        }
+    }
+
+    // ─── Hover ──────────────────────────────────────────────────────
 
     override func mouseEntered(with event: NSEvent) {
         isHovering = true
@@ -299,44 +425,6 @@ final class AppButtonView: NSView {
         popover.show(windows: appGroup.windows, appIcon: appGroup.icon, anchorPoint: screenPoint, screen: screen)
     }
 
-    override func mouseDown(with event: NSEvent) {
-        mouseDownLocation = event.locationInWindow
-        layer?.backgroundColor = NSColor.controlAccentColor.withAlphaComponent(0.12).cgColor
-    }
-
-    override func mouseDragged(with event: NSEvent) {
-        guard let startLocation = mouseDownLocation else { return }
-        let currentLocation = event.locationInWindow
-        let distance = hypot(currentLocation.x - startLocation.x, currentLocation.y - startLocation.y)
-        guard distance > 5 else { return }
-
-        let pasteboardItem = NSPasteboardItem()
-        pasteboardItem.setString("\(bundleIdentifier):\(index)", forType: .string)
-
-        let draggingItem = NSDraggingItem(pasteboardWriter: pasteboardItem)
-        if let rep = bitmapImageRepForCachingDisplay(in: bounds) {
-            cacheDisplay(in: bounds, to: rep)
-            let dragImage = NSImage(size: bounds.size)
-            dragImage.addRepresentation(rep)
-            draggingItem.setDraggingFrame(bounds, contents: dragImage)
-        }
-        let session = beginDraggingSession(with: [draggingItem], event: event, source: self)
-        session.animatesToStartingPositionsOnCancelOrFail = true
-    }
-
-    override func mouseUp(with event: NSEvent) {
-        mouseDownLocation = nil
-        if isHovering {
-            layer?.backgroundColor = NSColor.controlAccentColor.withAlphaComponent(0.05).cgColor
-        } else {
-            layer?.backgroundColor = nil
-        }
-
-        if let target = target as? NSObject, let action = action {
-            target.perform(action, with: self)
-        }
-    }
-
     override func rightMouseDown(with event: NSEvent) {
         rightAction?(index)
     }
@@ -349,6 +437,14 @@ final class AppButtonView: NSView {
     override func resetCursorRects() {
         super.resetCursorRects()
         addCursorRect(bounds, cursor: .arrow)
+    }
+
+    override func viewDidMoveToWindow() {
+        super.viewDidMoveToWindow()
+        if window != nil && !didAnimateEntry {
+            playEntryAnimation()
+            didAnimateEntry = true
+        }
     }
 
     func setDragHovering(_ hovering: Bool) {
@@ -369,6 +465,79 @@ final class AppButtonView: NSView {
             accentColor.setFill()
             NSBezierPath(roundedRect: bounds.insetBy(dx: 1, dy: 1), xRadius: 5, yRadius: 5).fill()
         }
+    }
+
+    override func viewDidChangeEffectiveAppearance() {
+        super.viewDidChangeEffectiveAppearance()
+        updateIndicatorColors()
+    }
+
+    private func setupConstraints() {
+        [iconView, activeIndicator, hoverOverlay].forEach { $0.translatesAutoresizingMaskIntoConstraints = false }
+        nameLabel?.translatesAutoresizingMaskIntoConstraints = false
+
+        let iconLeading: CGFloat = 8
+        let iconHeight = CGFloat(TaskbarSettings.shared.iconSize)
+
+        let indicatorWidth: CGFloat
+        let indicatorHeight: CGFloat
+        if appGroup.isLaunching {
+            indicatorWidth = 16
+            indicatorHeight = 4
+        } else if !appGroup.windows.isEmpty && appGroup.isActive {
+            indicatorWidth = 16
+            indicatorHeight = 3
+        } else if appGroup.isRunning && appGroup.windows.isEmpty {
+            indicatorWidth = 4
+            indicatorHeight = 4
+        } else {
+            indicatorWidth = 6
+            indicatorHeight = 3
+        }
+
+        let wid = activeIndicator.widthAnchor.constraint(equalToConstant: indicatorWidth)
+        let hei = activeIndicator.heightAnchor.constraint(equalToConstant: indicatorHeight)
+        indicatorWidthConstraint = wid
+        indicatorHeightConstraint = hei
+
+        NSLayoutConstraint.activate([
+            hoverOverlay.leadingAnchor.constraint(equalTo: leadingAnchor),
+            hoverOverlay.trailingAnchor.constraint(equalTo: trailingAnchor),
+            hoverOverlay.topAnchor.constraint(equalTo: topAnchor),
+            hoverOverlay.bottomAnchor.constraint(equalTo: bottomAnchor),
+
+            iconView.leadingAnchor.constraint(equalTo: leadingAnchor, constant: iconLeading),
+            iconView.centerYAnchor.constraint(equalTo: centerYAnchor),
+            iconView.widthAnchor.constraint(equalToConstant: iconHeight),
+            iconView.heightAnchor.constraint(equalToConstant: iconHeight),
+
+            activeIndicator.centerXAnchor.constraint(equalTo: centerXAnchor),
+            activeIndicator.bottomAnchor.constraint(equalTo: bottomAnchor, constant: -2),
+            wid,
+            hei,
+        ])
+
+        if showName, let nameLabel {
+            NSLayoutConstraint.activate([
+                nameLabel.leadingAnchor.constraint(equalTo: iconView.trailingAnchor, constant: 6),
+                nameLabel.centerYAnchor.constraint(equalTo: centerYAnchor),
+                nameLabel.trailingAnchor.constraint(lessThanOrEqualTo: trailingAnchor, constant: -8),
+            ])
+        }
+    }
+
+    private func setupTrackingArea() {
+        if let existing = trackingArea {
+            removeTrackingArea(existing)
+        }
+        let newArea = NSTrackingArea(
+            rect: bounds,
+            options: [.mouseEnteredAndExited, .activeAlways, .inVisibleRect],
+            owner: self,
+            userInfo: nil
+        )
+        trackingArea = newArea
+        addTrackingArea(newArea)
     }
 }
 

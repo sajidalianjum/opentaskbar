@@ -216,24 +216,40 @@ final class TaskbarContentView: NSView {
         let existingIDs = appButtons.map(\.bundleIdentifier)
         let newIDs = groups.map(\.bundleIdentifier)
 
+        let anim = settings.animationsEnabled
+
         if existingIDs != newIDs {
+            let oldSet = Set(existingIDs)
+            let newSet = Set(newIDs)
+            let removedIDs = oldSet.subtracting(newSet)
+
+            if !removedIDs.isEmpty && anim {
+                for button in appButtons where removedIDs.contains(button.bundleIdentifier) {
+                    let fade = CABasicAnimation(keyPath: "opacity")
+                    fade.toValue = 0.01
+                    fade.duration = 0.2
+                    fade.timingFunction = CAMediaTimingFunction(name: .easeIn)
+                    fade.fillMode = .forwards
+                    fade.isRemovedOnCompletion = false
+                    button.layer?.add(fade, forKey: "exitFade")
+
+                    let slide = CABasicAnimation(keyPath: "transform.translation.y")
+                    slide.toValue = 20
+                    slide.duration = 0.2
+                    slide.timingFunction = CAMediaTimingFunction(name: .easeIn)
+                    slide.fillMode = .forwards
+                    slide.isRemovedOnCompletion = false
+                    button.layer?.add(slide, forKey: "exitSlide")
+                }
+            }
+
             appStackView.arrangedSubviews.forEach { $0.removeFromSuperview() }
             appButtons.removeAll()
 
             for (index, group) in groups.enumerated() {
-                let button = AppButtonView(appGroup: group, index: index, showName: showNames)
-                button.target = self
-                button.action = #selector(appButtonClicked(_:))
-                button.rightAction = { [weak self] index in
-                    self?.showContextMenu(for: index)
-                }
-                button.onNeedsRefresh = { [weak self] windowID in
-                    self?.windowManager.removeWindow(withID: windowID)
-                }
-                button.onFocusChanged = { [weak self] windowID, bundleID in
-                    self?.windowManager.recordWindowFocus(bundleIdentifier: bundleID, windowID: windowID)
-                }
-
+                let isNew = !oldSet.contains(group.bundleIdentifier)
+                let button = AppButtonView(appGroup: group, index: index, showName: showNames, animateEntry: isNew)
+                configureButton(button, at: index)
                 appButtons.append(button)
                 appStackView.addArrangedSubview(button)
 
@@ -244,29 +260,9 @@ final class TaskbarContentView: NSView {
         } else {
             for (index, group) in groups.enumerated() {
                 if index < appButtons.count {
-                    let oldButton = appButtons[index]
-                    let newButton = AppButtonView(appGroup: group, index: index, showName: showNames)
-                    newButton.target = self
-                    newButton.action = #selector(appButtonClicked(_:))
-                    newButton.rightAction = { [weak self] index in
-                        self?.showContextMenu(for: index)
-                    }
-                    newButton.onNeedsRefresh = { [weak self] windowID in
-                        self?.windowManager.removeWindow(withID: windowID)
-                    }
-                    newButton.onFocusChanged = { [weak self] windowID, bundleID in
-                        self?.windowManager.recordWindowFocus(bundleIdentifier: bundleID, windowID: windowID)
-                    }
-
-                    appStackView.removeArrangedSubview(oldButton)
-                    oldButton.removeFromSuperview()
-                    appStackView.insertArrangedSubview(newButton, at: index)
-
-                    let btnWidth: CGFloat = showNames ? 140 : CGFloat(settings.iconSize) + 16
-                    newButton.widthAnchor.constraint(equalToConstant: btnWidth).isActive = true
-                    newButton.heightAnchor.constraint(equalToConstant: max(taskbarHeight - 4, 1)).isActive = true
-
-                    appButtons[index] = newButton
+                    let button = appButtons[index]
+                    button.updateAppGroupState(group)
+                    button.index = index
                 }
             }
         }
@@ -274,6 +270,20 @@ final class TaskbarContentView: NSView {
         let showStart = settings.showStartButton
         startMenuButton?.isHidden = !showStart
         startSeparator?.isHidden = !showStart
+    }
+
+    private func configureButton(_ button: AppButtonView, at index: Int) {
+        button.target = self
+        button.action = #selector(appButtonClicked(_:))
+        button.rightAction = { [weak self] index in
+            self?.showContextMenu(for: index)
+        }
+        button.onNeedsRefresh = { [weak self] windowID in
+            self?.windowManager.removeWindow(withID: windowID)
+        }
+        button.onFocusChanged = { [weak self] windowID, bundleID in
+            self?.windowManager.recordWindowFocus(bundleIdentifier: bundleID, windowID: windowID)
+        }
     }
 
     override func resetCursorRects() {

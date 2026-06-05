@@ -320,6 +320,7 @@ final class SettingsWindowController {
         // ─── Display Options ───
         section("Display Options")
 
+        checkbox("Enable Animations", action: #selector(animationsChanged(_:)), state: settings.animationsEnabled ? .on : .off)
         checkbox("Show Window Thumbnails on Hover", action: #selector(thumbnailsChanged(_:)), state: settings.showThumbnails ? .on : .off)
         checkbox("Show App Names", action: #selector(namesChanged(_:)), state: settings.showAppNames ? .on : .off)
         checkbox("Show Spotlight Button", action: #selector(startButtonChanged(_:)), state: settings.showStartButton ? .on : .off)
@@ -384,6 +385,10 @@ final class SettingsWindowController {
 
     @objc private func constrainZoomedChanged(_ sender: NSButton) {
         settings.constrainZoomedWindows = sender.state == .on
+    }
+
+    @objc private func animationsChanged(_ sender: NSButton) {
+        settings.animationsEnabled = sender.state == .on
     }
 
     @objc private func spacingChanged(_ sender: NSSlider) {
@@ -451,6 +456,7 @@ final class SettingsWindowController {
         settings.barSpacing = 4.0
         settings.iconSize = 32.0
         settings.quitOnLastWindowClose = false
+        settings.animationsEnabled = true
         settings.constrainZoomedWindows = false
         settings.translucentBar = !NSWorkspace.shared.accessibilityDisplayShouldReduceTransparency
         settings.backgroundTheme = .system

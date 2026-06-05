@@ -81,6 +81,10 @@ final class TaskbarSettings {
         didSet { UserDefaults.standard.set(customBackgroundColorData, forKey: "customBackgroundColor"); postChange() }
     }
 
+    @Published var animationsEnabled: Bool {
+        didSet { UserDefaults.standard.set(animationsEnabled, forKey: "animationsEnabled"); postChange() }
+    }
+
     @Published var pinnedBundleIdentifiers: [String] {
         didSet { UserDefaults.standard.set(pinnedBundleIdentifiers, forKey: "pinnedBundleIdentifiers"); postChange() }
     }
@@ -148,6 +152,7 @@ final class TaskbarSettings {
         self.barSpacing = defaults.object(forKey: "barSpacing") as? Double ?? 4.0
         self.iconSize = defaults.object(forKey: "iconSize") as? Double ?? 32.0
         self.quitOnLastWindowClose = defaults.object(forKey: "quitOnLastWindowClose") as? Bool ?? false
+        self.animationsEnabled = defaults.object(forKey: "animationsEnabled") as? Bool ?? true
         self.constrainZoomedWindows = defaults.object(forKey: "constrainZoomedWindows") as? Bool ?? false
         self.translucentBar = defaults.object(forKey: "translucentBar") as? Bool ?? !NSWorkspace.shared.accessibilityDisplayShouldReduceTransparency
         self.backgroundTheme = BackgroundTheme(rawValue: defaults.string(forKey: "backgroundTheme") ?? "") ?? .system

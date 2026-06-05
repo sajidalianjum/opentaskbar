@@ -84,6 +84,45 @@ final class WindowManager {
                 SettingsWindowController.shared.showWindow()
             }
         }
+
+        MenuItemActions.shared.onForceQuitApp = { bundleID in
+            guard let app = NSWorkspace.shared.runningApplications.first(where: { $0.bundleIdentifier == bundleID }) else { return }
+            let appName = app.localizedName ?? bundleID
+            let alert = NSAlert()
+            alert.messageText = "Force Quit \(appName)?"
+            alert.informativeText = "You will lose any unsaved changes. This action cannot be undone."
+            alert.addButton(withTitle: "Force Quit")
+            alert.addButton(withTitle: "Cancel")
+            alert.alertStyle = .critical
+            guard alert.runModal() == .alertFirstButtonReturn else { return }
+            app.forceTerminate()
+        }
+
+        MenuItemActions.shared.onQuitAppsToTheRight = { [weak self] index in
+            guard let self else { return }
+            let ownID = Bundle.main.bundleIdentifier
+            var names: [String] = []
+            var apps: [NSRunningApplication] = []
+            for i in (index + 1)..<self.appGroups.count {
+                let group = self.appGroups[i]
+                guard group.isRunning, let app = group.runningApplication else { continue }
+                guard app.bundleIdentifier != ownID else { continue }
+                guard app.bundleIdentifier != "com.apple.finder" else { continue }
+                names.append(group.localizedName)
+                apps.append(app)
+            }
+            guard !names.isEmpty else { return }
+            let alert = NSAlert()
+            alert.messageText = "Quit Apps to the Right"
+            alert.informativeText = "Do you want to quit the following \(names.count) \(names.count == 1 ? "app" : "apps")?\n\n\(names.joined(separator: "\n"))"
+            alert.addButton(withTitle: "Quit All")
+            alert.addButton(withTitle: "Cancel")
+            alert.alertStyle = .critical
+            guard alert.runModal() == .alertFirstButtonReturn else { return }
+            for app in apps {
+                app.terminate()
+            }
+        }
     }
 
     func start() {
@@ -750,10 +789,30 @@ final class WindowManager {
         if group.isRunning {
             menu.addItem(NSMenuItem.separator())
 
+            let quitMenu = NSMenu()
+            let quitSubItem = NSMenuItem(title: "Quit", action: nil, keyEquivalent: "")
+            quitSubItem.submenu = quitMenu
+            menu.addItem(quitSubItem)
+
             let quitItem = NSMenuItem(title: "Quit \(appName)", action: #selector(MenuItemActions.shared.quitApp(_:)), keyEquivalent: "q")
             quitItem.target = MenuItemActions.shared
             quitItem.representedObject = ["bundleID": group.bundleIdentifier]
-            menu.addItem(quitItem)
+            quitMenu.addItem(quitItem)
+
+            let hasAppsToRight = (index + 1) < appGroups.count && !appGroups[(index + 1)...].allSatisfy { !$0.isRunning }
+            if hasAppsToRight {
+                let quitRightItem = NSMenuItem(title: "Quit Apps to the Right", action: #selector(MenuItemActions.shared.quitAppsToTheRight(_:)), keyEquivalent: "")
+                quitRightItem.target = MenuItemActions.shared
+                quitRightItem.representedObject = ["index": index]
+                quitMenu.addItem(quitRightItem)
+            }
+
+            quitMenu.addItem(NSMenuItem.separator())
+
+            let forceQuitItem = NSMenuItem(title: "Force Quit \(appName)", action: #selector(MenuItemActions.shared.forceQuitApp(_:)), keyEquivalent: "")
+            forceQuitItem.target = MenuItemActions.shared
+            forceQuitItem.representedObject = ["bundleID": group.bundleIdentifier]
+            quitMenu.addItem(forceQuitItem)
         }
 
         return menu
@@ -811,6 +870,8 @@ final class MenuItemActions: NSObject {
     var onQuitAllClosed: (() -> Void)?
     var onQuitAllApps: (() -> Void)?
     var onOpenPreferences: (() -> Void)?
+    var onForceQuitApp: ((String) -> Void)?
+    var onQuitAppsToTheRight: ((Int) -> Void)?
 
     @objc func activateWindow(_ sender: NSMenuItem) {
         guard let info = sender.representedObject as? [String: Int],
@@ -847,6 +908,18 @@ final class MenuItemActions: NSObject {
         for app in runningApps {
             app.terminate()
         }
+    }
+
+    @objc func forceQuitApp(_ sender: NSMenuItem) {
+        guard let info = sender.representedObject as? [String: String],
+              let bundleID = info["bundleID"] else { return }
+        onForceQuitApp?(bundleID)
+    }
+
+    @objc func quitAppsToTheRight(_ sender: NSMenuItem) {
+        guard let info = sender.representedObject as? [String: Int],
+              let index = info["index"] else { return }
+        onQuitAppsToTheRight?(index)
     }
 
     @objc func togglePin(_ sender: NSMenuItem) {

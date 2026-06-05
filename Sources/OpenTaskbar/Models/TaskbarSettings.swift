@@ -13,6 +13,7 @@ final class TaskbarSettings {
         case system
         case dark
         case light
+        case glassmorphism
         case custom
     }
 
@@ -55,15 +56,20 @@ final class TaskbarSettings {
         didSet { UserDefaults.standard.set(showStartButton, forKey: "showStartButton"); postChange() }
     }
 
-    @Published var backgroundTheme: BackgroundTheme {
-        didSet {
-            UserDefaults.standard.set(backgroundTheme.rawValue, forKey: "backgroundTheme")
-            if backgroundTheme == .system {
-                translucentBar = !NSWorkspace.shared.accessibilityDisplayShouldReduceTransparency
+        @Published var backgroundTheme: BackgroundTheme {
+            didSet {
+                UserDefaults.standard.set(backgroundTheme.rawValue, forKey: "backgroundTheme")
+                switch backgroundTheme {
+                case .system:
+                    translucentBar = !NSWorkspace.shared.accessibilityDisplayShouldReduceTransparency
+                case .glassmorphism:
+                    translucentBar = true
+                default:
+                    break
+                }
+                postChange()
             }
-            postChange()
         }
-    }
 
     @Published var quitOnLastWindowClose: Bool {
         didSet { UserDefaults.standard.set(quitOnLastWindowClose, forKey: "quitOnLastWindowClose"); postChange() }
@@ -171,6 +177,10 @@ final class TaskbarSettings {
         ) { [weak self] _ in
             guard let self, self.backgroundTheme == .system else { return }
             self.translucentBar = !NSWorkspace.shared.accessibilityDisplayShouldReduceTransparency
+        }
+
+        if backgroundTheme == .glassmorphism {
+            translucentBar = true
         }
     }
 }

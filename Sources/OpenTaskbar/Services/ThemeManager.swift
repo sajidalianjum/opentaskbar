@@ -8,7 +8,8 @@ final class ThemeManager {
         solidView: inout NSView?,
         parent: NSView,
         material: NSVisualEffectView.Material = .sidebar,
-        cornerRadius: CGFloat = 0
+        cornerRadius: CGFloat = 0,
+        shadowView: inout NSView?
     ) {
         let settings = TaskbarSettings.shared
 
@@ -18,25 +19,32 @@ final class ThemeManager {
             effectView.blendingMode = .behindWindow
             effectView.state = .active
             effectView.layer?.backgroundColor = nil
+            solidView?.isHidden = true
 
             switch settings.backgroundTheme {
             case .system:
-                solidView?.isHidden = true
+                hideShadow(&shadowView)
                 effectView.appearance = nil
                 parent.appearance = nil
 
             case .dark:
-                solidView?.isHidden = true
+                hideShadow(&shadowView)
                 effectView.appearance = NSAppearance(named: .darkAqua)
                 parent.appearance = NSAppearance(named: .darkAqua)
 
             case .light:
-                solidView?.isHidden = true
+                hideShadow(&shadowView)
                 effectView.appearance = NSAppearance(named: .aqua)
                 parent.appearance = NSAppearance(named: .aqua)
 
+            case .glassmorphism:
+                effectView.material = .hudWindow
+                effectView.appearance = nil
+                parent.appearance = nil
+                showShadow(on: &shadowView, parent: parent, effectView: effectView, cornerRadius: cornerRadius)
+
             case .custom:
-                solidView?.isHidden = true
+                hideShadow(&shadowView)
                 let color = settings.customBackgroundColor
                 effectView.layer?.backgroundColor = color.withAlphaComponent(0.35).cgColor
                 effectView.appearance = Self.appearance(for: color)
@@ -44,6 +52,7 @@ final class ThemeManager {
             }
         } else {
             effectView.isHidden = true
+            hideShadow(&shadowView)
 
             let opaqueColor: NSColor
             switch settings.backgroundTheme {
@@ -57,6 +66,10 @@ final class ThemeManager {
             case .light:
                 opaqueColor = NSColor(calibratedWhite: 0.92, alpha: 1.0)
                 parent.appearance = NSAppearance(named: .aqua)
+            case .glassmorphism:
+                let isDark = parent.effectiveAppearance.bestMatch(from: [.darkAqua, .aqua]) == .darkAqua
+                opaqueColor = isDark ? NSColor(calibratedWhite: 0.08, alpha: 1.0) : NSColor(calibratedWhite: 0.92, alpha: 1.0)
+                parent.appearance = nil
             case .custom:
                 opaqueColor = settings.customBackgroundColor
                 parent.appearance = Self.appearance(for: opaqueColor)
@@ -80,6 +93,36 @@ final class ThemeManager {
             solidView?.layer?.backgroundColor = opaqueColor.cgColor
             solidView?.layer?.cornerRadius = cornerRadius
         }
+    }
+
+    private static func hideShadow(_ shadowView: inout NSView?) {
+        shadowView?.isHidden = true
+        shadowView?.layer?.shadowOpacity = 0
+    }
+
+    private static func showShadow(on shadowView: inout NSView?, parent: NSView, effectView: NSView, cornerRadius: CGFloat) {
+        if shadowView == nil {
+            let shadow = NSView()
+            shadow.wantsLayer = true
+            shadow.translatesAutoresizingMaskIntoConstraints = false
+            shadow.layer?.masksToBounds = false
+            parent.addSubview(shadow, positioned: .below, relativeTo: effectView)
+            NSLayoutConstraint.activate([
+                shadow.leadingAnchor.constraint(equalTo: effectView.leadingAnchor),
+                shadow.trailingAnchor.constraint(equalTo: effectView.trailingAnchor),
+                shadow.topAnchor.constraint(equalTo: effectView.topAnchor),
+                shadow.bottomAnchor.constraint(equalTo: effectView.bottomAnchor),
+            ])
+            shadowView = shadow
+        }
+        guard let shadow = shadowView else { return }
+        shadow.isHidden = false
+        shadow.layer?.backgroundColor = nil
+        shadow.layer?.cornerRadius = cornerRadius
+        shadow.layer?.shadowOpacity = 0.2
+        shadow.layer?.shadowRadius = 6
+        shadow.layer?.shadowOffset = NSSize(width: 0, height: -4)
+        shadow.layer?.shadowColor = NSColor.black.cgColor
     }
 
     static func appearance(for color: NSColor) -> NSAppearance {

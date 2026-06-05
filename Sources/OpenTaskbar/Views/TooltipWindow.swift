@@ -72,6 +72,8 @@ final class TooltipWindow: NSWindow {
             appearance = NSAppearance(named: .darkAqua)
         case .light:
             appearance = NSAppearance(named: .aqua)
+        case .glassmorphism:
+            appearance = nil
         case .custom:
             appearance = ThemeManager.appearance(for: settings.customBackgroundColor)
         }

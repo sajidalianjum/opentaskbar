@@ -8,6 +8,7 @@ final class TaskbarContentView: NSView {
     private var appStackView: NSStackView!
     private var contentStackView: NSStackView!
     private var solidBackgroundView: NSView?
+    private var shadowBackgroundView: NSView?
 
     private var startMenuButton: StartMenuButton!
     private var startSeparator: NSView!
@@ -212,7 +213,8 @@ final class TaskbarContentView: NSView {
             solidView: &solidBackgroundView,
             parent: self,
             material: .sidebar,
-            cornerRadius: backgroundView.layer?.cornerRadius ?? 0
+            cornerRadius: backgroundView.layer?.cornerRadius ?? 0,
+            shadowView: &shadowBackgroundView
         )
     }
 

@@ -203,12 +203,14 @@ final class SettingsWindowController {
         themeSelect.addItem(withTitle: "System")
         themeSelect.addItem(withTitle: "Dark")
         themeSelect.addItem(withTitle: "Light")
+        themeSelect.addItem(withTitle: "Glassmorphism")
         themeSelect.addItem(withTitle: "Custom")
         switch settings.backgroundTheme {
         case .system: themeSelect.selectItem(at: 0)
         case .dark: themeSelect.selectItem(at: 1)
         case .light: themeSelect.selectItem(at: 2)
-        case .custom: themeSelect.selectItem(at: 3)
+        case .glassmorphism: themeSelect.selectItem(at: 3)
+        case .custom: themeSelect.selectItem(at: 4)
         }
         themeSelect.target = self
         themeSelect.action = #selector(themeChanged(_:))
@@ -411,7 +413,8 @@ final class SettingsWindowController {
         case 0: selected = .system
         case 1: selected = .dark
         case 2: selected = .light
-        case 3: selected = .custom
+        case 3: selected = .glassmorphism
+        case 4: selected = .custom
         default: selected = .system
         }
         settings.backgroundTheme = selected
@@ -433,7 +436,13 @@ final class SettingsWindowController {
 
     private func updateReduceTransparencyUI() {
         let reduced = NSWorkspace.shared.accessibilityDisplayShouldReduceTransparency
-        if reduced {
+        let isGlass = settings.backgroundTheme == .glassmorphism
+        if reduced && isGlass {
+            reduceLabel?.stringValue = "\"Reduce Transparency\" is on — glassmorphism requires translucency"
+            reduceLabelHeight?.constant = 14
+            reduceLabel?.isHidden = false
+            translucentCheckbox?.isEnabled = false
+        } else if reduced {
             reduceLabel?.stringValue = "\"Reduce Transparency\" is on — translucent effect unavailable"
             reduceLabelHeight?.constant = 14
             reduceLabel?.isHidden = false
@@ -442,7 +451,7 @@ final class SettingsWindowController {
             reduceLabel?.stringValue = ""
             reduceLabelHeight?.constant = 0
             reduceLabel?.isHidden = true
-            translucentCheckbox?.isEnabled = settings.backgroundTheme != .system
+            translucentCheckbox?.isEnabled = settings.backgroundTheme != .system && !isGlass
         }
     }
 

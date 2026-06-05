@@ -169,12 +169,14 @@ final class ThumbnailPopover: NSWindow {
     }
 
     private func applyTheme() {
+        var dummyShadow: NSView? = nil
         ThemeManager.apply(
             to: visualEffect,
             solidView: &solidBackgroundView,
             parent: contentView!,
             material: .popover,
-            cornerRadius: contentView!.layer?.cornerRadius ?? 0
+            cornerRadius: contentView!.layer?.cornerRadius ?? 0,
+            shadowView: &dummyShadow
         )
     }
 

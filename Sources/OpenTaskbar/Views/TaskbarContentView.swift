@@ -66,7 +66,6 @@ final class TaskbarContentView: NSView {
         insertionIndicator.layer?.cornerRadius = 1.5
         insertionIndicator.isHidden = true
         insertionIndicator.translatesAutoresizingMaskIntoConstraints = false
-        addSubview(insertionIndicator)
 
         startMenuButton = StartMenuButton()
         startMenuButton.target = self
@@ -100,6 +99,7 @@ final class TaskbarContentView: NSView {
 
             addSubview(backgroundView)
             addSubview(contentStackView)
+            addSubview(insertionIndicator)
 
             backgroundView.translatesAutoresizingMaskIntoConstraints = false
             contentStackView.translatesAutoresizingMaskIntoConstraints = false
@@ -164,6 +164,7 @@ final class TaskbarContentView: NSView {
 
             addSubview(backgroundView)
             addSubview(contentStackView)
+            addSubview(insertionIndicator)
 
             backgroundView.translatesAutoresizingMaskIntoConstraints = false
             contentStackView.translatesAutoresizingMaskIntoConstraints = false

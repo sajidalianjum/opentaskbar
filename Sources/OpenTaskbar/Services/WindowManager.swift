@@ -728,6 +728,11 @@ final class WindowManager {
             }
         }
 
+        for i in appGroups.indices {
+            appGroups[i].insertionOrder = i
+        }
+        nextInsertionOrder = appGroups.count
+
         notifyChanged()
     }
 }

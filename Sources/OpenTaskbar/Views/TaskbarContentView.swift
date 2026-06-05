@@ -453,6 +453,16 @@ final class TaskbarContentView: NSView {
         let menu = NSMenu()
         menu.autoenablesItems = false
 
+        let showDesktop = NSMenuItem(title: "Show Desktop", action: #selector(MenuItemActions.shared.showDesktop(_:)), keyEquivalent: "")
+        showDesktop.target = MenuItemActions.shared
+        menu.addItem(showDesktop)
+
+        let activityMonitor = NSMenuItem(title: "Activity Monitor", action: #selector(MenuItemActions.shared.openActivityMonitor(_:)), keyEquivalent: "")
+        activityMonitor.target = MenuItemActions.shared
+        menu.addItem(activityMonitor)
+
+        menu.addItem(NSMenuItem.separator())
+
         let quitClosed = NSMenuItem(title: "Quit All Closed Apps", action: #selector(MenuItemActions.shared.quitAllClosed(_:)), keyEquivalent: "")
         quitClosed.target = MenuItemActions.shared
         menu.addItem(quitClosed)

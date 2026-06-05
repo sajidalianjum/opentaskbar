@@ -85,6 +85,22 @@ final class WindowManager {
             }
         }
 
+        MenuItemActions.shared.onShowDesktop = {
+            guard let source = CGEventSource(stateID: .hidSystemState) else { return }
+            let f11Down = CGEvent(keyboardEventSource: source, virtualKey: 0x67, keyDown: true)
+            let f11Up = CGEvent(keyboardEventSource: source, virtualKey: 0x67, keyDown: false)
+            f11Down?.post(tap: .cgSessionEventTap)
+            f11Up?.post(tap: .cgSessionEventTap)
+        }
+
+        MenuItemActions.shared.onOpenActivityMonitor = {
+            if let appURL = NSWorkspace.shared.urlForApplication(withBundleIdentifier: "com.apple.ActivityMonitor") {
+                let config = NSWorkspace.OpenConfiguration()
+                config.activates = true
+                NSWorkspace.shared.open(appURL, configuration: config)
+            }
+        }
+
         MenuItemActions.shared.onForceQuitApp = { bundleID in
             guard let app = NSWorkspace.shared.runningApplications.first(where: { $0.bundleIdentifier == bundleID }) else { return }
             let appName = app.localizedName ?? bundleID
@@ -872,6 +888,8 @@ final class MenuItemActions: NSObject {
     var onOpenPreferences: (() -> Void)?
     var onForceQuitApp: ((String) -> Void)?
     var onQuitAppsToTheRight: ((Int) -> Void)?
+    var onShowDesktop: (() -> Void)?
+    var onOpenActivityMonitor: (() -> Void)?
 
     @objc func activateWindow(_ sender: NSMenuItem) {
         guard let info = sender.representedObject as? [String: Int],
@@ -938,6 +956,14 @@ final class MenuItemActions: NSObject {
 
     @objc func openPreferences(_ sender: NSMenuItem) {
         onOpenPreferences?()
+    }
+
+    @objc func showDesktop(_ sender: NSMenuItem) {
+        onShowDesktop?()
+    }
+
+    @objc func openActivityMonitor(_ sender: NSMenuItem) {
+        onOpenActivityMonitor?()
     }
 
     @objc func newFinderWindow(_ sender: NSMenuItem) {

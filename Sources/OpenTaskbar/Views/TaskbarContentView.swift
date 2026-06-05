@@ -18,6 +18,11 @@ final class TaskbarContentView: NSView {
     private var fileDragHoveredIndex: Int?
     private var springLoadTimer: Timer?
 
+    private var overflowChevronButton: OverflowChevronButton?
+    private var overflowButtonWidthConstraint: NSLayoutConstraint?
+    private let overflowPopover = OverflowPopover()
+    private var overflowGroups: [AppGroup] = []
+
     private var activeConstraints: [NSLayoutConstraint] = []
 
     private var taskbarHeight: CGFloat {
@@ -42,6 +47,8 @@ final class TaskbarContentView: NSView {
         startMenuButton = nil
         startSeparator = nil
         appButtons.removeAll()
+        overflowChevronButton = nil
+        overflowButtonWidthConstraint = nil
         solidBackgroundView = nil
 
         backgroundView = NSVisualEffectView(frame: .zero)
@@ -214,14 +221,19 @@ final class TaskbarContentView: NSView {
         let showNames = settings.showAppNames
         appStackView.spacing = CGFloat(settings.barSpacing)
 
+        let availableWidth = computeAvailableWidthForAppStack()
+        let (visibleGroups, hiddenGroups, buttonWidth) = computeButtonLayout(groups: groups, availableWidth: availableWidth, showNames: showNames)
+
+        let visibleIDs = visibleGroups.map(\.bundleIdentifier)
         let existingIDs = appButtons.map(\.bundleIdentifier)
-        let newIDs = groups.map(\.bundleIdentifier)
+
+        overflowGroups = hiddenGroups
 
         let anim = settings.animationsEnabled
 
-        if existingIDs != newIDs {
+        if existingIDs != visibleIDs {
             let oldSet = Set(existingIDs)
-            let newSet = Set(newIDs)
+            let newSet = Set(visibleIDs)
             let removedIDs = oldSet.subtracting(newSet)
 
             if !removedIDs.isEmpty && anim {
@@ -246,31 +258,142 @@ final class TaskbarContentView: NSView {
 
             appStackView.arrangedSubviews.forEach { $0.removeFromSuperview() }
             appButtons.removeAll()
+            overflowChevronButton?.removeFromSuperview()
+            overflowChevronButton = nil
 
-            for (index, group) in groups.enumerated() {
+            for (index, group) in visibleGroups.enumerated() {
+                let globalIndex = groups.firstIndex(where: { $0.bundleIdentifier == group.bundleIdentifier }) ?? index
                 let isNew = !oldSet.contains(group.bundleIdentifier)
-                let button = AppButtonView(appGroup: group, index: index, showName: showNames, animateEntry: isNew)
-                configureButton(button, at: index)
+                let button = AppButtonView(appGroup: group, index: globalIndex, showName: showNames, animateEntry: isNew)
+                configureButton(button, at: globalIndex)
                 appButtons.append(button)
                 appStackView.addArrangedSubview(button)
 
-                let btnWidth: CGFloat = showNames ? 140 : CGFloat(settings.iconSize) + 16
-                button.widthAnchor.constraint(equalToConstant: btnWidth).isActive = true
+                button.widthAnchor.constraint(equalToConstant: buttonWidth).isActive = true
                 button.heightAnchor.constraint(equalToConstant: max(taskbarHeight - 4, 1)).isActive = true
             }
+
+            if !overflowGroups.isEmpty {
+                addOverflowButton(overflowCount: overflowGroups.count)
+            }
         } else {
-            for (index, group) in groups.enumerated() {
+            for (index, group) in visibleGroups.enumerated() {
                 if index < appButtons.count {
                     let button = appButtons[index]
                     button.updateAppGroupState(group)
-                    button.index = index
+                    let globalIndex = groups.firstIndex(where: { $0.bundleIdentifier == group.bundleIdentifier }) ?? index
+                    button.index = globalIndex
                 }
+            }
+
+            if let chevron = overflowChevronButton {
+                if overflowGroups.isEmpty {
+                    chevron.removeFromSuperview()
+                    overflowChevronButton = nil
+                } else {
+                    chevron.overflowCount = overflowGroups.count
+                }
+            } else if !overflowGroups.isEmpty {
+                addOverflowButton(overflowCount: overflowGroups.count)
             }
         }
 
         let showStart = settings.showStartButton
         startMenuButton?.isHidden = !showStart
         startSeparator?.isHidden = !showStart
+    }
+
+    private func computeAvailableWidthForAppStack() -> CGFloat {
+        let totalWidth = bounds.width > 0 ? bounds.width : (window?.screen?.frame.width ?? NSScreen.main?.frame.width ?? 800)
+        let horizontalPadding: CGFloat = 16
+        let startSectionWidth: CGFloat
+        if settings.showStartButton {
+            startSectionWidth = 36 + 1 + 16
+        } else {
+            startSectionWidth = 0
+        }
+        return max(100, totalWidth - horizontalPadding - startSectionWidth)
+    }
+
+    private func computeButtonLayout(groups: [AppGroup], availableWidth: CGFloat, showNames: Bool) -> (visible: [AppGroup], hidden: [AppGroup], buttonWidth: CGFloat) {
+        let totalCount = groups.count
+        guard totalCount > 0 else { return ([], [], 0) }
+
+        let idealBtnWidth: CGFloat = showNames ? 140 : CGFloat(settings.iconSize) + 16
+        let minBtnWidth: CGFloat = showNames ? 60 : CGFloat(settings.iconSize) + 8
+        let overflowBtnWidth: CGFloat = 32
+        let spacing = CGFloat(settings.barSpacing)
+
+        let totalMinWidth = CGFloat(totalCount) * minBtnWidth + CGFloat(max(0, totalCount - 1)) * spacing
+
+        if totalMinWidth <= availableWidth {
+            let totalSpacing = CGFloat(max(0, totalCount - 1)) * spacing
+            let availableForButtons = availableWidth - totalSpacing
+            let fairWidth = max(minBtnWidth, min(idealBtnWidth, availableForButtons / CGFloat(totalCount)))
+            return (groups, [], fairWidth)
+        }
+
+        let maxVisible = max(1, Int((availableWidth - overflowBtnWidth) / (minBtnWidth + spacing)))
+        let visibleCount = min(maxVisible, totalCount - 1)
+
+        let visibleGroups = Array(groups.prefix(visibleCount))
+        let hiddenGroups = Array(groups.suffix(from: visibleCount))
+
+        let totalSpacing = CGFloat(visibleCount) * spacing
+        let availableForButtons = availableWidth - overflowBtnWidth - totalSpacing
+        let computedWidth = max(minBtnWidth, availableForButtons / CGFloat(max(visibleCount, 1)))
+
+        return (visibleGroups, hiddenGroups, computedWidth)
+    }
+
+    private func addOverflowButton(overflowCount: Int) {
+        let chevron = OverflowChevronButton()
+        chevron.translatesAutoresizingMaskIntoConstraints = false
+        chevron.overflowCount = overflowCount
+        chevron.target = self
+        chevron.action = #selector(overflowButtonClicked(_:))
+        appStackView.addArrangedSubview(chevron)
+        overflowChevronButton = chevron
+
+        let btnHeight = max(taskbarHeight - 4, 1)
+        overflowButtonWidthConstraint?.isActive = false
+        let widthConst = chevron.widthAnchor.constraint(equalToConstant: 32)
+        widthConst.isActive = true
+        overflowButtonWidthConstraint = widthConst
+        chevron.heightAnchor.constraint(equalToConstant: btnHeight).isActive = true
+    }
+
+    @objc private func overflowButtonClicked(_ sender: OverflowChevronButton) {
+        if overflowPopover.isVisible {
+            overflowPopover.hide()
+            return
+        }
+
+        guard !overflowGroups.isEmpty, let screen = window?.screen ?? NSScreen.main else { return }
+
+        let buttonFrameInScreen = sender.convert(sender.bounds, to: nil)
+        let anchorPoint: NSPoint
+        if let windowFrame = window?.frame {
+            anchorPoint = NSPoint(
+                x: windowFrame.origin.x + buttonFrameInScreen.midX,
+                y: windowFrame.origin.y + buttonFrameInScreen.maxY
+            )
+        } else {
+            anchorPoint = NSPoint(x: buttonFrameInScreen.midX, y: buttonFrameInScreen.maxY)
+        }
+
+        let capturedOverflowGroups = overflowGroups
+        let fullGroups = windowManager.appGroups
+        let firstOverflowIndex = fullGroups.firstIndex(where: { $0.bundleIdentifier == capturedOverflowGroups.first?.bundleIdentifier }) ?? 0
+
+        overflowPopover.onAppActivated = { [weak self] overflowIndex in
+            guard let self else { return }
+            let globalIndex = firstOverflowIndex + overflowIndex
+            self.windowManager.activateApp(at: globalIndex)
+            self.overflowPopover.hide()
+        }
+
+        overflowPopover.show(groups: capturedOverflowGroups, anchorPoint: anchorPoint, screen: screen)
     }
 
     private func configureButton(_ button: AppButtonView, at index: Int) {
@@ -482,6 +605,7 @@ final class TaskbarContentView: NSView {
     }
 
     deinit {
+        overflowPopover.hide()
         NotificationCenter.default.removeObserver(self)
     }
 }

@@ -219,61 +219,7 @@ final class AppButtonView: NSView {
         session.animatesToStartingPositionsOnCancelOrFail = true
     }
 
-    // ─── Minimize / Restore Bounce ──────────────────────────────────
 
-    private func playMinimizeBounce() {
-        guard animEnabled else { return }
-
-        let bounce = CAKeyframeAnimation(keyPath: "transform.translation.y")
-        bounce.values = [0, 12, -4, 0]
-        bounce.keyTimes = [0, 0.25, 0.5, 1.0]
-        bounce.timingFunctions = [
-            CAMediaTimingFunction(name: .easeIn),
-            CAMediaTimingFunction(name: .easeOut),
-            CAMediaTimingFunction(name: .easeIn),
-        ]
-        bounce.duration = 0.667
-
-        let squash = CAKeyframeAnimation(keyPath: "transform.scale.y")
-        squash.values = [1.0, 0.85, 1.02, 1.0]
-        squash.keyTimes = [0, 0.25, 0.5, 1.0]
-        squash.timingFunctions = [
-            CAMediaTimingFunction(name: .easeIn),
-            CAMediaTimingFunction(name: .easeOut),
-            CAMediaTimingFunction(name: .easeIn),
-        ]
-        squash.duration = 0.667
-
-        layer?.add(bounce, forKey: "minimizeBounce")
-        layer?.add(squash, forKey: "minimizeSquash")
-    }
-
-    private func playRestoreBounce() {
-        guard animEnabled else { return }
-
-        let bounce = CAKeyframeAnimation(keyPath: "transform.translation.y")
-        bounce.values = [0, -12, 4, 0]
-        bounce.keyTimes = [0, 0.25, 0.5, 1.0]
-        bounce.timingFunctions = [
-            CAMediaTimingFunction(name: .easeIn),
-            CAMediaTimingFunction(name: .easeOut),
-            CAMediaTimingFunction(name: .easeIn),
-        ]
-        bounce.duration = 0.667
-
-        let squash = CAKeyframeAnimation(keyPath: "transform.scale.y")
-        squash.values = [1.0, 1.15, 0.98, 1.0]
-        squash.keyTimes = [0, 0.25, 0.5, 1.0]
-        squash.timingFunctions = [
-            CAMediaTimingFunction(name: .easeIn),
-            CAMediaTimingFunction(name: .easeOut),
-            CAMediaTimingFunction(name: .easeIn),
-        ]
-        squash.duration = 0.667
-
-        layer?.add(bounce, forKey: "restoreBounce")
-        layer?.add(squash, forKey: "restoreSquash")
-    }
 
     // ─── In-Place State Update ──────────────────────────────────────
 
@@ -325,12 +271,7 @@ final class AppButtonView: NSView {
             activeIndicator.layer?.cornerRadius = cr
         }
 
-        if !newlyMinimized.isEmpty {
-            playMinimizeBounce()
-        }
-        if !newlyUnminimized.isEmpty {
-            playRestoreBounce()
-        }
+
 
         if showName, let label = nameLabel {
             label.textColor = newGroup.isActive ? .labelColor : .secondaryLabelColor

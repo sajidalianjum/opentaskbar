@@ -7,7 +7,7 @@ final class WindowManager {
     private let workspaceMonitor = WorkspaceMonitor()
     private(set) var axObserverManager: AXObserverManager
     private var pollTimer: Timer?
-    private let pollInterval: TimeInterval = 1.0
+    private let pollInterval: TimeInterval = 0.5
     private var nextInsertionOrder = 0
 
     private var lastFocusedWindow: [String: CGWindowID] = [:]
@@ -117,15 +117,39 @@ final class WindowManager {
             return
         }
 
-        for group in appGroups {
-            guard let pid = group.runningApplication?.processIdentifier else { continue }
+        var didChange = false
+        for i in appGroups.indices {
+            guard let pid = appGroups[i].runningApplication?.processIdentifier else { continue }
             let cgIDs = Set(cgWindows.filter { $0.pid == pid }.map(\.windowID))
-            for window in group.windows where !window.isMinimized {
-                if !cgIDs.contains(window.windowID) {
-                    refreshAppGroups()
-                    return
+            var removedIndices: [Int] = []
+            for j in appGroups[i].windows.indices {
+                let window = appGroups[i].windows[j]
+                if window.isMinimized && cgIDs.contains(window.windowID) {
+                    appGroups[i].windows[j].isMinimized = false
+                    didChange = true
+                } else if !window.isMinimized && !cgIDs.contains(window.windowID) {
+                    let element = accessibilityService.windowElement(for: window.windowID, pid: pid)
+                    var minimized: CFTypeRef?
+                    if let element,
+                       AXUIElementCopyAttributeValue(element, kAXMinimizedAttribute as CFString, &minimized) == .success,
+                       (minimized as? Bool) == true
+                    {
+                        appGroups[i].windows[j].isMinimized = true
+                    } else {
+                        removedIndices.append(j)
+                    }
+                    didChange = true
                 }
             }
+            for j in removedIndices.reversed() {
+                appGroups[i].windows.remove(at: j)
+            }
+        }
+
+        appGroups.removeAll { $0.windows.isEmpty && !TaskbarSettings.shared.isPinned($0.bundleIdentifier) }
+
+        if didChange {
+            notifyChanged()
         }
     }
 

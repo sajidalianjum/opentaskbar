@@ -100,21 +100,11 @@ final class AccessibilityService {
     }
 
     func raiseWindow(_ element: AXUIElement, app: NSRunningApplication) {
-        let appElement = AXUIElementCreateApplication(app.processIdentifier)
-
-        AXUIElementSetAttributeValue(appElement, kAXFocusedWindowAttribute as CFString, element)
-
-        AXUIElementSetAttributeValue(element, kAXMainAttribute as CFString, kCFBooleanTrue)
-        AXUIElementSetAttributeValue(element, kAXFocusedAttribute as CFString, kCFBooleanTrue)
-        AXUIElementPerformAction(element, kAXRaiseAction as CFString)
-
         app.activate()
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
-            AXUIElementSetAttributeValue(element, kAXFocusedAttribute as CFString, kCFBooleanTrue)
-        }
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
-            app.activate()
-        }
+
+        let appElement = AXUIElementCreateApplication(app.processIdentifier)
+        AXUIElementSetAttributeValue(appElement, kAXFocusedWindowAttribute as CFString, element)
+        AXUIElementPerformAction(element, kAXRaiseAction as CFString)
     }
 
     func minimizeWindow(_ element: AXUIElement) {

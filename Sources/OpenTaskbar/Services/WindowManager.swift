@@ -172,7 +172,7 @@ final class WindowManager {
                 icon: app.icon ?? NSImage(),
                 runningApplication: app,
                 windows: mergedWindows.isEmpty && appWindows.isEmpty ? [] : mergedWindows,
-                isActive: app.isActive,
+                isActive: app.processIdentifier == NSWorkspace.shared.frontmostApplication?.processIdentifier,
                 insertionOrder: order
             )
             updatedGroups.append(group)
@@ -459,8 +459,10 @@ final class WindowManager {
                     let element = accessibilityService.windowElement(for: window.windowID, pid: app.processIdentifier)
                     if let element {
                         accessibilityService.unminimizeWindow(element)
+                        app.activate()
                     }
                 }
+                refreshAppGroups()
                 return
             }
         }
@@ -470,6 +472,9 @@ final class WindowManager {
                 let element = accessibilityService.windowElement(for: window.windowID, pid: app.processIdentifier)
                 if let element {
                     accessibilityService.unminimizeWindow(element)
+                    accessibilityService.raiseWindow(element, app: app)
+                } else {
+                    app.activate()
                 }
             } else {
                 let element = accessibilityService.windowElement(for: window.windowID, pid: app.processIdentifier)
@@ -480,6 +485,7 @@ final class WindowManager {
                 }
             }
             recordWindowFocus(bundleIdentifier: group.bundleIdentifier, windowID: window.windowID)
+            refreshAppGroups()
         } else {
             app.activate()
         }

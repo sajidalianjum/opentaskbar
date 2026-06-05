@@ -99,7 +99,7 @@ final class AppButtonView: NSView {
             activeIndicator.layer?.cornerRadius = 1.5
             activeIndicator.layer?.backgroundColor = NSColor.controlAccentColor.withAlphaComponent(0.7).cgColor
             activeIndicator.frame.size = NSSize(width: 16, height: 4)
-        } else if !appGroup.windows.isEmpty && appGroup.isActive {
+        } else if appGroup.windows.contains(where: { !$0.isMinimized }) && appGroup.isActive {
             activeIndicator.layer?.cornerRadius = 1.5
             activeIndicator.layer?.backgroundColor = NSColor.controlAccentColor.cgColor
             activeIndicator.frame.size = NSSize(width: 16, height: 3)
@@ -125,7 +125,7 @@ final class AppButtonView: NSView {
     private func updateIndicatorColors() {
         if appGroup.isLaunching {
             activeIndicator.layer?.backgroundColor = NSColor.controlAccentColor.withAlphaComponent(0.7).cgColor
-        } else if !appGroup.windows.isEmpty && appGroup.isActive {
+        } else if appGroup.windows.contains(where: { !$0.isMinimized }) && appGroup.isActive {
             activeIndicator.layer?.backgroundColor = NSColor.controlAccentColor.cgColor
         } else if appGroup.isRunning && !appGroup.windows.isEmpty {
             activeIndicator.layer?.backgroundColor = isDarkAppearance
@@ -300,18 +300,18 @@ final class AppButtonView: NSView {
 
         if newGroup.isLaunching && !didAnimateEntry {
             playEntryAnimation()
-        } else if activeChanged || runningChanged || windowsChanged {
+        } else if activeChanged || runningChanged || windowsChanged || !newlyMinimized.isEmpty || !newlyUnminimized.isEmpty {
             updateIndicatorColors()
             activeIndicator.isHidden = !newGroup.isRunning && !newGroup.isLaunching
         }
 
-        if activeChanged || runningChanged {
+        if activeChanged || runningChanged || !newlyMinimized.isEmpty || !newlyUnminimized.isEmpty {
             let w: CGFloat
             let h: CGFloat
             let cr: CGFloat
             if newGroup.isLaunching {
                 w = 16; h = 4; cr = 1.5
-            } else if !newGroup.windows.isEmpty && newGroup.isActive {
+            } else if newGroup.windows.contains(where: { !$0.isMinimized }) && newGroup.isActive {
                 w = 16; h = 3; cr = 1.5
             } else if newGroup.isRunning && !newGroup.windows.isEmpty {
                 w = 6; h = 3; cr = 1.5
@@ -484,7 +484,7 @@ final class AppButtonView: NSView {
         if appGroup.isLaunching {
             indicatorWidth = 16
             indicatorHeight = 4
-        } else if !appGroup.windows.isEmpty && appGroup.isActive {
+        } else if appGroup.windows.contains(where: { !$0.isMinimized }) && appGroup.isActive {
             indicatorWidth = 16
             indicatorHeight = 3
         } else if appGroup.isRunning && appGroup.windows.isEmpty {

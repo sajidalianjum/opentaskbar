@@ -605,8 +605,16 @@ final class WindowManager {
         let group = appGroups[index]
 
         if group.bundleIdentifier == "com.apple.finder" && group.windows.isEmpty {
-            Task {
-                NSWorkspace.shared.open(URL(fileURLWithPath: NSHomeDirectory()))
+            let script = """
+            tell application "Finder"
+                activate
+                make new Finder window
+            end tell
+            """
+            var error: NSDictionary?
+            NSAppleScript(source: script)?.executeAndReturnError(&error)
+            if let error {
+                print("Failed to create new Finder window: \(error)")
             }
             return
         }
@@ -983,7 +991,17 @@ final class MenuItemActions: NSObject {
     @objc func openFolder(_ sender: NSMenuItem) {
         guard let info = sender.representedObject as? [String: String],
               let path = info["path"] else { return }
-        NSWorkspace.shared.selectFile(nil, inFileViewerRootedAtPath: path)
+        let script = """
+        tell application "Finder"
+            activate
+            open POSIX file "\(path)"
+        end tell
+        """
+        var error: NSDictionary?
+        NSAppleScript(source: script)?.executeAndReturnError(&error)
+        if let error {
+            print("Failed to open folder in Finder: \(error)")
+        }
     }
 
     @objc func emptyTrash(_ sender: NSMenuItem) {

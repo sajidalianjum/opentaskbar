@@ -71,11 +71,11 @@ final class WindowManager {
             self?.updateActiveStates()
         }
 
-        axObserverManager.onWindowCreated = { [weak self] (_: pid_t, _: AXUIElement) in
-            self?.refreshAppGroups()
+        axObserverManager.onWindowCreated = { [weak self] (pid, element) in
+            self?.handleWindowCreated(pid: pid, element: element)
         }
-        axObserverManager.onWindowDestroyed = { [weak self] (_: pid_t, _: AXUIElement) in
-            self?.refreshAppGroups()
+        axObserverManager.onWindowDestroyed = { [weak self] (pid, element) in
+            self?.handleWindowDestroyed(pid: pid, element: element)
         }
         axObserverManager.onTitleChanged = { [weak self] (_: pid_t, _: AXUIElement) in
             self?.titleChangeWorkItem?.cancel()
@@ -83,11 +83,11 @@ final class WindowManager {
             self?.titleChangeWorkItem = work
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.15, execute: work)
         }
-        axObserverManager.onWindowMinimized = { [weak self] (_: pid_t, _: AXUIElement) in
-            self?.refreshAppGroups()
+        axObserverManager.onWindowMinimized = { [weak self] (pid, element) in
+            self?.handleWindowMinimized(pid: pid, element: element)
         }
-        axObserverManager.onWindowUnminimized = { [weak self] (_: pid_t, _: AXUIElement) in
-            self?.refreshAppGroups()
+        axObserverManager.onWindowUnminimized = { [weak self] (pid, element) in
+            self?.handleWindowUnminimized(pid: pid, element: element)
         }
 
         TaskbarSettings.shared.$showAppNames
@@ -107,43 +107,64 @@ final class WindowManager {
 
     private func pollWindows() {
         let cgWindows = CGWindowExtensions.eligibleWindows()
-        var changed = false
-
-        for i in appGroups.indices {
-            let group = appGroups[i]
-            let currentIDs = Set(group.windows.map(\.windowID))
-            let pidWindows = cgWindows.filter { $0.pid == group.runningApplication?.processIdentifier }
-            let newIDs = Set(pidWindows.map(\.windowID))
-
-            if currentIDs != newIDs {
-                changed = true
-            }
-        }
-
+        let cgPIDs = Set(cgWindows.map(\.pid))
         let trackedPIDs = Set(appGroups.compactMap { $0.runningApplication?.processIdentifier })
-        let untrackedPIDs = Set(cgWindows.map(\.pid)).filter { !trackedPIDs.contains($0) }
-        if !untrackedPIDs.isEmpty {
-            let runningPIDs = Set(NSWorkspace.shared.runningApplications.filter { $0.activationPolicy == .regular }.map(\.processIdentifier))
-            if !untrackedPIDs.intersection(runningPIDs).isEmpty {
-                changed = true
-            }
+        let runningPIDs = Set(NSWorkspace.shared.runningApplications.filter { $0.activationPolicy == .regular }.map(\.processIdentifier))
+
+        let untracked = cgPIDs.subtracting(trackedPIDs).intersection(runningPIDs)
+        if !untracked.isEmpty {
+            refreshAppGroups()
+            return
         }
 
-        if changed {
-            refreshAppGroups()
+        for group in appGroups {
+            guard let pid = group.runningApplication?.processIdentifier else { continue }
+            let cgIDs = Set(cgWindows.filter { $0.pid == pid }.map(\.windowID))
+            for window in group.windows where !window.isMinimized {
+                if !cgIDs.contains(window.windowID) {
+                    refreshAppGroups()
+                    return
+                }
+            }
         }
     }
 
     func refreshAppGroups() {
         cleanupExpiredLaunches()
 
-        let runningApps = NSWorkspace.shared.runningApplications.filter { app in
-            app.activationPolicy == .regular
-        }
-
+        let runningApps = NSWorkspace.shared.runningApplications.filter { $0.activationPolicy == .regular }
         let cgWindows = CGWindowExtensions.eligibleWindows()
         let existingMap = Dictionary(uniqueKeysWithValues: appGroups.map { ($0.bundleIdentifier, $0) })
+        let pinnedIDs = TaskbarSettings.shared.pinnedBundleIdentifiers
 
+        DispatchQueue.global(qos: .userInitiated).async { [weak self] in
+            guard let self else { return }
+
+            var axMap: [pid_t: [WindowInfo]] = [:]
+            for app in runningApps {
+                axMap[app.processIdentifier] = self.accessibilityService.windowsForPID(app.processIdentifier)
+            }
+
+            DispatchQueue.main.async { [weak self] in
+                guard let self else { return }
+                self.buildAndApplyAppGroups(
+                    runningApps: runningApps,
+                    cgWindows: cgWindows,
+                    axMap: axMap,
+                    existingMap: existingMap,
+                    pinnedIDs: pinnedIDs
+                )
+            }
+        }
+    }
+
+    private func buildAndApplyAppGroups(
+        runningApps: [NSRunningApplication],
+        cgWindows: [WindowInfo],
+        axMap: [pid_t: [WindowInfo]],
+        existingMap: [String: AppGroup],
+        pinnedIDs: [String]
+    ) {
         var updatedGroups: [AppGroup] = []
         var runningBundleIDs = Set<String>()
 
@@ -152,10 +173,8 @@ final class WindowManager {
             let bundleID = app.bundleIdentifier ?? "unknown-\(pid)"
             runningBundleIDs.insert(bundleID)
             let appWindows = cgWindows.filter { $0.pid == pid }
-
-            let axWindows = accessibilityService.windowsForPID(pid)
+            let axWindows = axMap[pid] ?? []
             var mergedWindows = mergeWindows(axWindows: axWindows, cgWindows: appWindows)
-
             mergedWindows.sort { $0.windowID < $1.windowID }
 
             let order: Int
@@ -178,8 +197,6 @@ final class WindowManager {
             updatedGroups.append(group)
         }
 
-        let settings = TaskbarSettings.shared
-        let pinnedIDs = settings.pinnedBundleIdentifiers
         for pinnedID in pinnedIDs {
             guard !runningBundleIDs.contains(pinnedID) else { continue }
 
@@ -194,7 +211,7 @@ final class WindowManager {
                 }
                 icon = NSWorkspace.shared.icon(forFile: appURL.path)
             } else {
-                settings.pinnedBundleIdentifiers.removeAll { $0 == pinnedID }
+                TaskbarSettings.shared.pinnedBundleIdentifiers.removeAll { $0 == pinnedID }
                 continue
             }
 
@@ -223,11 +240,11 @@ final class WindowManager {
         }
 
         updatedGroups.sort { lhs, rhs in
-            let lhsIsPinned = settings.isPinned(lhs.bundleIdentifier)
-            let rhsIsPinned = settings.isPinned(rhs.bundleIdentifier)
+            let lhsIsPinned = TaskbarSettings.shared.isPinned(lhs.bundleIdentifier)
+            let rhsIsPinned = TaskbarSettings.shared.isPinned(rhs.bundleIdentifier)
             if lhsIsPinned && rhsIsPinned {
-                let li = settings.pinnedBundleIdentifiers.firstIndex(of: lhs.bundleIdentifier) ?? Int.max
-                let ri = settings.pinnedBundleIdentifiers.firstIndex(of: rhs.bundleIdentifier) ?? Int.max
+                let li = pinnedIDs.firstIndex(of: lhs.bundleIdentifier) ?? Int.max
+                let ri = pinnedIDs.firstIndex(of: rhs.bundleIdentifier) ?? Int.max
                 return li < ri
             }
             if lhsIsPinned { return true }
@@ -241,7 +258,7 @@ final class WindowManager {
             }
         }
 
-        if settings.quitOnLastWindowClose {
+        if TaskbarSettings.shared.quitOnLastWindowClose {
             for group in updatedGroups where group.windows.isEmpty {
                 if appsSeenWithWindows.contains(group.bundleIdentifier) {
                     group.runningApplication?.terminate()
@@ -249,7 +266,7 @@ final class WindowManager {
             }
         }
 
-        appGroups = updatedGroups.filter { !$0.windows.isEmpty || settings.isPinned($0.bundleIdentifier) || $0.isLaunching }
+        appGroups = updatedGroups.filter { !$0.windows.isEmpty || TaskbarSettings.shared.isPinned($0.bundleIdentifier) || $0.isLaunching }
 
         constrainZoomedWindows()
         notifyChanged()
@@ -388,6 +405,67 @@ final class WindowManager {
             let pid = appGroups[i].runningApplication?.processIdentifier
             appGroups[i].isActive = pid == frontPID
         }
+        notifyChanged()
+    }
+
+    private func handleWindowMinimized(pid: pid_t, element: AXUIElement) {
+        guard let windowID = accessibilityService.cgWindowID(from: element) else {
+            refreshAppGroups()
+            return
+        }
+        for i in appGroups.indices {
+            guard appGroups[i].runningApplication?.processIdentifier == pid else { continue }
+            if let j = appGroups[i].windows.firstIndex(where: { $0.windowID == windowID }) {
+                appGroups[i].windows[j].isMinimized = true
+                notifyChanged()
+                return
+            }
+        }
+        refreshAppGroups()
+    }
+
+    private func handleWindowUnminimized(pid: pid_t, element: AXUIElement) {
+        guard let windowID = accessibilityService.cgWindowID(from: element) else {
+            refreshAppGroups()
+            return
+        }
+        for i in appGroups.indices {
+            guard appGroups[i].runningApplication?.processIdentifier == pid else { continue }
+            if let j = appGroups[i].windows.firstIndex(where: { $0.windowID == windowID }) {
+                appGroups[i].windows[j].isMinimized = false
+                notifyChanged()
+                return
+            }
+        }
+        refreshAppGroups()
+    }
+
+    private func handleWindowCreated(pid: pid_t, element: AXUIElement) {
+        guard let info = accessibilityService.windowInfo(from: element, pid: pid) else {
+            refreshAppGroups()
+            return
+        }
+        for i in appGroups.indices {
+            guard appGroups[i].runningApplication?.processIdentifier == pid else { continue }
+            if !appGroups[i].windows.contains(where: { $0.windowID == info.windowID }) {
+                appGroups[i].windows.append(info)
+                appGroups[i].windows.sort { $0.windowID < $1.windowID }
+                notifyChanged()
+                return
+            }
+        }
+        refreshAppGroups()
+    }
+
+    private func handleWindowDestroyed(pid: pid_t, element: AXUIElement) {
+        guard let windowID = accessibilityService.cgWindowID(from: element) else {
+            refreshAppGroups()
+            return
+        }
+        for i in appGroups.indices {
+            appGroups[i].windows.removeAll { $0.windowID == windowID }
+        }
+        appGroups.removeAll { $0.windows.isEmpty && !TaskbarSettings.shared.isPinned($0.bundleIdentifier) }
         notifyChanged()
     }
 

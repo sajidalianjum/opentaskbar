@@ -449,6 +449,27 @@ final class TaskbarContentView: NSView {
         menu.popUp(positioning: nil, at: NSEvent.mouseLocation, in: nil)
     }
 
+    override func rightMouseDown(with event: NSEvent) {
+        let menu = NSMenu()
+        menu.autoenablesItems = false
+
+        let quitClosed = NSMenuItem(title: "Quit All Closed Apps", action: #selector(MenuItemActions.shared.quitAllClosed(_:)), keyEquivalent: "")
+        quitClosed.target = MenuItemActions.shared
+        menu.addItem(quitClosed)
+
+        let quitAll = NSMenuItem(title: "Quit All Apps", action: #selector(MenuItemActions.shared.quitAllApps(_:)), keyEquivalent: "")
+        quitAll.target = MenuItemActions.shared
+        menu.addItem(quitAll)
+
+        menu.addItem(NSMenuItem.separator())
+
+        let prefs = NSMenuItem(title: "Preferences\u{2026}", action: #selector(MenuItemActions.shared.openPreferences(_:)), keyEquivalent: ",")
+        prefs.target = MenuItemActions.shared
+        menu.addItem(prefs)
+
+        NSMenu.popUpContextMenu(menu, with: event, for: self)
+    }
+
     private func updateButtonIndices() {
         for (i, button) in appButtons.enumerated() {
             button.index = i

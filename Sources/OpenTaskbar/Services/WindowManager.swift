@@ -42,6 +42,48 @@ final class WindowManager {
                 self?.pinApp(bundleIdentifier: bundleID)
             }
         }
+
+        MenuItemActions.shared.onQuitAllClosed = { [weak self] in
+            guard let self else { return }
+            let ownID = Bundle.main.bundleIdentifier
+            for group in self.appGroups where group.isRunning && group.windows.isEmpty {
+                guard let app = group.runningApplication else { continue }
+                guard app.bundleIdentifier != ownID else { continue }
+                guard app.bundleIdentifier != "com.apple.finder" else { continue }
+                app.terminate()
+            }
+        }
+
+        MenuItemActions.shared.onQuitAllApps = { [weak self] in
+            guard let self else { return }
+            let ownID = Bundle.main.bundleIdentifier
+            var names: [String] = []
+            var apps: [NSRunningApplication] = []
+            for group in self.appGroups where group.isRunning {
+                guard let app = group.runningApplication else { continue }
+                guard app.bundleIdentifier != ownID else { continue }
+                guard app.bundleIdentifier != "com.apple.finder" else { continue }
+                names.append(group.localizedName)
+                apps.append(app)
+            }
+            guard !names.isEmpty else { return }
+            let alert = NSAlert()
+            alert.messageText = "Quit All Apps"
+            alert.informativeText = "Are you sure you want to quit the following \(names.count) \(names.count == 1 ? "app" : "apps")?\n\n\(names.joined(separator: "\n"))"
+            alert.addButton(withTitle: "Quit All")
+            alert.addButton(withTitle: "Cancel")
+            alert.alertStyle = .critical
+            guard alert.runModal() == .alertFirstButtonReturn else { return }
+            for app in apps {
+                app.terminate()
+            }
+        }
+
+        MenuItemActions.shared.onOpenPreferences = {
+            DispatchQueue.main.async {
+                SettingsWindowController.shared.showWindow()
+            }
+        }
     }
 
     func start() {
@@ -766,6 +808,9 @@ final class MenuItemActions: NSObject {
 
     var onWindowActivated: ((CGWindowID, pid_t) -> Void)?
     var onTogglePin: ((String) -> Void)?
+    var onQuitAllClosed: (() -> Void)?
+    var onQuitAllApps: (() -> Void)?
+    var onOpenPreferences: (() -> Void)?
 
     @objc func activateWindow(_ sender: NSMenuItem) {
         guard let info = sender.representedObject as? [String: Int],
@@ -808,6 +853,18 @@ final class MenuItemActions: NSObject {
         guard let info = sender.representedObject as? [String: String],
               let bundleID = info["bundleID"] else { return }
         onTogglePin?(bundleID)
+    }
+
+    @objc func quitAllClosed(_ sender: NSMenuItem) {
+        onQuitAllClosed?()
+    }
+
+    @objc func quitAllApps(_ sender: NSMenuItem) {
+        onQuitAllApps?()
+    }
+
+    @objc func openPreferences(_ sender: NSMenuItem) {
+        onOpenPreferences?()
     }
 
     @objc func newFinderWindow(_ sender: NSMenuItem) {

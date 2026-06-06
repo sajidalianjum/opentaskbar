@@ -16,6 +16,8 @@ final class WindowManager {
     private var launchingBundleIDs: Set<String> = []
     private var launchTimeouts: [String: Date] = [:]
     private let launchTimeoutDuration: TimeInterval = 8.0
+    private let insertionOrderTTL: TimeInterval = 30
+    private var savedInsertionOrders: [String: (order: Int, savedAt: Date)] = [:]
 
     var onAppGroupsChanged: (() -> Void)?
 
@@ -243,7 +245,13 @@ final class WindowManager {
             }
         }
 
-        appGroups.removeAll { $0.windows.isEmpty && !TaskbarSettings.shared.isPinned($0.bundleIdentifier) }
+        appGroups.removeAll { group in
+            if group.windows.isEmpty && !TaskbarSettings.shared.isPinned(group.bundleIdentifier) {
+                savedInsertionOrders[group.bundleIdentifier] = (group.insertionOrder, Date())
+                return true
+            }
+            return false
+        }
 
         if didChange {
             notifyChanged()
@@ -301,6 +309,9 @@ final class WindowManager {
             let order: Int
             if let existing = existingMap[bundleID] {
                 order = existing.insertionOrder
+            } else if let saved = savedInsertionOrders[bundleID], Date().timeIntervalSince(saved.savedAt) <= insertionOrderTTL {
+                order = saved.order
+                savedInsertionOrders.removeValue(forKey: bundleID)
             } else {
                 order = nextInsertionOrder
                 nextInsertionOrder += 1
@@ -387,6 +398,9 @@ final class WindowManager {
             }
         }
 
+        for group in updatedGroups where group.windows.isEmpty && !TaskbarSettings.shared.isPinned(group.bundleIdentifier) && !group.isLaunching {
+            savedInsertionOrders[group.bundleIdentifier] = (group.insertionOrder, Date())
+        }
         appGroups = updatedGroups.filter { !$0.windows.isEmpty || TaskbarSettings.shared.isPinned($0.bundleIdentifier) || $0.isLaunching }
 
         constrainZoomedWindows()
@@ -497,6 +511,7 @@ final class WindowManager {
             appsSeenWithWindows.remove(bundleID)
             launchingBundleIDs.remove(bundleID)
             launchTimeouts.removeValue(forKey: bundleID)
+            savedInsertionOrders.removeValue(forKey: bundleID)
         }
         refreshAppGroups()
     }
@@ -586,7 +601,13 @@ final class WindowManager {
         for i in appGroups.indices {
             appGroups[i].windows.removeAll { $0.windowID == windowID }
         }
-        appGroups.removeAll { $0.windows.isEmpty && !TaskbarSettings.shared.isPinned($0.bundleIdentifier) }
+        appGroups.removeAll { group in
+            if group.windows.isEmpty && !TaskbarSettings.shared.isPinned(group.bundleIdentifier) {
+                savedInsertionOrders[group.bundleIdentifier] = (group.insertionOrder, Date())
+                return true
+            }
+            return false
+        }
         notifyChanged()
     }
 
@@ -846,7 +867,13 @@ final class WindowManager {
         for i in appGroups.indices {
             appGroups[i].windows.removeAll { $0.windowID == windowID }
         }
-        appGroups.removeAll { $0.windows.isEmpty && !TaskbarSettings.shared.isPinned($0.bundleIdentifier) }
+        appGroups.removeAll { group in
+            if group.windows.isEmpty && !TaskbarSettings.shared.isPinned(group.bundleIdentifier) {
+                savedInsertionOrders[group.bundleIdentifier] = (group.insertionOrder, Date())
+                return true
+            }
+            return false
+        }
         notifyChanged()
     }
 

@@ -86,6 +86,8 @@ final class AppButtonView: NSView {
         setupConstraints()
         setupTrackingArea()
 
+        updateActiveAccent()
+
         iconView.wantsLayer = true
         let f = iconView.frame
         iconView.layer?.anchorPoint = CGPoint(x: 0.5, y: 0.5)
@@ -135,6 +137,14 @@ final class AppButtonView: NSView {
             activeIndicator.layer?.backgroundColor = isDarkAppearance
                 ? indicatorColor(darkAlpha: 0.7)
                 : NSColor.secondaryLabelColor.withAlphaComponent(0.3).cgColor
+        }
+    }
+
+    private func updateActiveAccent() {
+        if !appGroup.windows.isEmpty && appGroup.isActive {
+            layer?.backgroundColor = NSColor.controlAccentColor.withAlphaComponent(0.06).cgColor
+        } else {
+            layer?.backgroundColor = nil
         }
     }
 
@@ -191,7 +201,7 @@ final class AppButtonView: NSView {
         if isHovering {
             layer?.backgroundColor = NSColor.controlAccentColor.withAlphaComponent(0.05).cgColor
         } else {
-            layer?.backgroundColor = nil
+            updateActiveAccent()
         }
 
         if let target = target as? NSObject, let action = action {
@@ -251,6 +261,10 @@ final class AppButtonView: NSView {
             activeIndicator.isHidden = !newGroup.isRunning && !newGroup.isLaunching
         }
 
+        if activeChanged || windowsChanged {
+            updateActiveAccent()
+        }
+
         if activeChanged || runningChanged || !newlyMinimized.isEmpty || !newlyUnminimized.isEmpty {
             let w: CGFloat
             let h: CGFloat
@@ -291,7 +305,7 @@ final class AppButtonView: NSView {
     override func mouseExited(with event: NSEvent) {
         isHovering = false
         hoverOverlay.isHidden = true
-        layer?.backgroundColor = nil
+        updateActiveAccent()
 
         Self.sharedWindowListPopover.scheduleHide()
         Self.sharedThumbnailPopover.scheduleHide()
@@ -394,17 +408,7 @@ final class AppButtonView: NSView {
             layer?.backgroundColor = NSColor.controlAccentColor.withAlphaComponent(0.05).cgColor
         } else {
             hoverOverlay.isHidden = true
-            layer?.backgroundColor = nil
-        }
-    }
-
-    override func draw(_ dirtyRect: NSRect) {
-        super.draw(dirtyRect)
-
-        if !appGroup.windows.isEmpty && appGroup.isActive {
-            let accentColor = NSColor.controlAccentColor.withAlphaComponent(0.06)
-            accentColor.setFill()
-            NSBezierPath(roundedRect: bounds.insetBy(dx: 1, dy: 1), xRadius: 5, yRadius: 5).fill()
+            updateActiveAccent()
         }
     }
 

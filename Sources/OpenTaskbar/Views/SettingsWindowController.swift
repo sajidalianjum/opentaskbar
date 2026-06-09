@@ -172,9 +172,9 @@ final class SettingsWindowController {
         section("General")
 
         let styleSelect = NSPopUpButton()
-        styleSelect.addItem(withTitle: "Dock")
         styleSelect.addItem(withTitle: "Taskbar")
-        styleSelect.selectItem(at: settings.style == .dock ? 0 : 1)
+        styleSelect.addItem(withTitle: "Dock")
+        styleSelect.selectItem(at: settings.style == .taskbar ? 0 : 1)
         styleSelect.target = self
         styleSelect.action = #selector(styleChanged(_:))
         labeled("Style", control: styleSelect)
@@ -358,7 +358,7 @@ final class SettingsWindowController {
     }
 
     @objc private func styleChanged(_ sender: NSPopUpButton) {
-        settings.style = sender.indexOfSelectedItem == 0 ? .dock : .taskbar
+        settings.style = sender.indexOfSelectedItem == 0 ? .taskbar : .dock
     }
 
     @objc private func thumbnailsChanged(_ sender: NSButton) {
@@ -461,7 +461,7 @@ final class SettingsWindowController {
         settings.showStartButton = true
         settings.showOnAllScreens = true
         settings.barAlignment = .center
-        settings.style = .dock
+        settings.style = .taskbar
         settings.barSpacing = 4.0
         settings.iconSize = 32.0
         settings.quitOnLastWindowClose = false

@@ -87,6 +87,10 @@ final class TaskbarSettings {
         didSet { UserDefaults.standard.set(customBackgroundColorData, forKey: "customBackgroundColor"); postChange() }
     }
 
+    @Published var launchAtLogin: Bool {
+        didSet { UserDefaults.standard.set(launchAtLogin, forKey: "launchAtLogin"); postChange() }
+    }
+
     @Published var animationsEnabled: Bool {
         didSet { UserDefaults.standard.set(animationsEnabled, forKey: "animationsEnabled"); postChange() }
     }
@@ -158,6 +162,7 @@ final class TaskbarSettings {
         self.barSpacing = defaults.object(forKey: "barSpacing") as? Double ?? 4.0
         self.iconSize = defaults.object(forKey: "iconSize") as? Double ?? 32.0
         self.quitOnLastWindowClose = defaults.object(forKey: "quitOnLastWindowClose") as? Bool ?? false
+        self.launchAtLogin = defaults.object(forKey: "launchAtLogin") as? Bool ?? true
         self.animationsEnabled = defaults.object(forKey: "animationsEnabled") as? Bool ?? true
         self.constrainZoomedWindows = defaults.object(forKey: "constrainZoomedWindows") as? Bool ?? false
         self.translucentBar = defaults.object(forKey: "translucentBar") as? Bool ?? !NSWorkspace.shared.accessibilityDisplayShouldReduceTransparency

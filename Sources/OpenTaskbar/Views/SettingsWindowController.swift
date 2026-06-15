@@ -322,6 +322,7 @@ final class SettingsWindowController {
         // ─── Display Options ───
         section("Display Options")
 
+        checkbox("Launch at Login", action: #selector(launchAtLoginChanged(_:)), state: settings.launchAtLogin ? .on : .off)
         checkbox("Enable Animations", action: #selector(animationsChanged(_:)), state: settings.animationsEnabled ? .on : .off)
         checkbox("Show Window Thumbnails on Hover", action: #selector(thumbnailsChanged(_:)), state: settings.showThumbnails ? .on : .off)
         checkbox("Show App Names", action: #selector(namesChanged(_:)), state: settings.showAppNames ? .on : .off)
@@ -387,6 +388,12 @@ final class SettingsWindowController {
 
     @objc private func constrainZoomedChanged(_ sender: NSButton) {
         settings.constrainZoomedWindows = sender.state == .on
+    }
+
+    @objc private func launchAtLoginChanged(_ sender: NSButton) {
+        let enabled = sender.state == .on
+        settings.launchAtLogin = enabled
+        LoginItemManager.setLaunchAtLogin(enabled)
     }
 
     @objc private func animationsChanged(_ sender: NSButton) {
@@ -465,6 +472,7 @@ final class SettingsWindowController {
         settings.barSpacing = 4.0
         settings.iconSize = 32.0
         settings.quitOnLastWindowClose = false
+        settings.launchAtLogin = true
         settings.animationsEnabled = true
         settings.constrainZoomedWindows = false
         settings.translucentBar = !NSWorkspace.shared.accessibilityDisplayShouldReduceTransparency

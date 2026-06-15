@@ -56,6 +56,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             }
         }
 
+        if settings.launchAtLogin {
+            LoginItemManager.setLaunchAtLogin(true)
+        }
         dockManager.hideDock()
         windowManager.start()
         createTaskbarPanels()

@@ -163,7 +163,7 @@ final class AppButtonView: NSView {
             return
         }
 
-        let offset: CGFloat = 20
+        let offset: CGFloat = -20
         layer?.opacity = 0.01
         layer?.transform = CATransform3DTranslate(CATransform3DIdentity, 0, offset, 0)
 

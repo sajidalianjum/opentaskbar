@@ -18,6 +18,8 @@
     <string>OpenTaskbar</string>
     <key>LSUIElement</key>
     <true/>
+    <key>NSSupportsSuddenTermination</key>
+    <true/>
     <key>NSAccessibilityUsageDescription</key>
     <string>OpenTaskbar needs Accessibility to switch between windows and manage them.</string>
     <key>NSScreenCaptureUsageDescription</key>

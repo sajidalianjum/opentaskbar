@@ -6,6 +6,7 @@ final class ThumbnailService {
     static let shared = ThumbnailService()
 
     private var cache: [CGWindowID: (image: NSImage, timestamp: Date)] = [:]
+    private let cacheQueue = DispatchQueue(label: "com.opentaskbar.thumbnail.cache")
     private let cacheTimeout: TimeInterval = 2.0
     private let thumbnailSize = NSSize(width: 300, height: 200)
 
@@ -13,12 +14,14 @@ final class ThumbnailService {
 
     private init() {}
 
-    @MainActor
     func thumbnail(for windowID: CGWindowID) async -> NSImage? {
         guard isEnabled else { return nil }
 
-        if let cached = cache[windowID],
-           Date().timeIntervalSince(cached.timestamp) < cacheTimeout {
+        if let cached: (image: NSImage, timestamp: Date) = cacheQueue.sync(execute: {
+            guard let entry = cache[windowID],
+                  Date().timeIntervalSince(entry.timestamp) < cacheTimeout else { return nil }
+            return entry
+        }) {
             return cached.image
         }
 
@@ -31,7 +34,7 @@ final class ThumbnailService {
         }
 
         if let image {
-            cache[windowID] = (image: image, timestamp: Date())
+            cacheQueue.sync { cache[windowID] = (image: image, timestamp: Date()) }
         }
 
         return image
@@ -112,10 +115,10 @@ final class ThumbnailService {
     }
 
     func clearCache() {
-        cache.removeAll()
+        cacheQueue.async { self.cache.removeAll() }
     }
 
     func removeThumbnail(for windowID: CGWindowID) {
-        cache.removeValue(forKey: windowID)
+        cacheQueue.async { self.cache.removeValue(forKey: windowID) }
     }
 }

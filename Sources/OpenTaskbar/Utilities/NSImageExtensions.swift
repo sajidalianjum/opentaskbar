@@ -1,5 +1,7 @@
 import AppKit
 
+extension NSImage: @unchecked Sendable {}
+
 extension NSImage {
     func resized(to size: NSSize) -> NSImage {
         let scale = NSScreen.main?.backingScaleFactor ?? 2.0

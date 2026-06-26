@@ -7,6 +7,7 @@ final class WindowManager {
     private let workspaceMonitor = WorkspaceMonitor()
     private(set) var axObserverManager: AXObserverManager
     private var pollTimer: Timer?
+    private var constrainTimer: Timer?
     private let pollInterval: TimeInterval = 0.5
     private var nextInsertionOrder = 0
 
@@ -202,8 +203,11 @@ final class WindowManager {
     private func startPolling() {
         pollTimer = Timer.scheduledTimer(withTimeInterval: pollInterval, repeats: true) { [weak self] _ in
             self?.pollWindows()
+        }
+        constrainTimer = Timer.scheduledTimer(withTimeInterval: 2.0, repeats: true) { [weak self] _ in
             self?.constrainZoomedWindows()
         }
+        constrainTimer?.tolerance = 0.5
     }
 
     private func pollWindows() {
@@ -228,15 +232,8 @@ final class WindowManager {
                 if window.isMinimized && cgIDs.contains(window.windowID) {
                     appGroups[i].windows[j].isMinimized = false
                     didChange = true
-                } else if !window.isMinimized && !cgIDs.contains(window.windowID) {
-                    let element = accessibilityService.windowElement(for: window.windowID, pid: pid)
-                    var minimized: CFTypeRef?
-                    if let element,
-                       AXUIElementCopyAttributeValue(element, kAXMinimizedAttribute as CFString, &minimized) == .success,
-                       (minimized as? Bool) == true
-                    {
-                        appGroups[i].windows[j].isMinimized = true
-                    } else {
+                } else if !cgIDs.contains(window.windowID) {
+                    if !window.isMinimized {
                         removedIndices.append(j)
                     }
                     didChange = true

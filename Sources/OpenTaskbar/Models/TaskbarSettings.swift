@@ -134,10 +134,19 @@ final class TaskbarSettings {
 
     private var lastChangeKey: String?
     private var suppressPostChange = false
+    private var batchDepth = 0
     private var accessibilityObserver: NSObjectProtocol?
+
+    func beginBatchUpdates() { batchDepth += 1 }
+
+    func endBatchUpdates() {
+        batchDepth = max(batchDepth - 1, 0)
+        if batchDepth == 0 { postChange() }
+    }
 
     private func postChange() {
         guard !suppressPostChange else { return }
+        guard batchDepth == 0 else { return }
         NotificationCenter.default.post(name: TaskbarSettings.settingsDidChange, object: self)
     }
 

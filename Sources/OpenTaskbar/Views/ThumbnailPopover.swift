@@ -333,11 +333,12 @@ extension ThumbnailPopover {
 
         func loadThumbnail() -> Task<Void, Never>? {
             let windowID = windowInfo.windowID
-            return Task { @MainActor [weak self] in
-                guard let self else { return }
-                if let image = await ThumbnailService.shared.thumbnail(for: windowID) {
-                    guard !Task.isCancelled else { return }
-                    self.imageView.image = image
+            let thumbnailService = ThumbnailService.shared
+            return Task.detached {
+                guard let image = await thumbnailService.thumbnail(for: windowID) else { return }
+                guard !Task.isCancelled else { return }
+                await MainActor.run { [weak self] in
+                    self?.imageView.image = image
                 }
             }
         }

@@ -463,6 +463,7 @@ final class SettingsWindowController {
     }
 
     @objc private func resetDefaults() {
+        settings.beginBatchUpdates()
         settings.showThumbnails = false
         settings.showAppNames = false
         settings.showStartButton = true
@@ -478,6 +479,7 @@ final class SettingsWindowController {
         settings.translucentBar = !NSWorkspace.shared.accessibilityDisplayShouldReduceTransparency
         settings.backgroundTheme = .system
         settings.customBackgroundColor = NSColor(calibratedRed: 0.15, green: 0.15, blue: 0.2, alpha: 1.0)
+        settings.endBatchUpdates()
         window?.close()
         showWindow()
     }

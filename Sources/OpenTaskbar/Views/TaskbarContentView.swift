@@ -13,6 +13,7 @@ final class TaskbarContentView: NSView {
     private var startMenuButton: StartMenuButton!
     private var startSeparator: NSView!
     private var appButtons: [AppButtonView] = []
+    private var reloadWorkItem: DispatchWorkItem?
     private var insertionIndicator: NSView!
     private var draggedBundleID: String?
     private var isFileDrag = false
@@ -219,6 +220,15 @@ final class TaskbarContentView: NSView {
     }
 
     func reloadData() {
+        reloadWorkItem?.cancel()
+        let work = DispatchWorkItem { [weak self] in
+            self?.performReload()
+        }
+        reloadWorkItem = work
+        DispatchQueue.main.async(execute: work)
+    }
+
+    private func performReload() {
         let groups = windowManager.appGroups
         let showNames = settings.showAppNames
         appStackView.spacing = CGFloat(settings.barSpacing)
@@ -239,23 +249,28 @@ final class TaskbarContentView: NSView {
             let removedIDs = oldSet.subtracting(newSet)
 
             if !removedIDs.isEmpty && anim {
+                CATransaction.begin()
                 for button in appButtons where removedIDs.contains(button.bundleIdentifier) {
+                    button.alphaValue = 0
+                    var t = CATransform3DIdentity
+                    t = CATransform3DTranslate(t, 0, 20, 0)
+                    button.layer?.transform = t
+
                     let fade = CABasicAnimation(keyPath: "opacity")
-                    fade.toValue = 0.01
+                    fade.fromValue = 1.0
+                    fade.toValue = 0.0
                     fade.duration = 0.2
                     fade.timingFunction = CAMediaTimingFunction(name: .easeIn)
-                    fade.fillMode = .forwards
-                    fade.isRemovedOnCompletion = false
-                    button.layer?.add(fade, forKey: "exitFade")
+                    button.layer?.add(fade, forKey: nil)
 
                     let slide = CABasicAnimation(keyPath: "transform.translation.y")
+                    slide.fromValue = 0
                     slide.toValue = 20
                     slide.duration = 0.2
                     slide.timingFunction = CAMediaTimingFunction(name: .easeIn)
-                    slide.fillMode = .forwards
-                    slide.isRemovedOnCompletion = false
-                    button.layer?.add(slide, forKey: "exitSlide")
+                    button.layer?.add(slide, forKey: nil)
                 }
+                CATransaction.commit()
             }
 
             appStackView.arrangedSubviews.forEach { $0.removeFromSuperview() }

@@ -10,6 +10,7 @@ final class AppButtonView: NSView {
     private var nameLabel: NSTextField?
     private var activeIndicator: NSView!
     private var hoverOverlay: NSView!
+    private var isLaunchingPulseActive = false
 
     private var isHovering = false
     private var trackingArea: NSTrackingArea?
@@ -84,6 +85,7 @@ final class AppButtonView: NSView {
 
         updateIndicatorColors()
         setupConstraints()
+        setLaunchingPulseActive(appGroup.isLaunching)
         setupTrackingArea()
 
         updateActiveAccent()
@@ -98,9 +100,10 @@ final class AppButtonView: NSView {
 
     private func setupIndicator() {
         if appGroup.isLaunching {
+            activeIndicator.isHidden = false
             activeIndicator.layer?.cornerRadius = 1.5
             activeIndicator.layer?.backgroundColor = NSColor.controlAccentColor.withAlphaComponent(0.7).cgColor
-            activeIndicator.frame.size = NSSize(width: 16, height: 4)
+            activeIndicator.frame.size = NSSize(width: 16, height: 3)
         } else if appGroup.windows.contains(where: { !$0.isMinimized }) && appGroup.isActive {
             activeIndicator.layer?.cornerRadius = 1.5
             activeIndicator.layer?.backgroundColor = NSColor.controlAccentColor.cgColor
@@ -113,6 +116,32 @@ final class AppButtonView: NSView {
             activeIndicator.frame.size = NSSize(width: 4, height: 4)
         } else {
             activeIndicator.isHidden = true
+        }
+    }
+
+    private static let launchingPulseKey = "launchingPulse"
+
+    private func setLaunchingPulseActive(_ active: Bool) {
+        guard let indicatorLayer = activeIndicator?.layer else { return }
+        if active == isLaunchingPulseActive { return }
+        isLaunchingPulseActive = active
+        if active {
+            if !animEnabled {
+                indicatorLayer.opacity = 0.7
+                return
+            }
+            indicatorLayer.opacity = 1
+            let anim = CABasicAnimation(keyPath: "opacity")
+            anim.fromValue = 1.0
+            anim.toValue = 0.35
+            anim.duration = 0.9
+            anim.autoreverses = true
+            anim.repeatCount = .infinity
+            anim.timingFunction = CAMediaTimingFunction(name: .easeInEaseOut)
+            indicatorLayer.add(anim, forKey: Self.launchingPulseKey)
+        } else {
+            indicatorLayer.removeAnimation(forKey: Self.launchingPulseKey)
+            indicatorLayer.opacity = 1
         }
     }
 
@@ -252,25 +281,30 @@ final class AppButtonView: NSView {
 
         let activeChanged = oldGroup.isActive != newGroup.isActive
         let runningChanged = oldGroup.isRunning != newGroup.isRunning
+        let launchingChanged = wasLaunching != isNowLaunching
         let windowsChanged = oldGroup.windows.map(\.windowID) != newGroup.windows.map(\.windowID)
 
         if newGroup.isLaunching && !didAnimateEntry {
             playEntryAnimation()
-        } else if activeChanged || runningChanged || windowsChanged || !newlyMinimized.isEmpty || !newlyUnminimized.isEmpty {
+        } else if activeChanged || runningChanged || launchingChanged || windowsChanged || !newlyMinimized.isEmpty || !newlyUnminimized.isEmpty {
             updateIndicatorColors()
             activeIndicator.isHidden = !newGroup.isRunning && !newGroup.isLaunching
         }
 
-        if activeChanged || windowsChanged {
+        if activeChanged || launchingChanged || windowsChanged {
             updateActiveAccent()
         }
 
-        if activeChanged || runningChanged || !newlyMinimized.isEmpty || !newlyUnminimized.isEmpty {
+        if launchingChanged {
+            setLaunchingPulseActive(isNowLaunching)
+        }
+
+        if activeChanged || runningChanged || launchingChanged || !newlyMinimized.isEmpty || !newlyUnminimized.isEmpty {
             let w: CGFloat
             let h: CGFloat
             let cr: CGFloat
             if newGroup.isLaunching {
-                w = 16; h = 4; cr = 1.5
+                w = 16; h = 3; cr = 1.5
             } else if newGroup.windows.contains(where: { !$0.isMinimized }) && newGroup.isActive {
                 w = 16; h = 3; cr = 1.5
             } else if newGroup.isRunning && !newGroup.windows.isEmpty {
@@ -428,7 +462,7 @@ final class AppButtonView: NSView {
         let indicatorHeight: CGFloat
         if appGroup.isLaunching {
             indicatorWidth = 16
-            indicatorHeight = 4
+            indicatorHeight = 3
         } else if appGroup.windows.contains(where: { !$0.isMinimized }) && appGroup.isActive {
             indicatorWidth = 16
             indicatorHeight = 3

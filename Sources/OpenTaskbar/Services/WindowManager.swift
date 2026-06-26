@@ -16,6 +16,8 @@ final class WindowManager {
     private var launchingBundleIDs: Set<String> = []
     private var launchTimeouts: [String: Date] = [:]
     private let launchTimeoutDuration: TimeInterval = 8.0
+    private let backgroundedLaunchGrace: TimeInterval = 1.5
+    private var launchStartedAt: [String: Date] = [:]
     private let insertionOrderTTL: TimeInterval = 30
     private var savedInsertionOrders: [String: (order: Int, savedAt: Date)] = [:]
 
@@ -362,9 +364,19 @@ final class WindowManager {
         for i in updatedGroups.indices {
             let bundleID = updatedGroups[i].bundleIdentifier
             if launchingBundleIDs.contains(bundleID) {
-                if !updatedGroups[i].windows.isEmpty {
+                let hasWindows = !updatedGroups[i].windows.isEmpty
+                let isFrontmost = updatedGroups[i].runningApplication?.processIdentifier
+                    == NSWorkspace.shared.frontmostApplication?.processIdentifier
+                let startedAt = launchStartedAt[bundleID] ?? Date()
+                let graceElapsed = Date().timeIntervalSince(startedAt) >= backgroundedLaunchGrace
+                if hasWindows || (isFrontmost && graceElapsed) {
                     launchingBundleIDs.remove(bundleID)
                     launchTimeouts.removeValue(forKey: bundleID)
+                    launchStartedAt.removeValue(forKey: bundleID)
+                } else if !isFrontmost && graceElapsed {
+                    launchingBundleIDs.remove(bundleID)
+                    launchTimeouts.removeValue(forKey: bundleID)
+                    launchStartedAt.removeValue(forKey: bundleID)
                 } else {
                     updatedGroups[i].isLaunching = true
                 }
@@ -401,6 +413,11 @@ final class WindowManager {
         for group in updatedGroups where group.windows.isEmpty && !TaskbarSettings.shared.isPinned(group.bundleIdentifier) && !group.isLaunching {
             savedInsertionOrders[group.bundleIdentifier] = (group.insertionOrder, Date())
         }
+
+        for i in updatedGroups.indices where !launchingBundleIDs.contains(updatedGroups[i].bundleIdentifier) {
+            updatedGroups[i].isLaunching = false
+        }
+
         appGroups = updatedGroups.filter { !$0.windows.isEmpty || TaskbarSettings.shared.isPinned($0.bundleIdentifier) || $0.isLaunching }
 
         constrainZoomedWindows()
@@ -495,6 +512,7 @@ final class WindowManager {
             if !appGroups.contains(where: { $0.bundleIdentifier == bundleID && !$0.windows.isEmpty }) {
                 launchingBundleIDs.insert(bundleID)
                 launchTimeouts[bundleID] = Date().addingTimeInterval(launchTimeoutDuration)
+                launchStartedAt[bundleID] = Date()
             }
         }
         refreshAppGroups()
@@ -511,6 +529,7 @@ final class WindowManager {
             appsSeenWithWindows.remove(bundleID)
             launchingBundleIDs.remove(bundleID)
             launchTimeouts.removeValue(forKey: bundleID)
+            launchStartedAt.removeValue(forKey: bundleID)
             savedInsertionOrders.removeValue(forKey: bundleID)
         }
         refreshAppGroups()
@@ -522,6 +541,7 @@ final class WindowManager {
             if now >= timeout {
                 launchingBundleIDs.remove(bundleID)
                 launchTimeouts.removeValue(forKey: bundleID)
+                launchStartedAt.removeValue(forKey: bundleID)
             }
         }
     }
@@ -645,6 +665,7 @@ final class WindowManager {
             if launchingBundleIDs.contains(bundleID) { return }
             launchingBundleIDs.insert(bundleID)
             launchTimeouts[bundleID] = Date().addingTimeInterval(launchTimeoutDuration)
+            launchStartedAt[bundleID] = Date()
             refreshAppGroups()
             Task {
                 if let appURL = NSWorkspace.shared.urlForApplication(withBundleIdentifier: bundleID) {

@@ -223,6 +223,7 @@ final class WindowManager {
         }
 
         var didChange = false
+        var needsRefresh = false
         for i in appGroups.indices {
             guard let pid = appGroups[i].runningApplication?.processIdentifier else { continue }
             let cgIDs = Set(cgWindows.filter { $0.pid == pid }.map(\.windowID))
@@ -242,6 +243,13 @@ final class WindowManager {
             for j in removedIndices.reversed() {
                 appGroups[i].windows.remove(at: j)
             }
+            if appGroups[i].windows.isEmpty && !cgIDs.isEmpty && !TaskbarSettings.shared.isPinned(appGroups[i].bundleIdentifier) {
+                needsRefresh = true
+            }
+        }
+        if needsRefresh {
+            refreshAppGroups()
+            return
         }
 
         appGroups.removeAll { group in
@@ -612,6 +620,12 @@ final class WindowManager {
 
     private func handleWindowDestroyed(pid: pid_t, element: AXUIElement) {
         guard let windowID = accessibilityService.cgWindowID(from: element) else {
+            refreshAppGroups()
+            return
+        }
+        let cgWindows = CGWindowExtensions.eligibleWindows()
+        let stillInCG = cgWindows.contains { $0.windowID == windowID }
+        if stillInCG {
             refreshAppGroups()
             return
         }

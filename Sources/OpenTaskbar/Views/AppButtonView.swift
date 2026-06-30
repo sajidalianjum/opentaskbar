@@ -511,7 +511,7 @@ final class AppButtonView: NSView {
         }
         let newArea = NSTrackingArea(
             rect: bounds,
-            options: [.mouseEnteredAndExited, .activeAlways, .inVisibleRect],
+            options: [.mouseEnteredAndExited, .activeAlways, .inVisibleRect, .enabledDuringMouseDrag],
             owner: self,
             userInfo: nil
         )

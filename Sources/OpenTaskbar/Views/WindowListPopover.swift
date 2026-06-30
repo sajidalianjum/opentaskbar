@@ -5,6 +5,7 @@ final class WindowListPopover: NSWindow {
     private var windows: [WindowInfo] = []
     private var hideWorkItem: DispatchWorkItem?
     private(set) var isHovering = false
+    private(set) var isDragging = false
 
     private static let rowHeight: CGFloat = 28
     private static let popoverWidth: CGFloat = 240
@@ -88,8 +89,12 @@ final class WindowListPopover: NSWindow {
 
         for (index, window) in windows.enumerated() {
             let row = WindowRowView(windowInfo: window, index: index, appIcon: appIcon)
+            row.popoverView = self
             row.onActivate = { [weak self] idx in
                 self?.activateWindow(at: idx)
+            }
+            row.onFocus = { [weak self] idx in
+                self?.focusWindowWithoutHiding(at: idx)
             }
             let windowID = window.windowID
             row.onClose = { [weak self] in
@@ -133,8 +138,9 @@ final class WindowListPopover: NSWindow {
 
     func scheduleHide(delay: TimeInterval = 0.25) {
         cancelHideTimer()
+        guard !isDragging else { return }
         let item = DispatchWorkItem { [weak self] in
-            guard let self, !self.isHovering else { return }
+            guard let self, !self.isHovering, !self.isDragging else { return }
             self.hide()
         }
         hideWorkItem = item
@@ -149,6 +155,13 @@ final class WindowListPopover: NSWindow {
     func setHovering(_ hovering: Bool) {
         isHovering = hovering
         if hovering {
+            cancelHideTimer()
+        }
+    }
+
+    func setDragging(_ dragging: Bool) {
+        isDragging = dragging
+        if dragging {
             cancelHideTimer()
         }
     }
@@ -188,6 +201,30 @@ final class WindowListPopover: NSWindow {
 
         onWindowActivated?(window.windowID, window.pid)
         hide()
+    }
+
+    private func focusWindowWithoutHiding(at index: Int) {
+        guard index < windows.count else { return }
+        let window = windows[index]
+        let pid = window.pid
+        let accessibilityService = AccessibilityService()
+
+        if let app = NSRunningApplication(processIdentifier: pid) {
+            if window.isMinimized {
+                if let element = accessibilityService.windowElement(for: window.windowID, pid: pid) {
+                    accessibilityService.unminimizeWindow(element)
+                    app.activate()
+                }
+            } else {
+                if let element = accessibilityService.windowElement(for: window.windowID, pid: pid) {
+                    accessibilityService.raiseWindow(element, app: app)
+                } else {
+                    app.activate()
+                }
+            }
+        }
+
+        onWindowActivated?(window.windowID, window.pid)
     }
 
     private func closeWindow(with windowID: CGWindowID) {
@@ -267,8 +304,11 @@ private final class WindowRowView: NSView {
     private let closeButton: NSButton
     private var trackingArea: NSTrackingArea?
     private var tooltipWorkItem: DispatchWorkItem?
+    private var springLoadTimer: Timer?
+    weak var popoverView: WindowListPopover?
 
     var onActivate: ((Int) -> Void)?
+    var onFocus: ((Int) -> Void)?
     var onClose: (() -> Void)?
 
     init(windowInfo: WindowInfo, index: Int, appIcon: NSImage) {
@@ -329,6 +369,7 @@ private final class WindowRowView: NSView {
         closeButton.target = self
         closeButton.action = #selector(closeButtonClicked)
 
+        registerForDraggedTypes([.fileURL, .URL, .string])
         setupTrackingArea()
     }
 
@@ -346,7 +387,7 @@ private final class WindowRowView: NSView {
         }
         let newArea = NSTrackingArea(
             rect: bounds,
-            options: [.mouseEnteredAndExited, .activeAlways, .inVisibleRect],
+            options: [.mouseEnteredAndExited, .activeAlways, .inVisibleRect, .enabledDuringMouseDrag],
             owner: self,
             userInfo: nil
         )
@@ -389,6 +430,55 @@ private final class WindowRowView: NSView {
         tooltipWorkItem = nil
         TooltipWindow.shared.hide()
         onActivate?(index)
+    }
+
+    override func draggingEntered(_ sender: NSDraggingInfo) -> NSDragOperation {
+        popoverView?.setDragging(true)
+        layer?.backgroundColor = NSColor.controlAccentColor.withAlphaComponent(0.18).cgColor
+        startSpringLoadTimer()
+        return .copy
+    }
+
+    override func draggingUpdated(_ sender: NSDraggingInfo) -> NSDragOperation {
+        return .copy
+    }
+
+    override func draggingExited(_ sender: NSDraggingInfo?) {
+        cancelSpringLoadTimer()
+        popoverView?.setDragging(false)
+        popoverView?.scheduleHide()
+        layer?.backgroundColor = NSColor.controlAccentColor.withAlphaComponent(0.1).cgColor
+    }
+
+    override func prepareForDragOperation(_ sender: NSDraggingInfo) -> Bool {
+        return true
+    }
+
+    override func performDragOperation(_ sender: NSDraggingInfo) -> Bool {
+        cancelSpringLoadTimer()
+        popoverView?.setDragging(false)
+        layer?.backgroundColor = NSColor.controlAccentColor.withAlphaComponent(0.1).cgColor
+        onFocus?(index)
+        return true
+    }
+
+    override func draggingEnded(_ sender: NSDraggingInfo) {
+        cancelSpringLoadTimer()
+        popoverView?.setDragging(false)
+        popoverView?.scheduleHide(delay: 0.1)
+    }
+
+    private func startSpringLoadTimer() {
+        cancelSpringLoadTimer()
+        springLoadTimer = Timer.scheduledTimer(withTimeInterval: 0.8, repeats: false) { [weak self] _ in
+            guard let self else { return }
+            self.onFocus?(self.index)
+        }
+    }
+
+    private func cancelSpringLoadTimer() {
+        springLoadTimer?.invalidate()
+        springLoadTimer = nil
     }
 
     override func updateTrackingAreas() {

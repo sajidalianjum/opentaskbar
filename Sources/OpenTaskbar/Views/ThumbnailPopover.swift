@@ -6,6 +6,7 @@ final class ThumbnailPopover: NSWindow {
     private var loadingTasks: Set<Task<Void, Never>> = []
     private var hideWorkItem: DispatchWorkItem?
     private(set) var isHovering = false
+    private(set) var isDragging = false
 
     private let visualEffect: NSVisualEffectView
     private var solidBackgroundView: NSView?
@@ -91,8 +92,12 @@ final class ThumbnailPopover: NSWindow {
 
         for window in windows {
             let card = ThumbnailCardView(windowInfo: window, appIcon: appIcon)
+            card.popoverView = self
             card.onActivate = { [weak self] in
                 self?.activateWindow(window)
+            }
+            card.onFocus = { [weak self] in
+                self?.focusWindow(window)
             }
             card.onClose = { [weak self] in
                 self?.closeWindow(window)
@@ -141,8 +146,9 @@ final class ThumbnailPopover: NSWindow {
 
     func scheduleHide(delay: TimeInterval = 0.25) {
         cancelHideTimer()
+        guard !isDragging else { return }
         let item = DispatchWorkItem { [weak self] in
-            guard let self, !self.isHovering else { return }
+            guard let self, !self.isHovering, !self.isDragging else { return }
             self.hide()
         }
         hideWorkItem = item
@@ -157,6 +163,13 @@ final class ThumbnailPopover: NSWindow {
     func setHovering(_ hovering: Bool) {
         isHovering = hovering
         if hovering {
+            cancelHideTimer()
+        }
+    }
+
+    func setDragging(_ dragging: Bool) {
+        isDragging = dragging
+        if dragging {
             cancelHideTimer()
         }
     }
@@ -203,6 +216,28 @@ final class ThumbnailPopover: NSWindow {
         hide()
     }
 
+    private func focusWindow(_ window: WindowInfo) {
+        let pid = window.pid
+        let accessibilityService = AccessibilityService()
+
+        if let app = NSRunningApplication(processIdentifier: pid) {
+            if window.isMinimized {
+                if let element = accessibilityService.windowElement(for: window.windowID, pid: pid) {
+                    accessibilityService.unminimizeWindow(element)
+                    app.activate()
+                }
+            } else {
+                if let element = accessibilityService.windowElement(for: window.windowID, pid: pid) {
+                    accessibilityService.raiseWindow(element, app: app)
+                } else {
+                    app.activate()
+                }
+            }
+        }
+
+        onWindowActivated?(window.windowID, window.pid)
+    }
+
     private func closeWindow(_ window: WindowInfo) {
         guard let index = windows.firstIndex(where: { $0.windowID == window.windowID }),
               index < cards.count else { return }
@@ -247,13 +282,16 @@ extension ThumbnailPopover {
     final class ThumbnailCardView: NSView {
         let windowInfo: WindowInfo
         private let appIcon: NSImage
+        weak var popoverView: ThumbnailPopover?
 
         private var imageView: NSImageView!
         private var titleLabel: NSTextField!
         private var closeButton: NSButton!
         private var trackingArea: NSTrackingArea?
+        private var springLoadTimer: Timer?
 
         var onActivate: (() -> Void)?
+        var onFocus: (() -> Void)?
         var onClose: (() -> Void)?
 
         init(windowInfo: WindowInfo, appIcon: NSImage) {
@@ -278,6 +316,7 @@ extension ThumbnailPopover {
             imageView.wantsLayer = true
             imageView.layer?.cornerRadius = 4
             imageView.layer?.masksToBounds = true
+            imageView.unregisterDraggedTypes()
 
             let title = windowInfo.title.isEmpty ? "Window" : windowInfo.title
             titleLabel = NSTextField(labelWithString: title)
@@ -328,6 +367,7 @@ extension ThumbnailPopover {
             closeButton.target = self
             closeButton.action = #selector(closeClicked)
 
+            registerForDraggedTypes([.fileURL, .URL, .string])
             setupTrackingArea()
         }
 
@@ -353,7 +393,7 @@ extension ThumbnailPopover {
             }
             let newArea = NSTrackingArea(
                 rect: bounds,
-                options: [.mouseEnteredAndExited, .activeAlways, .inVisibleRect],
+                options: [.mouseEnteredAndExited, .activeAlways, .inVisibleRect, .enabledDuringMouseDrag],
                 owner: self,
                 userInfo: nil
             )
@@ -373,6 +413,54 @@ extension ThumbnailPopover {
 
         override func mouseUp(with event: NSEvent) {
             onActivate?()
+        }
+
+        override func draggingEntered(_ sender: NSDraggingInfo) -> NSDragOperation {
+            popoverView?.setDragging(true)
+            layer?.backgroundColor = NSColor.controlAccentColor.withAlphaComponent(0.15).cgColor
+            startSpringLoadTimer()
+            return .copy
+        }
+
+        override func draggingUpdated(_ sender: NSDraggingInfo) -> NSDragOperation {
+            return .copy
+        }
+
+        override func draggingExited(_ sender: NSDraggingInfo?) {
+            cancelSpringLoadTimer()
+            popoverView?.setDragging(false)
+            popoverView?.scheduleHide()
+            layer?.backgroundColor = NSColor.controlAccentColor.withAlphaComponent(0.08).cgColor
+        }
+
+        override func prepareForDragOperation(_ sender: NSDraggingInfo) -> Bool {
+            return true
+        }
+
+        override func performDragOperation(_ sender: NSDraggingInfo) -> Bool {
+            cancelSpringLoadTimer()
+            popoverView?.setDragging(false)
+            layer?.backgroundColor = NSColor.controlAccentColor.withAlphaComponent(0.08).cgColor
+            onFocus?()
+            return true
+        }
+
+        override func draggingEnded(_ sender: NSDraggingInfo) {
+            cancelSpringLoadTimer()
+            popoverView?.setDragging(false)
+            popoverView?.scheduleHide(delay: 0.1)
+        }
+
+        private func startSpringLoadTimer() {
+            cancelSpringLoadTimer()
+            springLoadTimer = Timer.scheduledTimer(withTimeInterval: 0.8, repeats: false) { [weak self] _ in
+                self?.onFocus?()
+            }
+        }
+
+        private func cancelSpringLoadTimer() {
+            springLoadTimer?.invalidate()
+            springLoadTimer = nil
         }
 
         override func updateTrackingAreas() {

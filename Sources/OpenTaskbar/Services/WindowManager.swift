@@ -213,7 +213,8 @@ final class WindowManager {
     private func pollWindows() {
         let cgWindows = CGWindowExtensions.eligibleWindows()
         let cgPIDs = Set(cgWindows.map(\.pid))
-        let trackedPIDs = Set(appGroups.compactMap { $0.runningApplication?.processIdentifier })
+        let groups = appGroups
+        let trackedPIDs = Set(groups.compactMap { $0.runningApplication?.processIdentifier })
         let runningPIDs = Set(NSWorkspace.shared.runningApplications.filter { $0.activationPolicy == .regular }.map(\.processIdentifier))
 
         let untracked = cgPIDs.subtracting(trackedPIDs).intersection(runningPIDs)
@@ -224,7 +225,8 @@ final class WindowManager {
 
         var didChange = false
         var needsRefresh = false
-        for i in appGroups.indices {
+        for i in groups.indices {
+            guard i < appGroups.count else { continue }
             guard let pid = appGroups[i].runningApplication?.processIdentifier else { continue }
             let cgIDs = Set(cgWindows.filter { $0.pid == pid }.map(\.windowID))
             var removedIndices: [Int] = []
@@ -278,6 +280,7 @@ final class WindowManager {
 
             var axMap: [pid_t: [WindowInfo]] = [:]
             for app in runningApps {
+                guard app.isTerminated == false else { continue }
                 axMap[app.processIdentifier] = self.accessibilityService.windowsForPID(app.processIdentifier)
             }
 
@@ -562,7 +565,9 @@ final class WindowManager {
     private func updateActiveStates() {
         let frontApp = NSWorkspace.shared.frontmostApplication
         let frontPID = frontApp?.processIdentifier
-        for i in appGroups.indices {
+        let groups = appGroups
+        for i in groups.indices {
+            guard i < appGroups.count else { continue }
             let pid = appGroups[i].runningApplication?.processIdentifier
             appGroups[i].isActive = pid == frontPID
         }
@@ -574,7 +579,9 @@ final class WindowManager {
             refreshAppGroups()
             return
         }
-        for i in appGroups.indices {
+        let groups = appGroups
+        for i in groups.indices {
+            guard i < appGroups.count else { continue }
             guard appGroups[i].runningApplication?.processIdentifier == pid else { continue }
             if let j = appGroups[i].windows.firstIndex(where: { $0.windowID == windowID }) {
                 appGroups[i].windows[j].isMinimized = true
@@ -590,7 +597,9 @@ final class WindowManager {
             refreshAppGroups()
             return
         }
-        for i in appGroups.indices {
+        let groups = appGroups
+        for i in groups.indices {
+            guard i < appGroups.count else { continue }
             guard appGroups[i].runningApplication?.processIdentifier == pid else { continue }
             if let j = appGroups[i].windows.firstIndex(where: { $0.windowID == windowID }) {
                 appGroups[i].windows[j].isMinimized = false
@@ -606,7 +615,9 @@ final class WindowManager {
             refreshAppGroups()
             return
         }
-        for i in appGroups.indices {
+        let groups = appGroups
+        for i in groups.indices {
+            guard i < appGroups.count else { continue }
             guard appGroups[i].runningApplication?.processIdentifier == pid else { continue }
             if !appGroups[i].windows.contains(where: { $0.windowID == info.windowID }) {
                 appGroups[i].windows.append(info)
@@ -629,7 +640,9 @@ final class WindowManager {
             refreshAppGroups()
             return
         }
-        for i in appGroups.indices {
+        let groups = appGroups
+        for i in groups.indices {
+            guard i < appGroups.count else { continue }
             appGroups[i].windows.removeAll { $0.windowID == windowID }
         }
         appGroups.removeAll { group in
@@ -896,7 +909,9 @@ final class WindowManager {
     }
 
     func removeWindow(withID windowID: CGWindowID) {
-        for i in appGroups.indices {
+        let groups = appGroups
+        for i in groups.indices {
+            guard i < appGroups.count else { continue }
             appGroups[i].windows.removeAll { $0.windowID == windowID }
         }
         appGroups.removeAll { group in

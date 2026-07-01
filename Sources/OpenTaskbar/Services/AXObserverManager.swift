@@ -5,6 +5,7 @@ private var sharedManager: AXObserverManager?
 final class AXObserverManager {
     private var observers: [pid_t: AXObserver] = [:]
     private var runLoopSources: [pid_t: CFRunLoopSource] = [:]
+    private var validPIDs: Set<pid_t> = []
     private let axService: AccessibilityService
 
     var onWindowCreated: ((pid_t, AXUIElement) -> Void)?
@@ -42,17 +43,23 @@ final class AXObserverManager {
 
         observers[pid] = observer
         runLoopSources[pid] = runLoopSource
+        validPIDs.insert(pid)
 
         addWindowObserversForApp(pid: pid, appElement: appElement)
     }
 
     func removeObserver(for pid: pid_t) {
+        validPIDs.remove(pid)
         guard observers[pid] != nil,
               let runLoopSource = runLoopSources[pid] else { return }
 
         CFRunLoopRemoveSource(CFRunLoopGetMain(), runLoopSource, .defaultMode)
         observers.removeValue(forKey: pid)
         runLoopSources.removeValue(forKey: pid)
+    }
+
+    fileprivate func isValidPID(_ pid: pid_t) -> Bool {
+        return validPIDs.contains(pid)
     }
 
     private func addWindowObserversForApp(pid: pid_t, appElement: AXUIElement) {
@@ -136,8 +143,10 @@ final class AXObserverManager {
 private func axObserverCallback(_ observer: AXObserver, element: AXUIElement, notification: CFString, refcon: UnsafeMutableRawPointer?) {
     var pid: pid_t = 0
     AXUIElementGetPid(element, &pid)
+    guard sharedManager?.isValidPID(pid) == true else { return }
     let notifStr = notification as String
     DispatchQueue.main.async {
+        guard sharedManager?.isValidPID(pid) == true else { return }
         sharedManager?.handleNotification(pid: pid, element: element, notification: notifStr)
     }
 }

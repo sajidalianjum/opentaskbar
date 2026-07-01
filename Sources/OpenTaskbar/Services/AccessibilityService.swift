@@ -97,10 +97,17 @@ final class AccessibilityService {
     }
 
     func cgWindowID(from element: AXUIElement) -> CGWindowID? {
+        var pid: pid_t = 0
+        guard AXUIElementGetPid(element, &pid) == .success else { return nil }
+        guard processIsRunning(pid) else { return nil }
         var windowID: CGWindowID = 0
         guard let axGetWindow = axGetWindow else { return nil }
         let err = axGetWindow(element, &windowID)
         return err == .success ? windowID : nil
+    }
+
+    private func processIsRunning(_ pid: pid_t) -> Bool {
+        return NSRunningApplication(processIdentifier: pid) != nil
     }
 
     func raiseWindow(_ element: AXUIElement, app: NSRunningApplication) {

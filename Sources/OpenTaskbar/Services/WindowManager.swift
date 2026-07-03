@@ -459,7 +459,7 @@ final class WindowManager {
 
                 guard windowBottom < tbTop else { continue }
 
-                let targetHeight = screen.visibleFrame.maxY - tbTop - 4
+                let targetHeight = screen.visibleFrame.maxY - tbTop
 
                 if abs(liveFrame.height - targetHeight) <= 1 {
                     continue

@@ -38,6 +38,7 @@ final class TaskbarPanel: NSPanel {
         hidesOnDeactivate = false
         backgroundColor = .clear
         isMovableByWindowBackground = false
+        isMovable = false
         isOpaque = false
         hasShadow = false
         titleVisibility = .hidden
@@ -87,6 +88,26 @@ final class TaskbarPanel: NSPanel {
         let height = ScreenGeometry.taskbarHeight(forIconSize: CGFloat(settings.iconSize))
         let rect = ScreenGeometry.taskbarRect(for: screen, height: height, isDockStyle: settings.style == .dock)
         setFrame(rect, display: true, animate: true)
+    }
+
+    override func setFrame(_ frameRect: NSRect, display flag: Bool) {
+        let expectedHeight = ScreenGeometry.taskbarHeight(forIconSize: CGFloat(settings.iconSize))
+        var rect = frameRect
+        rect.size.height = expectedHeight
+        super.setFrame(rect, display: flag)
+    }
+
+    override func setFrame(_ frameRect: NSRect, display displayFlag: Bool, animate animateFlag: Bool) {
+        let expectedHeight = ScreenGeometry.taskbarHeight(forIconSize: CGFloat(settings.iconSize))
+        var rect = frameRect
+        rect.size.height = expectedHeight
+        super.setFrame(rect, display: displayFlag, animate: animateFlag)
+    }
+
+    override func constrainFrameRect(_ frameRect: NSRect, to screen: NSScreen?) -> NSRect {
+        let height = ScreenGeometry.taskbarHeight(forIconSize: CGFloat(settings.iconSize))
+        let targetScreen = screen ?? NSScreen.main!
+        return ScreenGeometry.taskbarRect(for: targetScreen, height: height, isDockStyle: settings.style == .dock)
     }
 
     override var canBecomeKey: Bool { false }

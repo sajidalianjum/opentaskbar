@@ -23,7 +23,9 @@ final class WindowManager {
     private var savedInsertionOrders: [String: (order: Int, savedAt: Date)] = [:]
 
     var onAppGroupsChanged: (() -> Void)?
+    var onFullscreenScreensChanged: (([NSScreen]) -> Void)?
 
+    private var lastFullscreenScreenIDs: Set<ObjectIdentifier> = []
     private var cancellables = Set<AnyCancellable>()
 
     init() {
@@ -172,6 +174,9 @@ final class WindowManager {
         workspaceMonitor.onAppDeactivated = { [weak self] _ in
             self?.updateActiveStates()
         }
+        workspaceMonitor.onActiveSpaceChanged = { [weak self] in
+            self?.refreshAppGroups()
+        }
 
         axObserverManager.onWindowCreated = { [weak self] (pid, element) in
             self?.handleWindowCreated(pid: pid, element: element)
@@ -264,6 +269,8 @@ final class WindowManager {
 
         if didChange {
             notifyChanged()
+        } else {
+            updateFullscreenScreens()
         }
     }
 
@@ -657,8 +664,91 @@ final class WindowManager {
 
     private func notifyChanged() {
         DispatchQueue.main.async { [weak self] in
-            self?.onAppGroupsChanged?()
+            guard let self else { return }
+            self.onAppGroupsChanged?()
+            self.updateFullscreenScreens()
         }
+    }
+
+    private func updateFullscreenScreens() {
+        var screens: [NSScreen] = []
+        var ids = Set<ObjectIdentifier>()
+
+        for screen in screensWithCoveringWindows() {
+            let id = ObjectIdentifier(screen)
+            if ids.insert(id).inserted {
+                screens.append(screen)
+            }
+        }
+
+        for group in appGroups {
+            for window in group.windows where !window.isMinimized && window.isFullscreen {
+                guard let screen = screenContaining(frame: window.frame) else { continue }
+                let id = ObjectIdentifier(screen)
+                if ids.insert(id).inserted {
+                    screens.append(screen)
+                }
+            }
+        }
+
+        guard ids != lastFullscreenScreenIDs else { return }
+        lastFullscreenScreenIDs = ids
+        onFullscreenScreensChanged?(screens)
+    }
+
+    private func screensWithCoveringWindows() -> [NSScreen] {
+        guard let windowList = CGWindowListCopyWindowInfo(.optionOnScreenOnly, kCGNullWindowID) as? [[String: Any]] else {
+            return []
+        }
+
+        let ourPid = ProcessInfo.processInfo.processIdentifier
+        var result: [NSScreen] = []
+        var seen = Set<ObjectIdentifier>()
+
+        for screen in NSScreen.screens {
+            let cgScreen = cgBounds(for: screen)
+
+            for info in windowList {
+                guard let pid = info[kCGWindowOwnerPID as String] as? pid_t, pid != ourPid,
+                      let layer = info[kCGWindowLayer as String] as? Int, layer == 0,
+                      let alpha = info[kCGWindowAlpha as String] as? Double, alpha > 0,
+                      let boundsDict = info[kCGWindowBounds as String] as? [String: CGFloat]
+                else { continue }
+
+                let frame = CGRect(
+                    x: boundsDict["X"] ?? 0,
+                    y: boundsDict["Y"] ?? 0,
+                    width: boundsDict["Width"] ?? 0,
+                    height: boundsDict["Height"] ?? 0
+                )
+
+                guard abs(frame.width - cgScreen.width) <= 4,
+                      abs(frame.height - cgScreen.height) <= 4,
+                      abs(frame.minX - cgScreen.minX) <= 4,
+                      abs(frame.minY - cgScreen.minY) <= 4
+                else { continue }
+
+                let id = ObjectIdentifier(screen)
+                if seen.insert(id).inserted {
+                    result.append(screen)
+                }
+                break
+            }
+        }
+
+        return result
+    }
+
+    private func cgBounds(for screen: NSScreen) -> CGRect {
+        let primary = NSScreen.screens.first(where: { $0.frame.origin == .zero }) ?? NSScreen.main
+        let primaryHeight = primary?.frame.height ?? screen.frame.height
+        let sf = screen.frame
+        return CGRect(
+            x: sf.minX,
+            y: primaryHeight - sf.maxY,
+            width: sf.width,
+            height: sf.height
+        )
     }
 
     func recordWindowFocus(bundleIdentifier: String, windowID: CGWindowID) {

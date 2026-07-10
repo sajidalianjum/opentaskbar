@@ -66,6 +66,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     private func createTaskbarPanels() {
+        windowManager.onAppGroupsChanged = { [weak self] in
+            guard let self else { return }
+            for panel in self.taskbarPanels.values {
+                panel.reloadContent()
+            }
+        }
+        windowManager.onFullscreenScreensChanged = { [weak self] screens in
+            self?.updatePanelVisibility(fullscreenScreens: screens)
+        }
+
         for screen in NSScreen.screens {
             let panel = TaskbarPanel(screen: screen, windowManager: windowManager)
             taskbarPanels[screen] = panel
@@ -78,6 +88,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             queue: .main
         ) { [weak self] _ in
             self?.updatePanelsForScreenChanges()
+        }
+    }
+
+    private func updatePanelVisibility(fullscreenScreens: [NSScreen]) {
+        let fullscreenIDs = Set(fullscreenScreens.map { ObjectIdentifier($0) })
+        for (screen, panel) in taskbarPanels {
+            panel.setHiddenForFullscreen(fullscreenIDs.contains(ObjectIdentifier(screen)))
         }
     }
 

@@ -43,7 +43,7 @@ final class TaskbarPanel: NSPanel {
         hasShadow = false
         titleVisibility = .hidden
         titlebarAppearsTransparent = true
-        collectionBehavior = [.canJoinAllSpaces, .stationary, .ignoresCycle, .fullScreenAuxiliary]
+        collectionBehavior = [.canJoinAllSpaces, .stationary, .ignoresCycle]
         isReleasedWhenClosed = false
 
         let clickThroughView = ClickThroughView()
@@ -68,9 +68,6 @@ final class TaskbarPanel: NSPanel {
             taskbarView.bottomAnchor.constraint(equalTo: clickThroughView.bottomAnchor)
         ])
 
-        windowManager.onAppGroupsChanged = { [weak self] in
-            self?.contentView_?.reloadData()
-        }
         contentView_?.reloadData()
 
         NotificationCenter.default.addObserver(
@@ -88,6 +85,18 @@ final class TaskbarPanel: NSPanel {
         let height = ScreenGeometry.taskbarHeight(forIconSize: CGFloat(settings.iconSize))
         let rect = ScreenGeometry.taskbarRect(for: screen, height: height, isDockStyle: settings.style == .dock)
         setFrame(rect, display: true, animate: true)
+    }
+
+    func reloadContent() {
+        contentView_?.reloadData()
+    }
+
+    func setHiddenForFullscreen(_ hidden: Bool) {
+        if hidden {
+            if isVisible { orderOut(nil) }
+        } else {
+            if !isVisible { orderFront(nil) }
+        }
     }
 
     override func setFrame(_ frameRect: NSRect, display flag: Bool) {

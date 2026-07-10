@@ -8,6 +8,7 @@ final class WorkspaceMonitor {
     var onAppActivated: ((NSRunningApplication) -> Void)?
     var onAppDeactivated: ((NSRunningApplication) -> Void)?
     var onScreenParametersChanged: (() -> Void)?
+    var onActiveSpaceChanged: (() -> Void)?
 
     func start() {
         let nc = NSWorkspace.shared.notificationCenter
@@ -32,11 +33,15 @@ final class WorkspaceMonitor {
             self?.onAppDeactivated?(app)
         }
 
+        let spaceObserver = nc.addObserver(forName: NSWorkspace.activeSpaceDidChangeNotification, object: nil, queue: .main) { [weak self] _ in
+            self?.onActiveSpaceChanged?()
+        }
+
         let screenObserver = NotificationCenter.default.addObserver(forName: NSApplication.didChangeScreenParametersNotification, object: nil, queue: .main) { [weak self] _ in
             self?.onScreenParametersChanged?()
         }
 
-        observers = [launchObserver, terminateObserver, activateObserver, deactivateObserver, screenObserver]
+        observers = [launchObserver, terminateObserver, activateObserver, deactivateObserver, spaceObserver, screenObserver]
     }
 
     func stop() {

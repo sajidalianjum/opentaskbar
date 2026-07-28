@@ -95,6 +95,10 @@ final class TaskbarSettings {
         didSet { UserDefaults.standard.set(animationsEnabled, forKey: "animationsEnabled"); postChange() }
     }
 
+    @Published var hoverDelay: Double {
+        didSet { UserDefaults.standard.set(hoverDelay, forKey: "hoverDelay"); postChange() }
+    }
+
     @Published var pinnedBundleIdentifiers: [String] {
         didSet { UserDefaults.standard.set(pinnedBundleIdentifiers, forKey: "pinnedBundleIdentifiers"); postChange() }
     }
@@ -173,6 +177,7 @@ final class TaskbarSettings {
         self.quitOnLastWindowClose = defaults.object(forKey: "quitOnLastWindowClose") as? Bool ?? false
         self.launchAtLogin = defaults.object(forKey: "launchAtLogin") as? Bool ?? true
         self.animationsEnabled = defaults.object(forKey: "animationsEnabled") as? Bool ?? true
+        self.hoverDelay = defaults.object(forKey: "hoverDelay") as? Double ?? 0.4
         self.constrainZoomedWindows = defaults.object(forKey: "constrainZoomedWindows") as? Bool ?? false
         self.translucentBar = defaults.object(forKey: "translucentBar") as? Bool ?? !NSWorkspace.shared.accessibilityDisplayShouldReduceTransparency
         self.backgroundTheme = BackgroundTheme(rawValue: defaults.string(forKey: "backgroundTheme") ?? "") ?? .system

@@ -14,6 +14,7 @@ final class AppButtonView: NSView {
 
     private var isHovering = false
     private var trackingArea: NSTrackingArea?
+    private var hoverWorkItem: DispatchWorkItem?
     private var mouseDownLocation: NSPoint?
     private var didAnimateEntry: Bool
     private var indicatorWidthConstraint: NSLayoutConstraint?
@@ -333,13 +334,25 @@ final class AppButtonView: NSView {
         hoverOverlay.isHidden = false
         layer?.backgroundColor = NSColor.controlAccentColor.withAlphaComponent(0.05).cgColor
 
-        showHoverPopover()
+        let delay = TaskbarSettings.shared.hoverDelay
+        guard delay > 0 else {
+            showHoverPopover()
+            return
+        }
+        let workItem = DispatchWorkItem { [weak self] in
+            self?.showHoverPopover()
+        }
+        hoverWorkItem = workItem
+        DispatchQueue.main.asyncAfter(deadline: .now() + delay, execute: workItem)
     }
 
     override func mouseExited(with event: NSEvent) {
         isHovering = false
         hoverOverlay.isHidden = true
         updateActiveAccent()
+
+        hoverWorkItem?.cancel()
+        hoverWorkItem = nil
 
         Self.sharedWindowListPopover.scheduleHide()
         Self.sharedThumbnailPopover.scheduleHide()

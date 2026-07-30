@@ -327,6 +327,7 @@ final class SettingsWindowController {
         checkbox("Show Window Thumbnails on Hover", action: #selector(thumbnailsChanged(_:)), state: settings.showThumbnails ? .on : .off)
         checkbox("Show App Names", action: #selector(namesChanged(_:)), state: settings.showAppNames ? .on : .off)
         checkbox("Show Spotlight Button", action: #selector(startButtonChanged(_:)), state: settings.showStartButton ? .on : .off)
+        checkbox("Hide Taskbar on Fullscreen", action: #selector(hideOnFullscreenChanged(_:)), state: settings.hideOnFullscreen ? .on : .off)
         checkbox("Quit Apps When All Windows Close", action: #selector(quitOnCloseChanged(_:)), state: settings.quitOnLastWindowClose ? .on : .off)
         checkbox("Keep Zoomed Windows Above Taskbar", action: #selector(constrainZoomedChanged(_:)), state: settings.constrainZoomedWindows ? .on : .off)
 
@@ -388,6 +389,10 @@ final class SettingsWindowController {
 
     @objc private func constrainZoomedChanged(_ sender: NSButton) {
         settings.constrainZoomedWindows = sender.state == .on
+    }
+
+    @objc private func hideOnFullscreenChanged(_ sender: NSButton) {
+        settings.hideOnFullscreen = sender.state == .on
     }
 
     @objc private func launchAtLoginChanged(_ sender: NSButton) {
@@ -473,6 +478,7 @@ final class SettingsWindowController {
         settings.barSpacing = 4.0
         settings.iconSize = 32.0
         settings.quitOnLastWindowClose = false
+        settings.hideOnFullscreen = true
         settings.launchAtLogin = true
         settings.animationsEnabled = true
         settings.constrainZoomedWindows = false

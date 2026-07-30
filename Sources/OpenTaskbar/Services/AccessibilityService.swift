@@ -1,6 +1,8 @@
 import AppKit
 import ApplicationServices
 
+private let log = Logger.shared
+
 final class AccessibilityService {
     private typealias AXUIElementGetWindowFunc = @convention(c) (AXUIElement, UnsafeMutablePointer<CGWindowID>) -> AXError
 
@@ -23,12 +25,17 @@ final class AccessibilityService {
         let err = AXUIElementCopyAttributeValue(appElement, kAXWindowsAttribute as CFString, &value)
 
         guard err == .success, let axWindows = value as? [AXUIElement] else {
+            if err != .success {
+                log.log("windowsForPID pid=\(pid) err=\(err.rawValue)")
+            }
             return []
         }
 
-        return axWindows.compactMap { element in
+        let infos = axWindows.compactMap { element in
             windowInfo(from: element, pid: pid)
         }
+        log.log("windowsForPID pid=\(pid) axWindows=\(axWindows.count) windowInfos=\(infos.count)")
+        return infos
     }
 
     func windowInfo(from element: AXUIElement, pid: pid_t) -> WindowInfo? {
@@ -49,10 +56,12 @@ final class AccessibilityService {
         if let posValue = positionRef, let sizeValue = sizeRef {
             var point = CGPoint.zero
             var size = CGSize.zero
-            if AXValueGetType(posValue as! AXValue) == .cgPoint {
+            if CFGetTypeID(posValue) == AXValueGetTypeID(),
+               AXValueGetType(posValue as! AXValue) == .cgPoint {
                 AXValueGetValue(posValue as! AXValue, .cgPoint, &point)
             }
-            if AXValueGetType(sizeValue as! AXValue) == .cgSize {
+            if CFGetTypeID(sizeValue) == AXValueGetTypeID(),
+               AXValueGetType(sizeValue as! AXValue) == .cgSize {
                 AXValueGetValue(sizeValue as! AXValue, .cgSize, &size)
             }
             frame = CGRect(origin: point, size: size)
@@ -61,17 +70,30 @@ final class AccessibilityService {
         var subroleRef: CFTypeRef?
         AXUIElementCopyAttributeValue(element, kAXSubroleAttribute as CFString, &subroleRef)
         let subrole = subroleRef as? String ?? ""
-        guard subrole == kAXStandardWindowSubrole as String || subrole == kAXDialogSubrole as String || subrole.isEmpty else {
-            return nil
-        }
-
-        guard let windowID = cgWindowID(from: element) else { return nil }
 
         var isFullscreen = false
         var fullscreenRef: CFTypeRef?
         if AXUIElementCopyAttributeValue(element, "AXFullScreen" as CFString, &fullscreenRef) == .success {
             isFullscreen = fullscreenRef as? Bool ?? false
         }
+
+        let isScreenCovering = NSScreen.screens.contains { screen in
+            let sf = screen.frame
+            let intersection = frame.intersection(sf)
+            let coverage = (intersection.width * intersection.height) / (sf.width * sf.height)
+            return coverage >= 0.85
+        }
+
+        guard subrole == kAXStandardWindowSubrole as String ||
+              subrole == kAXDialogSubrole as String ||
+              subrole.isEmpty ||
+              isFullscreen ||
+              isScreenCovering else {
+            log.log("windowInfo filtered subrole='\(subrole)' isFullscreen=\(isFullscreen) isScreenCovering=\(isScreenCovering) frame=\(frame)")
+            return nil
+        }
+
+        guard let windowID = cgWindowID(from: element) else { return nil }
 
         var documentPath: String?
         var documentRef: CFTypeRef?
@@ -130,6 +152,7 @@ final class AccessibilityService {
         var closeButton: CFTypeRef?
         guard AXUIElementCopyAttributeValue(element, kAXCloseButtonAttribute as CFString, &closeButton) == .success,
               let button = closeButton else { return }
+        guard CFGetTypeID(button) == AXUIElementGetTypeID() else { return }
         AXUIElementPerformAction(button as! AXUIElement, kAXPressAction as CFString)
     }
 
@@ -143,7 +166,9 @@ final class AccessibilityService {
         else { return nil }
         var point = CGPoint.zero
         var size = CGSize.zero
-        guard AXValueGetType(posValue as! AXValue) == .cgPoint,
+        guard CFGetTypeID(posValue) == AXValueGetTypeID(),
+              CFGetTypeID(sizeValue) == AXValueGetTypeID(),
+              AXValueGetType(posValue as! AXValue) == .cgPoint,
               AXValueGetType(sizeValue as! AXValue) == .cgSize
         else { return nil }
         AXValueGetValue(posValue as! AXValue, .cgPoint, &point)

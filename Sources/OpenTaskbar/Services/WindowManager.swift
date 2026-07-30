@@ -1,6 +1,8 @@
 import AppKit
 import Combine
 
+private let log = Logger.shared
+
 final class WindowManager {
     private(set) var appGroups: [AppGroup] = []
     private let accessibilityService = AccessibilityService()
@@ -224,6 +226,7 @@ final class WindowManager {
 
         let untracked = cgPIDs.subtracting(trackedPIDs).intersection(runningPIDs)
         if !untracked.isEmpty {
+            log.log("pollWindows: untracked PIDs found \(untracked.map(String.init).joined(separator: ",")) — triggering refresh")
             refreshAppGroups()
             return
         }
@@ -279,7 +282,19 @@ final class WindowManager {
 
         let runningApps = NSWorkspace.shared.runningApplications.filter { $0.activationPolicy == .regular }
         let cgWindows = CGWindowExtensions.eligibleWindows()
-        let existingMap = Dictionary(uniqueKeysWithValues: appGroups.map { ($0.bundleIdentifier, $0) })
+        log.log("refreshAppGroups: appGroups=\(appGroups.count) runningApps=\(runningApps.count) cgWindows=\(cgWindows.count)")
+
+        let chromePids = runningApps.filter { $0.bundleIdentifier?.contains("chrome") == true || $0.bundleIdentifier?.contains("Chrom") == true }.map { "\($0.processIdentifier):\($0.bundleIdentifier ?? "?")" }
+        if !chromePids.isEmpty {
+            log.log("Chrome processes found: \(chromePids.joined(separator: ", "))")
+        }
+
+        let duplicateIDs = Dictionary(grouping: appGroups, by: { $0.bundleIdentifier }).filter { $0.value.count > 1 }
+        if !duplicateIDs.isEmpty {
+            log.log("DUPLICATE bundle IDs detected: \(duplicateIDs.map { "\($0.key):\($0.value.count)" }.joined(separator: ", "))")
+        }
+
+        let existingMap = Dictionary(appGroups.map { ($0.bundleIdentifier, $0) }, uniquingKeysWith: { first, _ in first })
         let pinnedIDs = TaskbarSettings.shared.pinnedBundleIdentifiers
 
         DispatchQueue.global(qos: .userInitiated).async { [weak self] in
@@ -311,6 +326,14 @@ final class WindowManager {
         existingMap: [String: AppGroup],
         pinnedIDs: [String]
     ) {
+        log.log("buildAndApplyAppGroups: runningApps=\(runningApps.count) cgWindows=\(cgWindows.count) axMap keys=\(axMap.keys) existingMap=\(existingMap.count) pinned=\(pinnedIDs.count)")
+
+        // Log per-PID AX window counts
+        for (pid, windows) in axMap {
+            let bid = runningApps.first { $0.processIdentifier == pid }?.bundleIdentifier ?? "?"
+            log.log("  AX: pid=\(pid) bid=\(bid) windows=\(windows.count)")
+        }
+
         var updatedGroups: [AppGroup] = []
         var runningBundleIDs = Set<String>()
 
@@ -671,6 +694,14 @@ final class WindowManager {
     }
 
     private func updateFullscreenScreens() {
+        guard TaskbarSettings.shared.hideOnFullscreen else {
+            if !lastFullscreenScreenIDs.isEmpty {
+                lastFullscreenScreenIDs.removeAll()
+                onFullscreenScreensChanged?([])
+            }
+            return
+        }
+
         var screens: [NSScreen] = []
         var ids = Set<ObjectIdentifier>()
 
@@ -691,6 +722,15 @@ final class WindowManager {
             }
         }
 
+        if let frontApp = NSWorkspace.shared.frontmostApplication {
+            for screen in screensWithAXFullscreen(app: frontApp) {
+                let id = ObjectIdentifier(screen)
+                if ids.insert(id).inserted {
+                    screens.append(screen)
+                }
+            }
+        }
+
         guard ids != lastFullscreenScreenIDs else { return }
         lastFullscreenScreenIDs = ids
         onFullscreenScreensChanged?(screens)
@@ -702,15 +742,19 @@ final class WindowManager {
         }
 
         let ourPid = ProcessInfo.processInfo.processIdentifier
+        let frontmostPID = NSWorkspace.shared.frontmostApplication?.processIdentifier
         var result: [NSScreen] = []
         var seen = Set<ObjectIdentifier>()
 
         for screen in NSScreen.screens {
             let cgScreen = cgBounds(for: screen)
+            let screenArea = cgScreen.width * cgScreen.height
+            guard screenArea > 0 else { continue }
+
+            var frontmostCovers = false
 
             for info in windowList {
                 guard let pid = info[kCGWindowOwnerPID as String] as? pid_t, pid != ourPid,
-                      let layer = info[kCGWindowLayer as String] as? Int, layer == 0,
                       let alpha = info[kCGWindowAlpha as String] as? Double, alpha > 0,
                       let boundsDict = info[kCGWindowBounds as String] as? [String: CGFloat]
                 else { continue }
@@ -722,21 +766,74 @@ final class WindowManager {
                     height: boundsDict["Height"] ?? 0
                 )
 
-                guard abs(frame.width - cgScreen.width) <= 4,
-                      abs(frame.height - cgScreen.height) <= 4,
-                      abs(frame.minX - cgScreen.minX) <= 4,
-                      abs(frame.minY - cgScreen.minY) <= 4
-                else { continue }
+                let intersection = frame.intersection(cgScreen)
+                let coverage = (intersection.width * intersection.height) / screenArea
+                guard coverage >= 0.85 else { continue }
 
-                let id = ObjectIdentifier(screen)
-                if seen.insert(id).inserted {
-                    result.append(screen)
+                if let frontmostPID = frontmostPID, pid == frontmostPID {
+                    frontmostCovers = true
+                    break
                 }
-                break
+            }
+
+            guard frontmostCovers else { continue }
+
+            let id = ObjectIdentifier(screen)
+            if seen.insert(id).inserted {
+                result.append(screen)
             }
         }
 
         return result
+    }
+
+    private func screensWithAXFullscreen(app: NSRunningApplication) -> [NSScreen] {
+        let pid = app.processIdentifier
+        let appElement = AXUIElementCreateApplication(pid)
+        var value: CFTypeRef?
+        guard AXUIElementCopyAttributeValue(appElement, kAXWindowsAttribute as CFString, &value) == .success,
+              let axWindows = value as? [AXUIElement] else {
+            return []
+        }
+
+        var screens: [NSScreen] = []
+        var seen = Set<ObjectIdentifier>()
+
+        for element in axWindows {
+            var fullscreenRef: CFTypeRef?
+            guard AXUIElementCopyAttributeValue(element, "AXFullScreen" as CFString, &fullscreenRef) == .success,
+                  let isFullscreen = fullscreenRef as? Bool, isFullscreen else {
+                continue
+            }
+
+            var positionRef: CFTypeRef?
+            var sizeRef: CFTypeRef?
+            AXUIElementCopyAttributeValue(element, kAXPositionAttribute as CFString, &positionRef)
+            AXUIElementCopyAttributeValue(element, kAXSizeAttribute as CFString, &sizeRef)
+
+            var frame = CGRect.zero
+            if let posValue = positionRef, let sizeValue = sizeRef {
+                var point = CGPoint.zero
+                var size = CGSize.zero
+                if CFGetTypeID(posValue) == AXValueGetTypeID(),
+                   AXValueGetType(posValue as! AXValue) == .cgPoint {
+                    AXValueGetValue(posValue as! AXValue, .cgPoint, &point)
+                }
+                if CFGetTypeID(sizeValue) == AXValueGetTypeID(),
+                   AXValueGetType(sizeValue as! AXValue) == .cgSize {
+                    AXValueGetValue(sizeValue as! AXValue, .cgSize, &size)
+                }
+                frame = CGRect(origin: point, size: size)
+            }
+
+            guard let screen = screenContaining(frame: frame) else { continue }
+            let id = ObjectIdentifier(screen)
+            if seen.insert(id).inserted {
+                screens.append(screen)
+            }
+        }
+
+        return screens
     }
 
     private func cgBounds(for screen: NSScreen) -> CGRect {

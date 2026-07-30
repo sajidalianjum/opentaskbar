@@ -20,6 +20,7 @@ final class TaskbarPanel: NSPanel {
     private let windowManager: WindowManager
     private let settings = TaskbarSettings.shared
     private var contentView_: TaskbarContentView?
+    private var hiddenForFullscreen: Bool = false
 
     init(screen: NSScreen, windowManager: WindowManager) {
         self.windowManager = windowManager
@@ -92,6 +93,7 @@ final class TaskbarPanel: NSPanel {
     }
 
     func setHiddenForFullscreen(_ hidden: Bool) {
+        hiddenForFullscreen = hidden
         if hidden {
             if isVisible { orderOut(nil) }
         } else {
@@ -99,23 +101,30 @@ final class TaskbarPanel: NSPanel {
         }
     }
 
+    override func orderFront(_ sender: Any?) {
+        guard !hiddenForFullscreen else { return }
+        super.orderFront(sender)
+    }
+
     override func setFrame(_ frameRect: NSRect, display flag: Bool) {
         let expectedHeight = ScreenGeometry.taskbarHeight(forIconSize: CGFloat(settings.iconSize))
         var rect = frameRect
         rect.size.height = expectedHeight
-        super.setFrame(rect, display: flag)
+        super.setFrame(rect, display: flag && !hiddenForFullscreen)
     }
 
     override func setFrame(_ frameRect: NSRect, display displayFlag: Bool, animate animateFlag: Bool) {
         let expectedHeight = ScreenGeometry.taskbarHeight(forIconSize: CGFloat(settings.iconSize))
         var rect = frameRect
         rect.size.height = expectedHeight
-        super.setFrame(rect, display: displayFlag, animate: animateFlag)
+        super.setFrame(rect, display: displayFlag && !hiddenForFullscreen, animate: animateFlag)
     }
 
     override func constrainFrameRect(_ frameRect: NSRect, to screen: NSScreen?) -> NSRect {
         let height = ScreenGeometry.taskbarHeight(forIconSize: CGFloat(settings.iconSize))
-        let targetScreen = screen ?? NSScreen.main!
+        guard let targetScreen = screen ?? NSScreen.main else {
+            return frameRect
+        }
         return ScreenGeometry.taskbarRect(for: targetScreen, height: height, isDockStyle: settings.style == .dock)
     }
 

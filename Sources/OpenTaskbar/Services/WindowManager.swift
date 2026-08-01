@@ -151,6 +151,10 @@ final class WindowManager {
     }
 
     func start() {
+        let runningApps = NSWorkspace.shared.runningApplications.filter { $0.activationPolicy == .regular }
+        for app in runningApps {
+            axObserverManager.addObserver(for: app.processIdentifier)
+        }
         refreshAppGroups()
         workspaceMonitor.start()
         startPolling()
@@ -253,7 +257,8 @@ final class WindowManager {
             for j in removedIndices.reversed() {
                 appGroups[i].windows.remove(at: j)
             }
-            if appGroups[i].windows.isEmpty && !cgIDs.isEmpty && !TaskbarSettings.shared.isPinned(appGroups[i].bundleIdentifier) {
+            let knownIDs = Set(appGroups[i].windows.map(\.windowID))
+            if !cgIDs.isSubset(of: knownIDs) {
                 needsRefresh = true
             }
         }
@@ -442,6 +447,7 @@ final class WindowManager {
 
         if TaskbarSettings.shared.quitOnLastWindowClose {
             for group in updatedGroups where group.windows.isEmpty {
+                guard group.bundleIdentifier != "com.apple.finder" else { continue }
                 if appsSeenWithWindows.contains(group.bundleIdentifier) {
                     group.runningApplication?.terminate()
                 }
@@ -860,13 +866,16 @@ final class WindowManager {
             let script = """
             tell application "Finder"
                 activate
-                make new Finder window
+                open POSIX file "\(NSHomeDirectory())"
             end tell
             """
             var error: NSDictionary?
             NSAppleScript(source: script)?.executeAndReturnError(&error)
             if let error {
-                print("Failed to create new Finder window: \(error)")
+                print("Failed to open Finder home folder: \(error)")
+            }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { [weak self] in
+                self?.refreshAppGroups()
             }
             return
         }

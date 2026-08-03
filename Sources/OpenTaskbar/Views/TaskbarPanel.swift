@@ -34,8 +34,8 @@ final class TaskbarPanel: NSPanel {
             defer: false
         )
 
-        level = .statusBar
         isFloatingPanel = true
+        level = .statusBar
         hidesOnDeactivate = false
         backgroundColor = .clear
         isMovableByWindowBackground = false

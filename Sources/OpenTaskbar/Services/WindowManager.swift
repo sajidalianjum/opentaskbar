@@ -1,4 +1,5 @@
 import AppKit
+import ApplicationServices
 import Combine
 
 private let log = Logger.shared
@@ -15,6 +16,9 @@ final class WindowManager {
     private var refreshGeneration = 0
     private var refreshInFlight = false
     private var refreshQueued = false
+    private var cgMissCounts: [CGWindowID: Int] = [:]
+    private let maxCGMissesBeforeRemove = 2
+    private var pendingRemovedWindowIDs: Set<CGWindowID> = []
 
     private var lastFocusedWindow: [String: CGWindowID] = [:]
     private var appsSeenWithWindows: Set<String> = []
@@ -225,9 +229,6 @@ final class WindowManager {
     }
 
     private func pollWindows() {
-        if refreshInFlight {
-            return
-        }
         let cgWindows = CGWindowExtensions.eligibleWindows()
         let cgPIDs = Set(cgWindows.map(\.pid))
         let groups = appGroups
@@ -247,19 +248,56 @@ final class WindowManager {
             guard i < appGroups.count else { continue }
             guard let pid = appGroups[i].runningApplication?.processIdentifier else { continue }
             let cgIDs = Set(cgWindows.filter { $0.pid == pid }.map(\.windowID))
+            var removedWindowIDs: [CGWindowID] = []
             for j in appGroups[i].windows.indices {
                 let window = appGroups[i].windows[j]
                 if window.isMinimized && cgIDs.contains(window.windowID) {
                     appGroups[i].windows[j].isMinimized = false
                     didChange = true
-                } else if !window.isMinimized && !cgIDs.contains(window.windowID) {
-                    needsRefresh = true
+                } else if !window.isMinimized {
+                    if cgIDs.contains(window.windowID) {
+                        cgMissCounts.removeValue(forKey: window.windowID)
+                        pendingRemovedWindowIDs.remove(window.windowID)
+                    } else {
+                        let element = accessibilityService.windowElement(for: window.windowID, pid: pid)
+                        var minimized: CFTypeRef?
+                        if let element,
+                           AXUIElementCopyAttributeValue(element, kAXMinimizedAttribute as CFString, &minimized) == .success,
+                           (minimized as? Bool) == true {
+                            appGroups[i].windows[j].isMinimized = true
+                            didChange = true
+                        } else {
+                            let misses = (cgMissCounts[window.windowID] ?? 0) + 1
+                            cgMissCounts[window.windowID] = misses
+                            if misses >= maxCGMissesBeforeRemove {
+                                removedWindowIDs.append(window.windowID)
+                            }
+                        }
+                    }
                 }
+            }
+            if !removedWindowIDs.isEmpty {
+                appGroups[i].windows.removeAll { removedWindowIDs.contains($0.windowID) }
+                for windowID in removedWindowIDs {
+                    cgMissCounts.removeValue(forKey: windowID)
+                    pendingRemovedWindowIDs.insert(windowID)
+                }
+                didChange = true
             }
             let knownIDs = Set(appGroups[i].windows.map(\.windowID))
             if !cgIDs.isSubset(of: knownIDs) {
                 needsRefresh = true
             }
+        }
+        appGroups.removeAll { group in
+            if group.windows.isEmpty && !TaskbarSettings.shared.isPinned(group.bundleIdentifier) {
+                savedInsertionOrders[group.bundleIdentifier] = (group.insertionOrder, Date())
+                for window in group.windows {
+                    cgMissCounts.removeValue(forKey: window.windowID)
+                }
+                return true
+            }
+            return false
         }
         if needsRefresh {
             refreshAppGroups()
@@ -301,9 +339,8 @@ final class WindowManager {
 
         let existingMap = Dictionary(appGroups.map { ($0.bundleIdentifier, $0) }, uniquingKeysWith: { first, _ in first })
         let pinnedIDs = TaskbarSettings.shared.pinnedBundleIdentifiers
-        let previousWindowsByBundle = Dictionary(
-            appGroups.map { ($0.bundleIdentifier, $0.windows) },
-            uniquingKeysWith: { first, _ in first }
+        let previousBundlesWithWindows = Set(
+            appGroups.filter { !$0.windows.isEmpty }.map(\.bundleIdentifier)
         )
 
         DispatchQueue.global(qos: .userInitiated).async { [weak self] in
@@ -330,7 +367,7 @@ final class WindowManager {
                     axMap: axMap,
                     existingMap: existingMap,
                     pinnedIDs: pinnedIDs,
-                    previousWindowsByBundle: previousWindowsByBundle
+                    previousBundlesWithWindows: previousBundlesWithWindows
                 )
                 self.refreshInFlight = false
                 if self.refreshQueued {
@@ -346,7 +383,7 @@ final class WindowManager {
         axMap: [pid_t: [WindowInfo]],
         existingMap: [String: AppGroup],
         pinnedIDs: [String],
-        previousWindowsByBundle: [String: [WindowInfo]]
+        previousBundlesWithWindows: Set<String>
     ) {
         log.log("buildAndApplyAppGroups: runningApps=\(runningApps.count) cgWindows=\(cgWindows.count) axMap keys=\(axMap.keys) existingMap=\(existingMap.count) pinned=\(pinnedIDs.count)")
 
@@ -366,6 +403,9 @@ final class WindowManager {
             let appWindows = cgWindows.filter { $0.pid == pid }
             let axWindows = axMap[pid] ?? []
             var mergedWindows = mergeWindows(axWindows: axWindows, cgWindows: appWindows)
+            if !pendingRemovedWindowIDs.isEmpty {
+                mergedWindows.removeAll { pendingRemovedWindowIDs.contains($0.windowID) }
+            }
             mergedWindows.sort { $0.windowID < $1.windowID }
 
             let order: Int
@@ -479,15 +519,22 @@ final class WindowManager {
             updatedGroups[i].isLaunching = false
         }
 
-        // A background AX read can race a poll snapshot. If we already know this
-        // app had windows and the current read comes back empty, keep the group
-        // rather than dropping its icon (the poll recovers the true state).
+        // A background AX read can race a poll snapshot. If we already know
+        // this app had windows, keep the group so a transient empty read does
+        // not drop its icon — unless the poll already confirmed the close by
+        // removing the group from the current state, in which case a stale
+        // rebuild must not resurrect it.
         appGroups = updatedGroups.filter { group in
             if !group.windows.isEmpty || TaskbarSettings.shared.isPinned(group.bundleIdentifier) || group.isLaunching {
                 return true
             }
-            return previousWindowsByBundle[group.bundleIdentifier]?.isEmpty == false
+            guard previousBundlesWithWindows.contains(group.bundleIdentifier) else { return false }
+            return appGroups.contains(where: { $0.bundleIdentifier == group.bundleIdentifier })
         }
+
+        let liveWindowIDs = Set(appGroups.flatMap(\.windows).map(\.windowID))
+        cgMissCounts = cgMissCounts.filter { liveWindowIDs.contains($0.key) }
+        pendingRemovedWindowIDs.removeAll()
 
         constrainZoomedWindows()
         notifyChanged()
@@ -646,6 +693,8 @@ final class WindowManager {
             guard appGroups[i].runningApplication?.processIdentifier == pid else { continue }
             if let j = appGroups[i].windows.firstIndex(where: { $0.windowID == windowID }) {
                 appGroups[i].windows[j].isMinimized = true
+                cgMissCounts.removeValue(forKey: windowID)
+                pendingRemovedWindowIDs.remove(windowID)
                 notifyChanged()
                 return
             }
@@ -706,6 +755,8 @@ final class WindowManager {
             guard i < appGroups.count else { continue }
             appGroups[i].windows.removeAll { $0.windowID == windowID }
         }
+        cgMissCounts.removeValue(forKey: windowID)
+        pendingRemovedWindowIDs.insert(windowID)
         appGroups.removeAll { group in
             if group.windows.isEmpty && !TaskbarSettings.shared.isPinned(group.bundleIdentifier) {
                 savedInsertionOrders[group.bundleIdentifier] = (group.insertionOrder, Date())

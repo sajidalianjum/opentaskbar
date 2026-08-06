@@ -12,6 +12,9 @@ final class WindowManager {
     private var constrainTimer: Timer?
     private let pollInterval: TimeInterval = 0.5
     private var nextInsertionOrder = 0
+    private var refreshGeneration = 0
+    private var refreshInFlight = false
+    private var refreshQueued = false
 
     private var lastFocusedWindow: [String: CGWindowID] = [:]
     private var appsSeenWithWindows: Set<String> = []
@@ -222,6 +225,9 @@ final class WindowManager {
     }
 
     private func pollWindows() {
+        if refreshInFlight {
+            return
+        }
         let cgWindows = CGWindowExtensions.eligibleWindows()
         let cgPIDs = Set(cgWindows.map(\.pid))
         let groups = appGroups
@@ -241,21 +247,14 @@ final class WindowManager {
             guard i < appGroups.count else { continue }
             guard let pid = appGroups[i].runningApplication?.processIdentifier else { continue }
             let cgIDs = Set(cgWindows.filter { $0.pid == pid }.map(\.windowID))
-            var removedIndices: [Int] = []
             for j in appGroups[i].windows.indices {
                 let window = appGroups[i].windows[j]
                 if window.isMinimized && cgIDs.contains(window.windowID) {
                     appGroups[i].windows[j].isMinimized = false
                     didChange = true
-                } else if !cgIDs.contains(window.windowID) {
-                    if !window.isMinimized {
-                        removedIndices.append(j)
-                    }
-                    didChange = true
+                } else if !window.isMinimized && !cgIDs.contains(window.windowID) {
+                    needsRefresh = true
                 }
-            }
-            for j in removedIndices.reversed() {
-                appGroups[i].windows.remove(at: j)
             }
             let knownIDs = Set(appGroups[i].windows.map(\.windowID))
             if !cgIDs.isSubset(of: knownIDs) {
@@ -267,14 +266,6 @@ final class WindowManager {
             return
         }
 
-        appGroups.removeAll { group in
-            if group.windows.isEmpty && !TaskbarSettings.shared.isPinned(group.bundleIdentifier) {
-                savedInsertionOrders[group.bundleIdentifier] = (group.insertionOrder, Date())
-                return true
-            }
-            return false
-        }
-
         if didChange {
             notifyChanged()
         } else {
@@ -283,6 +274,15 @@ final class WindowManager {
     }
 
     func refreshAppGroups() {
+        if refreshInFlight {
+            refreshQueued = true
+            return
+        }
+        refreshInFlight = true
+        refreshQueued = false
+        refreshGeneration += 1
+        let generation = refreshGeneration
+
         cleanupExpiredLaunches()
 
         let runningApps = NSWorkspace.shared.runningApplications.filter { $0.activationPolicy == .regular }
@@ -301,6 +301,10 @@ final class WindowManager {
 
         let existingMap = Dictionary(appGroups.map { ($0.bundleIdentifier, $0) }, uniquingKeysWith: { first, _ in first })
         let pinnedIDs = TaskbarSettings.shared.pinnedBundleIdentifiers
+        let previousWindowsByBundle = Dictionary(
+            appGroups.map { ($0.bundleIdentifier, $0.windows) },
+            uniquingKeysWith: { first, _ in first }
+        )
 
         DispatchQueue.global(qos: .userInitiated).async { [weak self] in
             guard let self else { return }
@@ -313,13 +317,25 @@ final class WindowManager {
 
             DispatchQueue.main.async { [weak self] in
                 guard let self else { return }
+                guard generation == self.refreshGeneration else {
+                    self.refreshInFlight = false
+                    if self.refreshQueued {
+                        self.refreshAppGroups()
+                    }
+                    return
+                }
                 self.buildAndApplyAppGroups(
                     runningApps: runningApps,
                     cgWindows: cgWindows,
                     axMap: axMap,
                     existingMap: existingMap,
-                    pinnedIDs: pinnedIDs
+                    pinnedIDs: pinnedIDs,
+                    previousWindowsByBundle: previousWindowsByBundle
                 )
+                self.refreshInFlight = false
+                if self.refreshQueued {
+                    self.refreshAppGroups()
+                }
             }
         }
     }
@@ -329,7 +345,8 @@ final class WindowManager {
         cgWindows: [WindowInfo],
         axMap: [pid_t: [WindowInfo]],
         existingMap: [String: AppGroup],
-        pinnedIDs: [String]
+        pinnedIDs: [String],
+        previousWindowsByBundle: [String: [WindowInfo]]
     ) {
         log.log("buildAndApplyAppGroups: runningApps=\(runningApps.count) cgWindows=\(cgWindows.count) axMap keys=\(axMap.keys) existingMap=\(existingMap.count) pinned=\(pinnedIDs.count)")
 
@@ -462,7 +479,15 @@ final class WindowManager {
             updatedGroups[i].isLaunching = false
         }
 
-        appGroups = updatedGroups.filter { !$0.windows.isEmpty || TaskbarSettings.shared.isPinned($0.bundleIdentifier) || $0.isLaunching }
+        // A background AX read can race a poll snapshot. If we already know this
+        // app had windows and the current read comes back empty, keep the group
+        // rather than dropping its icon (the poll recovers the true state).
+        appGroups = updatedGroups.filter { group in
+            if !group.windows.isEmpty || TaskbarSettings.shared.isPinned(group.bundleIdentifier) || group.isLaunching {
+                return true
+            }
+            return previousWindowsByBundle[group.bundleIdentifier]?.isEmpty == false
+        }
 
         constrainZoomedWindows()
         notifyChanged()

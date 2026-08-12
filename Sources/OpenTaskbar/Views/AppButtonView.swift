@@ -187,8 +187,9 @@ final class AppButtonView: NSView {
     // ─── Entry Animation ────────────────────────────────────────────
 
     private func playEntryAnimation() {
-        guard animEnabled else {
+        guard animEnabled, !appGroup.isPinned else {
             layer?.opacity = 1
+            layer?.transform = CATransform3DIdentity
             didAnimateEntry = true
             return
         }

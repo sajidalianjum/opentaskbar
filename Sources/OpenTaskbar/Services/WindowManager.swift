@@ -289,6 +289,7 @@ final class WindowManager {
                 needsRefresh = true
             }
         }
+        let groupCountBefore = appGroups.count
         appGroups.removeAll { group in
             if group.windows.isEmpty && !TaskbarSettings.shared.isPinned(group.bundleIdentifier) {
                 savedInsertionOrders[group.bundleIdentifier] = (group.insertionOrder, Date())
@@ -298,6 +299,9 @@ final class WindowManager {
                 return true
             }
             return false
+        }
+        if appGroups.count != groupCountBefore {
+            didChange = true
         }
         if needsRefresh {
             refreshAppGroups()

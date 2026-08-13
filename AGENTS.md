@@ -36,7 +36,7 @@ OpenTaskbar/
 ├── Scripts/
 │   ├── build.sh                    # swift build -c release + codesign → .app bundle
 │   └── run.sh                      # build.sh + open the .app bundle
-├── myscripts/
+├── myscripts/                      # gitignored — local icon sources, not part of the repo
 │   ├── opentaskbar.svg             # Full app icon SVG source
 │   ├── optaskbar-statusicon.svg    # Status bar icon SVG source (18×18pt template)
 │   ├── svg2icns.sh                 # SVG → .icns converter
@@ -153,7 +153,7 @@ swift build -c release --arch arm64 --arch x86_64
 .build/debug/OpenTaskbar
 ```
 
-**Status bar icon:** SVG source at `myscripts/optaskbar-statusicon.svg`. Run `myscripts/generate_status_icon.sh` (or `Scripts/build.sh` which runs it automatically) to regenerate PNGs at 18×18 (1x), 36×36 (@2x), 54×54 (@3x) into `Resources/`. Requires `brew install svg2png`.
+**Icons:** The app icon (`OpenTaskbar.icns`) and status bar PNGs (18×18 (1x), 36×36 (@2x), 54×54 (@3x)) are committed under `Resources/` and copied into the app bundle by `Scripts/build.sh`. They are **not** regenerated at build time. To regenerate them (manual, local-only): edit the SVG sources in `myscripts/` (gitignored) and run `myscripts/generate_status_icon.sh` for the status bar PNGs or `myscripts/svg2icns.sh` for the app icon. Requires `brew install svg2png`. If you change the icons, commit the generated PNGs/icns.
 
 **No tests, no CI, no linter/formatter currently exist.**
 

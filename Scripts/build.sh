@@ -6,9 +6,6 @@ BUILD_DIR="${PROJECT_DIR}/.build/release"
 APP_NAME="OpenTaskbar"
 APP_BUNDLE="${PROJECT_DIR}/build/${APP_NAME}.app"
 
-echo "Generating status bar icons..."
-"${PROJECT_DIR}/myscripts/generate_status_icon.sh" 2>/dev/null || echo "  (skipped — svg2png not installed)"
-
 echo "Building ${APP_NAME}..."
 swift build -c release
 
@@ -35,7 +32,13 @@ cp "${PROJECT_DIR}/Resources/status-icon@2x.png" "${APP_BUNDLE}/Contents/Resourc
 cp "${PROJECT_DIR}/Resources/status-icon@3x.png" "${APP_BUNDLE}/Contents/Resources/" 2>/dev/null || true
 
 echo "Code signing..."
-codesign --force --deep --sign "OpenTaskbarDev" "${APP_BUNDLE}"
+SIGN_IDENTITY="${OPENTASKBAR_SIGN_IDENTITY:-OpenTaskbarDev}"
+if security find-identity -v -p codesigning | grep -qF "${SIGN_IDENTITY}"; then
+    codesign --force --sign "${SIGN_IDENTITY}" "${APP_BUNDLE}"
+else
+    echo "  (identity '${SIGN_IDENTITY}' not found — falling back to ad-hoc signing)"
+    codesign --force --sign - "${APP_BUNDLE}"
+fi
 
 echo ""
 echo "Build complete: ${APP_BUNDLE}"

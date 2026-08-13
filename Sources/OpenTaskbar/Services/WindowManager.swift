@@ -6,6 +6,7 @@ private let log = Logger.shared
 
 final class WindowManager {
     private(set) var appGroups: [AppGroup] = []
+    private(set) var closedApps: [AppGroup] = []
     private let accessibilityService = AccessibilityService()
     private let workspaceMonitor = WorkspaceMonitor()
     private(set) var axObserverManager: AXObserverManager
@@ -59,10 +60,15 @@ final class WindowManager {
             }
         }
 
+        MenuItemActions.shared.onToggleNeverQuit = { [weak self] bundleID in
+            TaskbarSettings.shared.toggleNeverQuit(bundleID)
+            self?.refreshAppGroups()
+        }
+
         MenuItemActions.shared.onQuitAllClosed = { [weak self] in
             guard let self else { return }
             let ownID = Bundle.main.bundleIdentifier
-            for group in self.appGroups where group.isRunning && group.windows.isEmpty {
+            for group in self.closedApps {
                 guard let app = group.runningApplication else { continue }
                 guard app.bundleIdentifier != ownID else { continue }
                 guard app.bundleIdentifier != "com.apple.finder" else { continue }
@@ -228,6 +234,21 @@ final class WindowManager {
         constrainTimer?.tolerance = 0.5
     }
 
+    private func addClosedApp(_ group: AppGroup) {
+        guard group.isRunning, group.windows.isEmpty, !group.isLaunching,
+              let app = group.runningApplication, !app.isTerminated else { return }
+        guard app.bundleIdentifier != Bundle.main.bundleIdentifier,
+              app.bundleIdentifier != "com.apple.finder" else { return }
+        guard !TaskbarSettings.shared.isNeverQuit(group.bundleIdentifier) else { return }
+        if !closedApps.contains(where: { $0.bundleIdentifier == group.bundleIdentifier }) {
+            closedApps.append(group)
+        }
+    }
+
+    private func removeClosedApp(bundleIdentifier: String) {
+        closedApps.removeAll { $0.bundleIdentifier == bundleIdentifier }
+    }
+
     private func pollWindows() {
         let cgWindows = CGWindowExtensions.eligibleWindows()
         let cgPIDs = Set(cgWindows.map(\.pid))
@@ -282,6 +303,9 @@ final class WindowManager {
                     cgMissCounts.removeValue(forKey: windowID)
                     pendingRemovedWindowIDs.insert(windowID)
                 }
+                if appGroups[i].windows.isEmpty {
+                    addClosedApp(appGroups[i])
+                }
                 didChange = true
             }
             let knownIDs = Set(appGroups[i].windows.map(\.windowID))
@@ -290,15 +314,20 @@ final class WindowManager {
             }
         }
         let groupCountBefore = appGroups.count
+        var newlyClosedGroups: [AppGroup] = []
         appGroups.removeAll { group in
             if group.windows.isEmpty && !TaskbarSettings.shared.isPinned(group.bundleIdentifier) {
                 savedInsertionOrders[group.bundleIdentifier] = (group.insertionOrder, Date())
                 for window in group.windows {
                     cgMissCounts.removeValue(forKey: window.windowID)
                 }
+                newlyClosedGroups.append(group)
                 return true
             }
             return false
+        }
+        for group in newlyClosedGroups {
+            addClosedApp(group)
         }
         if appGroups.count != groupCountBefore {
             didChange = true
@@ -509,6 +538,7 @@ final class WindowManager {
         if TaskbarSettings.shared.quitOnLastWindowClose {
             for group in updatedGroups where group.windows.isEmpty {
                 guard group.bundleIdentifier != "com.apple.finder" else { continue }
+                guard !TaskbarSettings.shared.isNeverQuit(group.bundleIdentifier) else { continue }
                 if appsSeenWithWindows.contains(group.bundleIdentifier) {
                     group.runningApplication?.terminate()
                 }
@@ -522,6 +552,18 @@ final class WindowManager {
         for i in updatedGroups.indices where !launchingBundleIDs.contains(updatedGroups[i].bundleIdentifier) {
             updatedGroups[i].isLaunching = false
         }
+
+        closedApps.removeAll()
+        for group in updatedGroups {
+            guard group.isRunning, group.windows.isEmpty, !group.isLaunching,
+                  let app = group.runningApplication, !app.isTerminated else { continue }
+            guard app.bundleIdentifier != Bundle.main.bundleIdentifier,
+                  app.bundleIdentifier != "com.apple.finder" else { continue }
+            guard !previousBundlesWithWindows.contains(group.bundleIdentifier) else { continue }
+            guard !TaskbarSettings.shared.isNeverQuit(group.bundleIdentifier) else { continue }
+            closedApps.append(group)
+        }
+        log.log("buildAndApplyAppGroups: closedApps=\(closedApps.count)")
 
         // A background AX read can race a poll snapshot. If we already know
         // this app had windows, keep the group so a transient empty read does
@@ -736,6 +778,7 @@ final class WindowManager {
             if !appGroups[i].windows.contains(where: { $0.windowID == info.windowID }) {
                 appGroups[i].windows.append(info)
                 appGroups[i].windows.sort { $0.windowID < $1.windowID }
+                removeClosedApp(bundleIdentifier: appGroups[i].bundleIdentifier)
                 notifyChanged()
                 return
             }
@@ -761,12 +804,20 @@ final class WindowManager {
         }
         cgMissCounts.removeValue(forKey: windowID)
         pendingRemovedWindowIDs.insert(windowID)
+        var newlyClosedGroups: [AppGroup] = []
         appGroups.removeAll { group in
             if group.windows.isEmpty && !TaskbarSettings.shared.isPinned(group.bundleIdentifier) {
                 savedInsertionOrders[group.bundleIdentifier] = (group.insertionOrder, Date())
+                newlyClosedGroups.append(group)
                 return true
             }
             return false
+        }
+        for group in newlyClosedGroups {
+            addClosedApp(group)
+        }
+        for group in appGroups where group.windows.isEmpty {
+            addClosedApp(group)
         }
         notifyChanged()
     }
@@ -1153,6 +1204,15 @@ final class WindowManager {
         menu.addItem(pinItem)
 
         if group.isRunning {
+            let isNeverQuit = TaskbarSettings.shared.isNeverQuit(group.bundleIdentifier)
+            let neverQuitItem = NSMenuItem(title: isNeverQuit ? "Allow Quit When Closed" : "Don't Quit When Closed", action: #selector(MenuItemActions.shared.toggleNeverQuit(_:)), keyEquivalent: "")
+            neverQuitItem.target = MenuItemActions.shared
+            neverQuitItem.representedObject = ["bundleID": group.bundleIdentifier]
+            neverQuitItem.state = isNeverQuit ? .on : .off
+            menu.addItem(neverQuitItem)
+        }
+
+        if group.isRunning {
             menu.addItem(NSMenuItem.separator())
 
             let quitMenu = NSMenu()
@@ -1241,6 +1301,7 @@ final class MenuItemActions: NSObject {
 
     var onWindowActivated: ((CGWindowID, pid_t) -> Void)?
     var onTogglePin: ((String) -> Void)?
+    var onToggleNeverQuit: ((String) -> Void)?
     var onQuitAllClosed: (() -> Void)?
     var onQuitAllApps: (() -> Void)?
     var onOpenPreferences: (() -> Void)?
@@ -1302,6 +1363,12 @@ final class MenuItemActions: NSObject {
         guard let info = sender.representedObject as? [String: String],
               let bundleID = info["bundleID"] else { return }
         onTogglePin?(bundleID)
+    }
+
+    @objc func toggleNeverQuit(_ sender: NSMenuItem) {
+        guard let info = sender.representedObject as? [String: String],
+              let bundleID = info["bundleID"] else { return }
+        onToggleNeverQuit?(bundleID)
     }
 
     @objc func quitAllClosed(_ sender: NSMenuItem) {

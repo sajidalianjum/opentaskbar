@@ -480,13 +480,51 @@ final class TaskbarContentView: NSView {
 
         menu.addItem(NSMenuItem.separator())
 
-        let quitClosed = NSMenuItem(title: "Quit All Closed Apps", action: #selector(MenuItemActions.shared.quitAllClosed(_:)), keyEquivalent: "")
+        let closedAppCount = windowManager.closedApps.count
+        let quitClosedTitle = closedAppCount > 0
+            ? "Quit \(closedAppCount) Closed App\(closedAppCount == 1 ? "" : "s")"
+            : "Quit All Closed Apps"
+        let quitClosed = NSMenuItem(title: quitClosedTitle, action: #selector(MenuItemActions.shared.quitAllClosed(_:)), keyEquivalent: "")
         quitClosed.target = MenuItemActions.shared
+        quitClosed.isEnabled = closedAppCount > 0
         menu.addItem(quitClosed)
 
         let quitAll = NSMenuItem(title: "Quit All Apps", action: #selector(MenuItemActions.shared.quitAllApps(_:)), keyEquivalent: "")
         quitAll.target = MenuItemActions.shared
         menu.addItem(quitAll)
+
+        let neverQuitSub = NSMenu()
+        let neverQuitItem = NSMenuItem(title: "Don't Quit These Apps", action: nil, keyEquivalent: "")
+        neverQuitItem.submenu = neverQuitSub
+        menu.addItem(neverQuitItem)
+
+        let neverQuitIDs = settings.neverQuitBundleIdentifiers
+        var addedAny = false
+        for bundleID in neverQuitIDs {
+            let runningApp = NSWorkspace.shared.runningApplications.first { $0.bundleIdentifier == bundleID }
+            let item = NSMenuItem(title: runningApp?.localizedName ?? bundleID, action: #selector(MenuItemActions.shared.toggleNeverQuit(_:)), keyEquivalent: "")
+            item.target = MenuItemActions.shared
+            item.representedObject = ["bundleID": bundleID]
+            item.state = .on
+            neverQuitSub.addItem(item)
+            addedAny = true
+        }
+        if !windowManager.closedApps.isEmpty {
+            if addedAny { neverQuitSub.addItem(NSMenuItem.separator()) }
+            for group in windowManager.closedApps {
+                let item = NSMenuItem(title: group.localizedName, action: #selector(MenuItemActions.shared.toggleNeverQuit(_:)), keyEquivalent: "")
+                item.target = MenuItemActions.shared
+                item.representedObject = ["bundleID": group.bundleIdentifier]
+                item.state = .off
+                neverQuitSub.addItem(item)
+                addedAny = true
+            }
+        }
+        if !addedAny {
+            let noneItem = NSMenuItem(title: "No apps", action: nil, keyEquivalent: "")
+            noneItem.isEnabled = false
+            neverQuitSub.addItem(noneItem)
+        }
 
         menu.addItem(NSMenuItem.separator())
 

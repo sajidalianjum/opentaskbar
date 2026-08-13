@@ -107,6 +107,10 @@ final class TaskbarSettings {
         didSet { UserDefaults.standard.set(pinnedBundleIdentifiers, forKey: "pinnedBundleIdentifiers"); postChange() }
     }
 
+    @Published var neverQuitBundleIdentifiers: [String] {
+        didSet { UserDefaults.standard.set(neverQuitBundleIdentifiers, forKey: "neverQuitBundleIdentifiers"); postChange() }
+    }
+
     func isPinned(_ bundleID: String) -> Bool {
         pinnedBundleIdentifiers.contains(bundleID)
     }
@@ -116,6 +120,18 @@ final class TaskbarSettings {
             pinnedBundleIdentifiers.removeAll { $0 == bundleID }
         } else {
             pinnedBundleIdentifiers.append(bundleID)
+        }
+    }
+
+    func isNeverQuit(_ bundleID: String) -> Bool {
+        neverQuitBundleIdentifiers.contains(bundleID)
+    }
+
+    func toggleNeverQuit(_ bundleID: String) {
+        if isNeverQuit(bundleID) {
+            neverQuitBundleIdentifiers.removeAll { $0 == bundleID }
+        } else {
+            neverQuitBundleIdentifiers.append(bundleID)
         }
     }
 
@@ -187,6 +203,7 @@ final class TaskbarSettings {
         self.translucentBar = defaults.object(forKey: "translucentBar") as? Bool ?? !NSWorkspace.shared.accessibilityDisplayShouldReduceTransparency
         self.backgroundTheme = BackgroundTheme(rawValue: defaults.string(forKey: "backgroundTheme") ?? "") ?? .system
         self.pinnedBundleIdentifiers = defaults.stringArray(forKey: "pinnedBundleIdentifiers") ?? []
+        self.neverQuitBundleIdentifiers = defaults.stringArray(forKey: "neverQuitBundleIdentifiers") ?? []
         if let saved = defaults.data(forKey: "customBackgroundColor") {
             self.customBackgroundColorData = saved
         } else {

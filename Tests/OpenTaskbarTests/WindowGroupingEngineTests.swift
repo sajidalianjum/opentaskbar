@@ -280,6 +280,178 @@ final class WindowGroupingEngineTests: XCTestCase {
         XCTAssertEqual(resolver.nextOrder, 1)
     }
 
+    // MARK: reorderGroups — moveApp index math, renumbering, pin interplay
+
+    private func makeOrderedGroups(_ bundleIDs: [String]) -> [AppGroup] {
+        bundleIDs.enumerated().map { makeGroup(bundleID: $0.element, insertionOrder: $0.offset) }
+    }
+
+    func testReorderMovesGroupDownWithAdjustedDestination() {
+        let groups = makeOrderedGroups(["com.a", "com.b", "com.c"])
+        let result = WindowGroupingEngine.reorderGroups(groups, from: 0, to: 2, pinnedIDs: [])
+        XCTAssertEqual(result.groups.map(\.bundleIdentifier), ["com.b", "com.a", "com.c"])
+        XCTAssertEqual(result.groups.map(\.insertionOrder), [0, 1, 2])
+        XCTAssertEqual(result.nextOrder, 3)
+        XCTAssertNil(result.pinnedBundleIDs)
+    }
+
+    func testReorderMovesGroupDownMultipleSlots() {
+        let groups = makeOrderedGroups(["com.a", "com.b", "com.c", "com.d"])
+        let result = WindowGroupingEngine.reorderGroups(groups, from: 0, to: 3, pinnedIDs: [])
+        XCTAssertEqual(result.groups.map(\.bundleIdentifier), ["com.b", "com.c", "com.a", "com.d"])
+    }
+
+    func testReorderMovesGroupUp() {
+        let groups = makeOrderedGroups(["com.a", "com.b", "com.c"])
+        let result = WindowGroupingEngine.reorderGroups(groups, from: 2, to: 0, pinnedIDs: [])
+        XCTAssertEqual(result.groups.map(\.bundleIdentifier), ["com.c", "com.a", "com.b"])
+        XCTAssertEqual(result.groups.map(\.insertionOrder), [0, 1, 2])
+        XCTAssertEqual(result.nextOrder, 3)
+    }
+
+    func testReorderOutOfBoundsDestinationIsNoOp() {
+        let groups = makeOrderedGroups(["com.a", "com.b", "com.c"])
+        let result = WindowGroupingEngine.reorderGroups(groups, from: 0, to: 99, pinnedIDs: [])
+        XCTAssertEqual(result.groups.map(\.bundleIdentifier), ["com.a", "com.b", "com.c"])
+        XCTAssertNil(result.nextOrder)
+        XCTAssertFalse(result.didReorder)
+    }
+
+    func testReorderOutOfBoundsSourceIsNoOp() {
+        let groups = makeOrderedGroups(["com.a", "com.b", "com.c"])
+        let result = WindowGroupingEngine.reorderGroups(groups, from: 99, to: 0, pinnedIDs: [])
+        XCTAssertEqual(result.groups.map(\.bundleIdentifier), ["com.a", "com.b", "com.c"])
+        XCTAssertNil(result.nextOrder)
+    }
+
+    func testReorderToSameIndexIsNoOp() {
+        let groups = makeOrderedGroups(["com.a", "com.b", "com.c"])
+        let result = WindowGroupingEngine.reorderGroups(groups, from: 1, to: 1, pinnedIDs: [])
+        XCTAssertEqual(result.groups.map(\.bundleIdentifier), ["com.a", "com.b", "com.c"])
+        XCTAssertNil(result.nextOrder)
+    }
+
+    func testReorderRenumbersInsertionOrdersFromZero() {
+        let groups = [
+            makeGroup(bundleID: "com.a", insertionOrder: 10),
+            makeGroup(bundleID: "com.b", insertionOrder: 20),
+            makeGroup(bundleID: "com.c", insertionOrder: 30),
+        ]
+        let result = WindowGroupingEngine.reorderGroups(groups, from: 2, to: 0, pinnedIDs: [])
+        XCTAssertEqual(result.groups.map(\.insertionOrder), [0, 1, 2])
+    }
+
+    func testReorderEmptyGroupsIsNoOp() {
+        let result = WindowGroupingEngine.reorderGroups([], from: 0, to: 0, pinnedIDs: [])
+        XCTAssertTrue(result.groups.isEmpty)
+        XCTAssertNil(result.nextOrder)
+    }
+
+    func testReorderUpdatesPinOrderWhenPinnedAppMovesWithinPinnedRegion() {
+        let groups = makeOrderedGroups(["com.a", "com.b", "com.c"])
+        let result = WindowGroupingEngine.reorderGroups(groups, from: 1, to: 0, pinnedIDs: ["com.a", "com.b"])
+        XCTAssertEqual(result.groups.map(\.bundleIdentifier), ["com.b", "com.a", "com.c"])
+        XCTAssertEqual(result.pinnedBundleIDs, ["com.b", "com.a"])
+    }
+
+    func testReorderDoesNotUpdatePinOrderBeyondPinnedRegion() {
+        let groups = makeOrderedGroups(["com.a", "com.b", "com.c"])
+        let result = WindowGroupingEngine.reorderGroups(groups, from: 0, to: 2, pinnedIDs: ["com.a"])
+        XCTAssertEqual(result.groups.map(\.bundleIdentifier), ["com.b", "com.a", "com.c"])
+        XCTAssertNil(result.pinnedBundleIDs)
+    }
+
+    func testReorderUnpinnedAppDoesNotTouchPinOrder() {
+        let groups = makeOrderedGroups(["com.a", "com.b", "com.c"])
+        let result = WindowGroupingEngine.reorderGroups(groups, from: 1, to: 0, pinnedIDs: ["com.a"])
+        XCTAssertEqual(result.groups.map(\.bundleIdentifier), ["com.b", "com.a", "com.c"])
+        XCTAssertNil(result.pinnedBundleIDs)
+    }
+
+    func testReorderPinnedAppPastPinnedRegionLeavesPinOrderUntouched() {
+        let groups = makeOrderedGroups(["com.a", "com.b", "com.c"])
+        let result = WindowGroupingEngine.reorderGroups(groups, from: 0, to: 2, pinnedIDs: ["com.a"])
+        XCTAssertEqual(result.groups.map(\.bundleIdentifier), ["com.b", "com.a", "com.c"])
+        XCTAssertNil(result.pinnedBundleIDs)
+    }
+
+    // MARK: closingEmptyGroups — remove empty unpinned groups
+
+    func testClosingEmptyGroupsRemovesEmptyUnpinnedGroups() {
+        let empty = makeGroup(bundleID: "com.empty", insertionOrder: 0)
+        let withWindow = makeGroup(bundleID: "com.windowed", windows: [makeWindow(id: 1)], insertionOrder: 1)
+        let result = WindowGroupingEngine.closingEmptyGroups([empty, withWindow], pinnedBundleIDs: [])
+        XCTAssertEqual(result.groups.map(\.bundleIdentifier), ["com.windowed"])
+        XCTAssertEqual(result.closed.map(\.bundleIdentifier), ["com.empty"])
+    }
+
+    func testClosingEmptyGroupsKeepsPinnedEmptyGroups() {
+        let empty = makeGroup(bundleID: "com.pinned", insertionOrder: 0)
+        let result = WindowGroupingEngine.closingEmptyGroups([empty], pinnedBundleIDs: ["com.pinned"])
+        XCTAssertEqual(result.groups.map(\.bundleIdentifier), ["com.pinned"])
+        XCTAssertTrue(result.closed.isEmpty)
+    }
+
+    func testClosingEmptyGroupsKeepsGroupsWithWindows() {
+        let group = makeGroup(bundleID: "com.a", windows: [makeWindow(id: 1), makeWindow(id: 2)])
+        let result = WindowGroupingEngine.closingEmptyGroups([group], pinnedBundleIDs: [])
+        XCTAssertEqual(result.groups.map(\.bundleIdentifier), ["com.a"])
+        XCTAssertTrue(result.closed.isEmpty)
+    }
+
+    func testClosingEmptyGroupsPreservesOrderOfSurvivors() {
+        let a = makeGroup(bundleID: "com.a", windows: [makeWindow(id: 1)], insertionOrder: 0)
+        let empty1 = makeGroup(bundleID: "com.empty1", insertionOrder: 1)
+        let b = makeGroup(bundleID: "com.b", windows: [makeWindow(id: 2)], insertionOrder: 2)
+        let empty2 = makeGroup(bundleID: "com.empty2", insertionOrder: 3)
+        let result = WindowGroupingEngine.closingEmptyGroups([a, empty1, b, empty2], pinnedBundleIDs: [])
+        XCTAssertEqual(result.groups.map(\.bundleIdentifier), ["com.a", "com.b"])
+        XCTAssertEqual(result.closed.map(\.bundleIdentifier), ["com.empty1", "com.empty2"])
+    }
+
+    // MARK: removingWindow — window removal + empty-group closure
+
+    func testRemovingWindowKeepsGroupWithRemainingWindows() {
+        let group = makeGroup(bundleID: "com.a", windows: [makeWindow(id: 1), makeWindow(id: 2)])
+        let result = WindowGroupingEngine.removingWindow(1, from: [group], pinnedBundleIDs: [])
+        XCTAssertEqual(result.groups.map(\.bundleIdentifier), ["com.a"])
+        XCTAssertEqual(result.groups.first?.windows.map(\.windowID), [2])
+        XCTAssertTrue(result.closed.isEmpty)
+    }
+
+    func testRemovingLastWindowClosesUnpinnedGroup() {
+        let group = makeGroup(bundleID: "com.a", windows: [makeWindow(id: 1)])
+        let result = WindowGroupingEngine.removingWindow(1, from: [group], pinnedBundleIDs: [])
+        XCTAssertTrue(result.groups.isEmpty)
+        XCTAssertEqual(result.closed.map(\.bundleIdentifier), ["com.a"])
+    }
+
+    func testRemovingLastWindowKeepsPinnedGroupEmpty() {
+        let group = makeGroup(bundleID: "com.a", windows: [makeWindow(id: 1)])
+        let result = WindowGroupingEngine.removingWindow(1, from: [group], pinnedBundleIDs: ["com.a"])
+        XCTAssertEqual(result.groups.map(\.bundleIdentifier), ["com.a"])
+        XCTAssertTrue(result.groups.first?.windows.isEmpty ?? false)
+        XCTAssertTrue(result.closed.isEmpty)
+    }
+
+    func testRemovingUnknownWindowIsNoOp() {
+        let group = makeGroup(bundleID: "com.a", windows: [makeWindow(id: 1)])
+        let result = WindowGroupingEngine.removingWindow(99, from: [group], pinnedBundleIDs: [])
+        XCTAssertEqual(result.groups.map(\.bundleIdentifier), ["com.a"])
+        XCTAssertEqual(result.groups.first?.windows.map(\.windowID), [1])
+        XCTAssertTrue(result.closed.isEmpty)
+    }
+
+    func testRemovingWindowOnlyAffectsOwningGroup() {
+        let a = makeGroup(bundleID: "com.a", windows: [makeWindow(id: 1)])
+        let b = makeGroup(bundleID: "com.b", windows: [makeWindow(id: 2), makeWindow(id: 3)])
+        let result = WindowGroupingEngine.removingWindow(2, from: [a, b], pinnedBundleIDs: [])
+        XCTAssertEqual(result.groups.map(\.bundleIdentifier), ["com.a", "com.b"])
+        XCTAssertEqual(result.groups.first { $0.bundleIdentifier == "com.a" }?.windows.map(\.windowID), [1])
+        XCTAssertEqual(result.groups.first { $0.bundleIdentifier == "com.b" }?.windows.map(\.windowID), [3])
+        XCTAssertTrue(result.closed.isEmpty)
+    }
+
     // MARK: WindowMissTracker — consecutive CG misses before removal
 
     func testSingleMissDoesNotRemoveWindow() {

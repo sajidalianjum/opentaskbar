@@ -7,20 +7,23 @@ enum ScreenGeometry {
         iconSize + 12
     }
 
-    static func taskbarRect(for screen: NSScreen, height: CGFloat, isDockStyle: Bool = false) -> NSRect {
-        let fullScreenFrame = screen.frame
-        var yPosition = fullScreenFrame.origin.y
+    static func taskbarRect(frame: NSRect, height: CGFloat, isDockStyle: Bool = false) -> NSRect {
+        var yPosition = frame.origin.y
 
         if isDockStyle {
             yPosition += dockStyleBottomOffset
         }
 
         return NSRect(
-            x: fullScreenFrame.origin.x,
+            x: frame.origin.x,
             y: yPosition,
-            width: fullScreenFrame.width,
+            width: frame.width,
             height: height
         )
+    }
+
+    static func taskbarRect(for screen: NSScreen, height: CGFloat, isDockStyle: Bool = false) -> NSRect {
+        taskbarRect(frame: screen.frame, height: height, isDockStyle: isDockStyle)
     }
 
     static func mainScreen() -> NSScreen? {

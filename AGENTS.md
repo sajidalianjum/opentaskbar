@@ -49,9 +49,10 @@ OpenTaskbar/
 ├── Tests/OpenTaskbarTests/         # XCTest suite (@testable import OpenTaskbar); run via swift test
 │   ├── TestSupport.swift           # makeWindow/makeGroup factories
 │   ├── WindowGroupingEngineTests.swift
+│   ├── DockManagerTests.swift
 │   ├── TaskbarSettingsTests.swift
-│   └── ModelAndUtilityTests.swift  # WindowInfo, AppGroup, ScreenGeometry, CrashGuard
-├── .github/workflows/ci.yml        # swift build + swift test on push/PR
+│   └── ModelAndUtilityTests.swift  # WindowInfo, AppGroup, ScreenGeometry, ThemeManager, SingleInstanceLock, NSImageExtensions, CrashGuard
+├── .github/workflows/ci.yml        # swift build + swift test --enable-code-coverage + llvm-cov threshold on push/PR
 │   ├── Models/
 │   │   ├── WindowInfo.swift        # CGWindowID, pid, title, frame, minimized, fullscreen, layer, alpha, ownerName, isValid (Hashable)
 │   │   ├── AppGroup.swift          # Bundle grouping: windows[WindowInfo], icon, active state, insertionOrder, isRunning, isPinned, hasMultipleWindows (Hashable)
@@ -191,8 +192,8 @@ swift test
 2. **SettingsWindowController** uses manual frame layout helpers (`FlippedView`, `labeled()`/`sliderRow()`/`checkbox()` functions), not a proper Auto Layout constraints-based layout
 3. **1s poll timer** compares full window sets each cycle; could be optimized to avoid full refresh when nothing changed
 4. **`MenuItemActions`** is a singleton (`shared`) that creates its own `AccessibilityService` instance rather than sharing the one from `WindowManager`; callback wiring is fragile
-5. **Tests cover pure logic only** — `WindowGroupingEngine`, models, and `TaskbarSettings` are unit tested; AppKit/AX-driven flows (panels, observers, popovers) have no test coverage
-6. **CI runs `swift build` + `swift test` only** — no linting, formatting, or release-bundle verification in CI
+5. **Tests cover pure logic only** — `WindowGroupingEngine` (including state transitions), models, `DockManager`, and utilities (`ScreenGeometry`, `ThemeManager`, `SingleInstanceLock`, `NSImageExtensions`) are unit tested; AppKit/AX-driven flows (panels, observers, popovers) have no test coverage
+6. **CI runs `swift build` + `swift test --enable-code-coverage` with an llvm-cov threshold** — no linting, formatting, or release-bundle verification in CI
 7. **No localization** — all strings hardcoded in English
 8. **No SwiftUI `@main`** — uses classic `NSApplicationMain` pattern
 9. **`StartMenuButton`** simulates Cmd+Space via `CGEvent` — fragile if Spotlight is remapped or disabled, and requires accessibility permissions
@@ -260,5 +261,5 @@ swift test
 
 ### Before committing:
 - Run `swift build` to verify compilation
-- No test suite exists, but build must succeed
+- Run `swift test`; all tests must pass
 - Keep commits focused and descriptive

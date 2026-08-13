@@ -313,19 +313,16 @@ final class WindowManager {
             }
         }
         let groupCountBefore = appGroups.count
-        var newlyClosedGroups: [AppGroup] = []
-        appGroups.removeAll { group in
-            if group.windows.isEmpty && !TaskbarSettings.shared.isPinned(group.bundleIdentifier) {
-                savedInsertionOrders[group.bundleIdentifier] = (group.insertionOrder, Date())
-                for window in group.windows {
-                    missTracker.hit(windowID: window.windowID)
-                }
-                newlyClosedGroups.append(group)
-                return true
+        let closingResult = WindowGroupingEngine.closingEmptyGroups(
+            appGroups,
+            pinnedBundleIDs: TaskbarSettings.shared.pinnedBundleIdentifiers
+        )
+        appGroups = closingResult.groups
+        for group in closingResult.closed {
+            savedInsertionOrders[group.bundleIdentifier] = (group.insertionOrder, Date())
+            for window in group.windows {
+                missTracker.hit(windowID: window.windowID)
             }
-            return false
-        }
-        for group in newlyClosedGroups {
             addClosedApp(group)
         }
         if appGroups.count != groupCountBefore {
@@ -753,23 +750,16 @@ final class WindowManager {
             refreshAppGroups()
             return
         }
-        let groups = appGroups
-        for i in groups.indices {
-            guard i < appGroups.count else { continue }
-            appGroups[i].windows.removeAll { $0.windowID == windowID }
-        }
+        let removalResult = WindowGroupingEngine.removingWindow(
+            windowID,
+            from: appGroups,
+            pinnedBundleIDs: TaskbarSettings.shared.pinnedBundleIdentifiers
+        )
+        appGroups = removalResult.groups
         missTracker.hit(windowID: windowID)
         pendingRemovedWindowIDs.insert(windowID)
-        var newlyClosedGroups: [AppGroup] = []
-        appGroups.removeAll { group in
-            if group.windows.isEmpty && !TaskbarSettings.shared.isPinned(group.bundleIdentifier) {
-                savedInsertionOrders[group.bundleIdentifier] = (group.insertionOrder, Date())
-                newlyClosedGroups.append(group)
-                return true
-            }
-            return false
-        }
-        for group in newlyClosedGroups {
+        for group in removalResult.closed {
+            savedInsertionOrders[group.bundleIdentifier] = (group.insertionOrder, Date())
             addClosedApp(group)
         }
         for group in appGroups where group.windows.isEmpty {
@@ -1194,17 +1184,14 @@ final class WindowManager {
     }
 
     func removeWindow(withID windowID: CGWindowID) {
-        let groups = appGroups
-        for i in groups.indices {
-            guard i < appGroups.count else { continue }
-            appGroups[i].windows.removeAll { $0.windowID == windowID }
-        }
-        appGroups.removeAll { group in
-            if group.windows.isEmpty && !TaskbarSettings.shared.isPinned(group.bundleIdentifier) {
-                savedInsertionOrders[group.bundleIdentifier] = (group.insertionOrder, Date())
-                return true
-            }
-            return false
+        let removalResult = WindowGroupingEngine.removingWindow(
+            windowID,
+            from: appGroups,
+            pinnedBundleIDs: TaskbarSettings.shared.pinnedBundleIdentifiers
+        )
+        appGroups = removalResult.groups
+        for group in removalResult.closed {
+            savedInsertionOrders[group.bundleIdentifier] = (group.insertionOrder, Date())
         }
         notifyChanged()
     }
@@ -1221,26 +1208,19 @@ final class WindowManager {
     }
 
     func moveApp(from sourceIndex: Int, to destinationIndex: Int) {
-        guard sourceIndex < appGroups.count, destinationIndex < appGroups.count, sourceIndex != destinationIndex else { return }
-        let group = appGroups[sourceIndex]
-        appGroups.remove(at: sourceIndex)
-        let adjustedDest = sourceIndex < destinationIndex ? destinationIndex - 1 : destinationIndex
-        appGroups.insert(group, at: adjustedDest)
-
-        let pinnedIDs = TaskbarSettings.shared.pinnedBundleIdentifiers
-        let movedBundleID = group.bundleIdentifier
-        if TaskbarSettings.shared.isPinned(movedBundleID) {
-            let pinnedCount = pinnedIDs.count
-            if destinationIndex < pinnedCount {
-                TaskbarSettings.shared.reorderPinned(bundleID: movedBundleID, to: destinationIndex)
-            }
+        let movedBundleID = sourceIndex < appGroups.count ? appGroups[sourceIndex].bundleIdentifier : nil
+        let reorderResult = WindowGroupingEngine.reorderGroups(
+            appGroups,
+            from: sourceIndex,
+            to: destinationIndex,
+            pinnedIDs: TaskbarSettings.shared.pinnedBundleIdentifiers
+        )
+        guard reorderResult.didReorder, let nextOrder = reorderResult.nextOrder else { return }
+        appGroups = reorderResult.groups
+        nextInsertionOrder = nextOrder
+        if reorderResult.pinnedBundleIDs != nil, let movedBundleID {
+            TaskbarSettings.shared.reorderPinned(bundleID: movedBundleID, to: destinationIndex)
         }
-
-        for i in appGroups.indices {
-            appGroups[i].insertionOrder = i
-        }
-        nextInsertionOrder = appGroups.count
-
         notifyChanged()
     }
 }

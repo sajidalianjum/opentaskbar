@@ -134,6 +134,76 @@ enum WindowGroupingEngine {
         }
     }
 
+    struct ReorderResult {
+        let groups: [AppGroup]
+        let nextOrder: Int?
+        let pinnedBundleIDs: [String]?
+
+        var didReorder: Bool { nextOrder != nil }
+    }
+
+    static func reorderGroups(
+        _ groups: [AppGroup],
+        from sourceIndex: Int,
+        to destinationIndex: Int,
+        pinnedIDs: [String]
+    ) -> ReorderResult {
+        guard sourceIndex < groups.count, destinationIndex < groups.count, sourceIndex != destinationIndex else {
+            return ReorderResult(groups: groups, nextOrder: nil, pinnedBundleIDs: nil)
+        }
+
+        var result = groups
+        let group = result.remove(at: sourceIndex)
+        let adjustedDest = sourceIndex < destinationIndex ? destinationIndex - 1 : destinationIndex
+        result.insert(group, at: adjustedDest)
+
+        var updatedPinnedIDs: [String]? = nil
+        if pinnedIDs.contains(group.bundleIdentifier) {
+            let pinnedCount = pinnedIDs.count
+            if destinationIndex < pinnedCount {
+                var updated = pinnedIDs
+                updated.removeAll { $0 == group.bundleIdentifier }
+                let clampedIndex = min(destinationIndex, updated.count)
+                updated.insert(group.bundleIdentifier, at: clampedIndex)
+                updatedPinnedIDs = updated
+            }
+        }
+
+        for i in result.indices {
+            result[i].insertionOrder = i
+        }
+
+        return ReorderResult(groups: result, nextOrder: result.count, pinnedBundleIDs: updatedPinnedIDs)
+    }
+
+    static func closingEmptyGroups(
+        _ groups: [AppGroup],
+        pinnedBundleIDs: [String]
+    ) -> (groups: [AppGroup], closed: [AppGroup]) {
+        var result = groups
+        var closed: [AppGroup] = []
+        result.removeAll { group in
+            if group.windows.isEmpty && !pinnedBundleIDs.contains(group.bundleIdentifier) {
+                closed.append(group)
+                return true
+            }
+            return false
+        }
+        return (result, closed)
+    }
+
+    static func removingWindow(
+        _ windowID: CGWindowID,
+        from groups: [AppGroup],
+        pinnedBundleIDs: [String]
+    ) -> (groups: [AppGroup], closed: [AppGroup]) {
+        var result = groups
+        for i in result.indices {
+            result[i].windows.removeAll { $0.windowID == windowID }
+        }
+        return closingEmptyGroups(result, pinnedBundleIDs: pinnedBundleIDs)
+    }
+
     struct WindowMissTracker {
         private(set) var missCounts: [CGWindowID: Int] = [:]
         let maxMissesBeforeRemove: Int

@@ -5,18 +5,27 @@ final class TaskbarSettingsTests: XCTestCase {
     private var originalPinned: [String] = []
     private var originalNeverQuit: [String] = []
     private var originalBackgroundColorData: Data = Data()
+    private var originalBackgroundTheme: TaskbarSettings.BackgroundTheme = .system
+    private var originalTranslucentBar = false
+    private var originalIconSize: Double = 32
 
     override func setUp() {
         super.setUp()
         originalPinned = TaskbarSettings.shared.pinnedBundleIdentifiers
         originalNeverQuit = TaskbarSettings.shared.neverQuitBundleIdentifiers
         originalBackgroundColorData = TaskbarSettings.shared.customBackgroundColorData
+        originalBackgroundTheme = TaskbarSettings.shared.backgroundTheme
+        originalTranslucentBar = TaskbarSettings.shared.translucentBar
+        originalIconSize = TaskbarSettings.shared.iconSize
     }
 
     override func tearDown() {
         TaskbarSettings.shared.pinnedBundleIdentifiers = originalPinned
         TaskbarSettings.shared.neverQuitBundleIdentifiers = originalNeverQuit
         TaskbarSettings.shared.customBackgroundColorData = originalBackgroundColorData
+        TaskbarSettings.shared.backgroundTheme = originalBackgroundTheme
+        TaskbarSettings.shared.translucentBar = originalTranslucentBar
+        TaskbarSettings.shared.iconSize = originalIconSize
         super.tearDown()
     }
 
@@ -96,5 +105,57 @@ final class TaskbarSettingsTests: XCTestCase {
         XCTAssertEqual(color.redComponent, fallback.redComponent, accuracy: 0.0001)
         XCTAssertEqual(color.greenComponent, fallback.greenComponent, accuracy: 0.0001)
         XCTAssertEqual(color.blueComponent, fallback.blueComponent, accuracy: 0.0001)
+    }
+
+    func testCustomBackgroundColorSetterRoundTrips() {
+        let settings = TaskbarSettings.shared
+        let color = NSColor(calibratedRed: 0.3, green: 0.6, blue: 0.9, alpha: 1.0)
+        settings.customBackgroundColor = color
+        let restored = settings.customBackgroundColor
+        XCTAssertEqual(restored.redComponent, color.redComponent, accuracy: 0.0001)
+        XCTAssertEqual(restored.greenComponent, color.greenComponent, accuracy: 0.0001)
+        XCTAssertEqual(restored.blueComponent, color.blueComponent, accuracy: 0.0001)
+    }
+
+    func testGlassmorphismThemeEnablesTranslucentBar() {
+        let settings = TaskbarSettings.shared
+        settings.translucentBar = false
+        settings.backgroundTheme = .glassmorphism
+        XCTAssertTrue(settings.translucentBar)
+    }
+
+    func testSystemThemeFollowsReduceTransparency() {
+        let settings = TaskbarSettings.shared
+        settings.backgroundTheme = .dark
+        settings.translucentBar = false
+        settings.backgroundTheme = .system
+        let expected = !NSWorkspace.shared.accessibilityDisplayShouldReduceTransparency
+        XCTAssertEqual(settings.translucentBar, expected)
+    }
+
+    func testReorderPinnedSuppressesChangeNotifications() {
+        let settings = TaskbarSettings.shared
+        var count = 0
+        let token = NotificationCenter.default.addObserver(
+            forName: TaskbarSettings.settingsDidChange,
+            object: nil,
+            queue: nil
+        ) { _ in count += 1 }
+
+        settings.pinnedBundleIdentifiers = ["com.a", "com.b", "com.c"]
+        count = 0
+        settings.reorderPinned(bundleID: "com.c", to: 0)
+        XCTAssertEqual(count, 0, "reorderPinned must not post change notifications")
+        XCTAssertEqual(settings.pinnedBundleIdentifiers, ["com.c", "com.a", "com.b"])
+
+        settings.iconSize = 40
+        XCTAssertEqual(count, 1, "a direct property set should post exactly one notification")
+        NotificationCenter.default.removeObserver(token)
+    }
+
+    func testSettingsPersistToUserDefaults() {
+        let settings = TaskbarSettings.shared
+        settings.iconSize = 42
+        XCTAssertEqual(UserDefaults.standard.double(forKey: "iconSize"), 42)
     }
 }

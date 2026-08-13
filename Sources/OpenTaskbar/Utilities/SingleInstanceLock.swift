@@ -3,8 +3,8 @@ import Foundation
 final class SingleInstanceLock {
     private static let lockPath = FileManager.default.temporaryDirectory.appendingPathComponent("com.opentaskbar.lock")
 
-    static func acquire() -> Bool {
-        let path = lockPath.path
+    static func acquire(lockFilePath: String? = nil) -> Bool {
+        let path = lockFilePath ?? lockPath.path
         if FileManager.default.fileExists(atPath: path) {
             let pidString = try? String(contentsOfFile: path, encoding: .utf8)
             if let pid = pidString.flatMap(Int.init) {
@@ -14,11 +14,12 @@ final class SingleInstanceLock {
             }
         }
 
-        try? "\(ProcessInfo.processInfo.processIdentifier)".write(to: lockPath, atomically: true, encoding: .utf8)
+        try? "\(ProcessInfo.processInfo.processIdentifier)".write(toFile: path, atomically: true, encoding: .utf8)
         return true
     }
 
-    static func release() {
-        try? FileManager.default.removeItem(at: lockPath)
+    static func release(lockFilePath: String? = nil) {
+        let path = lockFilePath ?? lockPath.path
+        try? FileManager.default.removeItem(atPath: path)
     }
 }

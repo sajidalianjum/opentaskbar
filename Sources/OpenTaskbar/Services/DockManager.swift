@@ -1,20 +1,65 @@
 import Foundation
 
 final class DockManager {
-    private var savedState: [String: Any] = [:]
+    struct DockState: Equatable {
+        var autohide: Bool
+        var autohideDelay: Double?
+
+        init(autohide: Bool, autohideDelay: Double?) {
+            self.autohide = autohide
+            self.autohideDelay = autohideDelay
+        }
+
+        init(dict: [String: Any]) {
+            autohide = (dict["autohide"] as? Bool) ?? false
+            if let delay = dict["autohide-delay"] as? Double {
+                autohideDelay = delay
+            } else if let delay = dict["autohide-delay"] as? NSNumber {
+                autohideDelay = delay.doubleValue
+            } else {
+                autohideDelay = nil
+            }
+        }
+
+        var asDictionary: [String: Any] {
+            var dict: [String: Any] = ["autohide": autohide]
+            if let autohideDelay {
+                dict["autohide-delay"] = autohideDelay
+            }
+            return dict
+        }
+
+        func restoreCommandArgs(for domain: String) -> [[String]] {
+            var commands: [[String]] = [
+                ["write", domain, "autohide", "-bool", autohide ? "true" : "false"]
+            ]
+            if let autohideDelay {
+                commands.append(["write", domain, "autohide-delay", "-float", "\(autohideDelay)"])
+            } else {
+                commands.append(["delete", domain, "autohide-delay"])
+            }
+            return commands
+        }
+    }
+
+    private(set) var savedState: [String: Any] = [:]
     private let defaultsPath: String
 
-    init() {
-        defaultsPath = FileManager.default.homeDirectoryForCurrentUser
-            .appendingPathComponent(".config/opentaskbar/dock-state.plist").path
+    init(defaultsPath: String? = nil) {
+        if let defaultsPath {
+            self.defaultsPath = defaultsPath
+        } else {
+            self.defaultsPath = FileManager.default.homeDirectoryForCurrentUser
+                .appendingPathComponent(".config/opentaskbar/dock-state.plist").path
+        }
     }
 
     func hideDock() {
         if !hasSavedState() {
             saveCurrentDockState()
         }
-        runDefaults("write", "com.apple.dock", "autohide", "-bool", "true")
-        runDefaults("write", "com.apple.dock", "autohide-delay", "-float", "1000")
+        runDefaults(["write", "com.apple.dock", "autohide", "-bool", "true"])
+        runDefaults(["write", "com.apple.dock", "autohide-delay", "-float", "1000"])
         restartDock()
     }
 
@@ -22,7 +67,7 @@ final class DockManager {
         if !hasSavedState() {
             saveCurrentDockState()
         }
-        runDefaults("write", "com.apple.dock", "autohide", "-bool", "true")
+        runDefaults(["write", "com.apple.dock", "autohide", "-bool", "true"])
         restartDock()
     }
 
@@ -35,13 +80,9 @@ final class DockManager {
             loadStateFromFile()
         }
 
-        let autohide = (savedState["autohide"] as? Bool) ?? false
-        runDefaults("write", "com.apple.dock", "autohide", "-bool", autohide ? "true" : "false")
-
-        if let delay = savedState["autohide-delay"] as? Double {
-            runDefaults("write", "com.apple.dock", "autohide-delay", "-float", "\(delay)")
-        } else {
-            runDefaults("delete", "com.apple.dock", "autohide-delay")
+        let state = DockState(dict: savedState)
+        for args in state.restoreCommandArgs(for: "com.apple.dock") {
+            runDefaults(args)
         }
 
         deleteSavedState()
@@ -53,13 +94,13 @@ final class DockManager {
         savedState = [:]
     }
 
-    private func loadStateFromFile() {
+    func loadStateFromFile() {
         guard FileManager.default.fileExists(atPath: defaultsPath) else { return }
         guard let saved = NSDictionary(contentsOfFile: defaultsPath) as? [String: Any] else { return }
         savedState = saved
     }
 
-    private func saveCurrentDockState() {
+    func saveCurrentDockState() {
         savedState = [
             "autohide": shellReadDefaults("read", "com.apple.dock", "autohide") == "1",
             "autohide-delay": Double(shellReadDefaults("read", "com.apple.dock", "autohide-delay") ?? "0.5") ?? 0.5
@@ -70,7 +111,7 @@ final class DockManager {
         (savedState as NSDictionary).write(toFile: defaultsPath, atomically: true)
     }
 
-    private func runDefaults(_ args: String...) {
+    private func runDefaults(_ args: [String]) {
         let process = Process()
         process.executableURL = URL(fileURLWithPath: "/usr/bin/defaults")
         process.arguments = args

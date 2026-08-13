@@ -15,5 +15,28 @@ jobs:
       - name: Build
         run: swift build
 
-      - name: Run tests
-        run: swift test
+      - name: Run tests with coverage
+        run: swift test --enable-code-coverage
+
+      - name: Coverage report and threshold
+        # Baseline: 7.49% total line coverage (110 tests, 2026-08-14).
+        # Threshold is set just below baseline so it only catches regressions;
+        # raise it as coverage grows.
+        run: |
+          TEST_BIN=$(find .build -path "*xctest/Contents/MacOS/*" -type f -not -path "*dSYM*" | head -1)
+          PROF=$(find .build -name "*.profdata" | head -1)
+          echo "Instrumented binary: $TEST_BIN"
+          echo "Profile data: $PROF"
+          xcrun llvm-cov report "$TEST_BIN" -instr-profile "$PROF" \
+            -ignore-filename-regex="Tests/|\.build/|Package.swift"
+          # The last %-suffixed field of the TOTAL row is line coverage
+          # (branch coverage is always '-' for Swift binaries).
+          COVERAGE=$(xcrun llvm-cov report "$TEST_BIN" -instr-profile "$PROF" \
+            -ignore-filename-regex="Tests/|\.build/|Package.swift" \
+            | awk '/TOTAL/{for(i=1;i<=NF;i++) if ($i ~ /%$/) pct=$i; sub(/%/,"",pct); print pct}')
+          echo "Total line coverage: ${COVERAGE}%"
+          THRESHOLD=7.0
+          if awk "BEGIN{exit !($COVERAGE < $THRESHOLD)}"; then
+            echo "Coverage ${COVERAGE}% is below threshold ${THRESHOLD}%"
+            exit 1
+          fi

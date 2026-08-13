@@ -8,6 +8,11 @@ let package = Package(
         .executableTarget(
             name: "OpenTaskbar",
             path: "Sources/OpenTaskbar"
+        ),
+        .testTarget(
+            name: "OpenTaskbarTests",
+            dependencies: ["OpenTaskbar"],
+            path: "Tests/OpenTaskbarTests"
         )
     ]
 )

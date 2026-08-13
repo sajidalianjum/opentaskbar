@@ -17,8 +17,7 @@ final class WindowManager {
     private var refreshGeneration = 0
     private var refreshInFlight = false
     private var refreshQueued = false
-    private var cgMissCounts: [CGWindowID: Int] = [:]
-    private let maxCGMissesBeforeRemove = 2
+    private var missTracker = WindowGroupingEngine.WindowMissTracker(maxMissesBeforeRemove: 2)
     private var pendingRemovedWindowIDs: Set<CGWindowID> = []
 
     private var lastFocusedWindow: [String: CGWindowID] = [:]
@@ -235,13 +234,15 @@ final class WindowManager {
     }
 
     private func addClosedApp(_ group: AppGroup) {
-        guard group.isRunning, group.windows.isEmpty, !group.isLaunching,
-              let app = group.runningApplication, !app.isTerminated else { return }
-        guard app.bundleIdentifier != Bundle.main.bundleIdentifier,
-              app.bundleIdentifier != "com.apple.finder" else { return }
-        guard !TaskbarSettings.shared.isNeverQuit(group.bundleIdentifier) else { return }
-        if !closedApps.contains(where: { $0.bundleIdentifier == group.bundleIdentifier }) {
-            closedApps.append(group)
+        guard let candidate = WindowGroupingEngine.closedAppCandidates(
+            from: [group],
+            previousBundlesWithWindows: [],
+            ownBundleID: Bundle.main.bundleIdentifier,
+            neverQuitBundleIDs: Set(TaskbarSettings.shared.neverQuitBundleIdentifiers),
+            isAlive: { group in group.runningApplication?.isTerminated == false }
+        ).first else { return }
+        if !closedApps.contains(where: { $0.bundleIdentifier == candidate.bundleIdentifier }) {
+            closedApps.append(candidate)
         }
     }
 
@@ -277,7 +278,7 @@ final class WindowManager {
                     didChange = true
                 } else if !window.isMinimized {
                     if cgIDs.contains(window.windowID) {
-                        cgMissCounts.removeValue(forKey: window.windowID)
+                        missTracker.hit(windowID: window.windowID)
                         pendingRemovedWindowIDs.remove(window.windowID)
                     } else {
                         let element = accessibilityService.windowElement(for: window.windowID, pid: pid)
@@ -288,9 +289,7 @@ final class WindowManager {
                             appGroups[i].windows[j].isMinimized = true
                             didChange = true
                         } else {
-                            let misses = (cgMissCounts[window.windowID] ?? 0) + 1
-                            cgMissCounts[window.windowID] = misses
-                            if misses >= maxCGMissesBeforeRemove {
+                            if missTracker.miss(windowID: window.windowID) {
                                 removedWindowIDs.append(window.windowID)
                             }
                         }
@@ -300,7 +299,7 @@ final class WindowManager {
             if !removedWindowIDs.isEmpty {
                 appGroups[i].windows.removeAll { removedWindowIDs.contains($0.windowID) }
                 for windowID in removedWindowIDs {
-                    cgMissCounts.removeValue(forKey: windowID)
+                    missTracker.hit(windowID: windowID)
                     pendingRemovedWindowIDs.insert(windowID)
                 }
                 if appGroups[i].windows.isEmpty {
@@ -319,7 +318,7 @@ final class WindowManager {
             if group.windows.isEmpty && !TaskbarSettings.shared.isPinned(group.bundleIdentifier) {
                 savedInsertionOrders[group.bundleIdentifier] = (group.insertionOrder, Date())
                 for window in group.windows {
-                    cgMissCounts.removeValue(forKey: window.windowID)
+                    missTracker.hit(windowID: window.windowID)
                 }
                 newlyClosedGroups.append(group)
                 return true
@@ -428,6 +427,10 @@ final class WindowManager {
 
         var updatedGroups: [AppGroup] = []
         var runningBundleIDs = Set<String>()
+        var insertionResolver = WindowGroupingEngine.InsertionOrderResolver(
+            nextOrder: nextInsertionOrder,
+            savedOrders: savedInsertionOrders
+        )
 
         for app in runningApps {
             let pid = app.processIdentifier
@@ -435,22 +438,18 @@ final class WindowManager {
             runningBundleIDs.insert(bundleID)
             let appWindows = cgWindows.filter { $0.pid == pid }
             let axWindows = axMap[pid] ?? []
-            var mergedWindows = mergeWindows(axWindows: axWindows, cgWindows: appWindows)
+            var mergedWindows = WindowGroupingEngine.mergeWindows(axWindows: axWindows, cgWindows: appWindows)
             if !pendingRemovedWindowIDs.isEmpty {
                 mergedWindows.removeAll { pendingRemovedWindowIDs.contains($0.windowID) }
             }
             mergedWindows.sort { $0.windowID < $1.windowID }
 
-            let order: Int
-            if let existing = existingMap[bundleID] {
-                order = existing.insertionOrder
-            } else if let saved = savedInsertionOrders[bundleID], Date().timeIntervalSince(saved.savedAt) <= insertionOrderTTL {
-                order = saved.order
-                savedInsertionOrders.removeValue(forKey: bundleID)
-            } else {
-                order = nextInsertionOrder
-                nextInsertionOrder += 1
-            }
+            let order = insertionResolver.order(
+                for: bundleID,
+                existing: existingMap[bundleID]?.insertionOrder,
+                now: Date(),
+                ttl: insertionOrderTTL
+            )
 
             let group = AppGroup(
                 bundleIdentifier: bundleID,
@@ -463,6 +462,8 @@ final class WindowManager {
             )
             updatedGroups.append(group)
         }
+        nextInsertionOrder = insertionResolver.nextOrder
+        savedInsertionOrders = insertionResolver.savedOrders
 
         for pinnedID in pinnedIDs {
             guard !runningBundleIDs.contains(pinnedID) else { continue }
@@ -497,37 +498,22 @@ final class WindowManager {
         for i in updatedGroups.indices {
             let bundleID = updatedGroups[i].bundleIdentifier
             if launchingBundleIDs.contains(bundleID) {
-                let hasWindows = !updatedGroups[i].windows.isEmpty
-                let isFrontmost = updatedGroups[i].runningApplication?.processIdentifier
-                    == NSWorkspace.shared.frontmostApplication?.processIdentifier
-                let startedAt = launchStartedAt[bundleID] ?? Date()
-                let graceElapsed = Date().timeIntervalSince(startedAt) >= backgroundedLaunchGrace
-                if hasWindows || (isFrontmost && graceElapsed) {
-                    launchingBundleIDs.remove(bundleID)
-                    launchTimeouts.removeValue(forKey: bundleID)
-                    launchStartedAt.removeValue(forKey: bundleID)
-                } else if !isFrontmost && graceElapsed {
-                    launchingBundleIDs.remove(bundleID)
-                    launchTimeouts.removeValue(forKey: bundleID)
-                    launchStartedAt.removeValue(forKey: bundleID)
-                } else {
+                if WindowGroupingEngine.shouldKeepLaunching(
+                    hasWindows: !updatedGroups[i].windows.isEmpty,
+                    startedAt: launchStartedAt[bundleID] ?? Date(),
+                    now: Date(),
+                    grace: backgroundedLaunchGrace
+                ) {
                     updatedGroups[i].isLaunching = true
+                } else {
+                    launchingBundleIDs.remove(bundleID)
+                    launchTimeouts.removeValue(forKey: bundleID)
+                    launchStartedAt.removeValue(forKey: bundleID)
                 }
             }
         }
 
-        updatedGroups.sort { lhs, rhs in
-            let lhsIsPinned = TaskbarSettings.shared.isPinned(lhs.bundleIdentifier)
-            let rhsIsPinned = TaskbarSettings.shared.isPinned(rhs.bundleIdentifier)
-            if lhsIsPinned && rhsIsPinned {
-                let li = pinnedIDs.firstIndex(of: lhs.bundleIdentifier) ?? Int.max
-                let ri = pinnedIDs.firstIndex(of: rhs.bundleIdentifier) ?? Int.max
-                return li < ri
-            }
-            if lhsIsPinned { return true }
-            if rhsIsPinned { return false }
-            return lhs.insertionOrder < rhs.insertionOrder
-        }
+        updatedGroups = WindowGroupingEngine.sortGroups(updatedGroups, pinnedIDs: pinnedIDs)
 
         for group in updatedGroups {
             if !group.windows.isEmpty {
@@ -554,15 +540,13 @@ final class WindowManager {
         }
 
         closedApps.removeAll()
-        for group in updatedGroups {
-            guard group.isRunning, group.windows.isEmpty, !group.isLaunching,
-                  let app = group.runningApplication, !app.isTerminated else { continue }
-            guard app.bundleIdentifier != Bundle.main.bundleIdentifier,
-                  app.bundleIdentifier != "com.apple.finder" else { continue }
-            guard !previousBundlesWithWindows.contains(group.bundleIdentifier) else { continue }
-            guard !TaskbarSettings.shared.isNeverQuit(group.bundleIdentifier) else { continue }
-            closedApps.append(group)
-        }
+        closedApps = WindowGroupingEngine.closedAppCandidates(
+            from: updatedGroups,
+            previousBundlesWithWindows: previousBundlesWithWindows,
+            ownBundleID: Bundle.main.bundleIdentifier,
+            neverQuitBundleIDs: Set(TaskbarSettings.shared.neverQuitBundleIdentifiers),
+            isAlive: { group in group.runningApplication?.isTerminated == false }
+        )
         log.log("buildAndApplyAppGroups: closedApps=\(closedApps.count)")
 
         // A background AX read can race a poll snapshot. If we already know
@@ -570,16 +554,18 @@ final class WindowManager {
         // not drop its icon — unless the poll already confirmed the close by
         // removing the group from the current state, in which case a stale
         // rebuild must not resurrect it.
+        let currentBundleIDs = Set(appGroups.map(\.bundleIdentifier))
         appGroups = updatedGroups.filter { group in
-            if !group.windows.isEmpty || TaskbarSettings.shared.isPinned(group.bundleIdentifier) || group.isLaunching {
-                return true
-            }
-            guard previousBundlesWithWindows.contains(group.bundleIdentifier) else { return false }
-            return appGroups.contains(where: { $0.bundleIdentifier == group.bundleIdentifier })
+            WindowGroupingEngine.keepGroupAfterRebuild(
+                group,
+                previousBundlesWithWindows: previousBundlesWithWindows,
+                currentBundleIDs: currentBundleIDs,
+                pinnedBundleIDs: Set(pinnedIDs)
+            )
         }
 
         let liveWindowIDs = Set(appGroups.flatMap(\.windows).map(\.windowID))
-        cgMissCounts = cgMissCounts.filter { liveWindowIDs.contains($0.key) }
+        missTracker.prune(keeping: liveWindowIDs)
         pendingRemovedWindowIDs.removeAll()
 
         constrainZoomedWindows()
@@ -605,21 +591,19 @@ final class WindowManager {
                 else { continue }
 
                 guard let screen = screenContaining(frame: liveFrame),
-                      isZoomedFrame(liveFrame, on: screen)
+                      WindowGroupingEngine.isZoomedFrame(liveFrame, visibleFrame: screen.visibleFrame)
                 else { continue }
 
                 let tbTop = taskbarTop(for: screen)
                 let windowBottom = liveFrame.minY
 
-                guard windowBottom < tbTop else { continue }
-
-                let targetHeight = screen.visibleFrame.maxY - tbTop
-
-                if abs(liveFrame.height - targetHeight) <= 1 {
-                    continue
-                }
-
-                guard targetHeight >= 100 else { continue }
+                guard windowBottom < tbTop,
+                      let targetHeight = WindowGroupingEngine.constrainedTargetHeight(
+                          frame: liveFrame,
+                          visibleFrame: screen.visibleFrame,
+                          taskbarTop: tbTop
+                      )
+                else { continue }
 
                 var newFrame = liveFrame
                 newFrame.size.height = targetHeight
@@ -638,34 +622,6 @@ final class WindowManager {
         let center = CGPoint(x: frame.midX, y: frame.midY)
         return NSScreen.screens.first(where: { $0.frame.contains(center) })
             ?? NSScreen.screens.first(where: { $0.frame.intersects(frame) })
-    }
-
-    private func isZoomedFrame(_ frame: CGRect, on screen: NSScreen) -> Bool {
-        let vf = screen.visibleFrame
-        let widthRatio = frame.width / vf.width
-        let heightRatio = frame.height / vf.height
-        return widthRatio >= 0.98 && heightRatio >= 0.98
-    }
-
-    private func mergeWindows(axWindows: [WindowInfo], cgWindows: [WindowInfo]) -> [WindowInfo] {
-        var result: [WindowInfo] = []
-        var seenIDs = Set<CGWindowID>()
-
-        for axWindow in axWindows {
-            if axWindow.isValid && !seenIDs.contains(axWindow.windowID) {
-                seenIDs.insert(axWindow.windowID)
-                result.append(axWindow)
-            }
-        }
-
-        for cgWindow in cgWindows {
-            if !seenIDs.contains(cgWindow.windowID) {
-                seenIDs.insert(cgWindow.windowID)
-                result.append(cgWindow)
-            }
-        }
-
-        return result
     }
 
     private func handleAppLaunched(_ app: NSRunningApplication) {
@@ -739,7 +695,7 @@ final class WindowManager {
             guard appGroups[i].runningApplication?.processIdentifier == pid else { continue }
             if let j = appGroups[i].windows.firstIndex(where: { $0.windowID == windowID }) {
                 appGroups[i].windows[j].isMinimized = true
-                cgMissCounts.removeValue(forKey: windowID)
+                missTracker.hit(windowID: windowID)
                 pendingRemovedWindowIDs.remove(windowID)
                 notifyChanged()
                 return
@@ -802,7 +758,7 @@ final class WindowManager {
             guard i < appGroups.count else { continue }
             appGroups[i].windows.removeAll { $0.windowID == windowID }
         }
-        cgMissCounts.removeValue(forKey: windowID)
+        missTracker.hit(windowID: windowID)
         pendingRemovedWindowIDs.insert(windowID)
         var newlyClosedGroups: [AppGroup] = []
         appGroups.removeAll { group in
@@ -903,8 +859,7 @@ final class WindowManager {
                     height: boundsDict["Height"] ?? 0
                 )
 
-                let intersection = frame.intersection(cgScreen)
-                let coverage = (intersection.width * intersection.height) / screenArea
+                let coverage = WindowGroupingEngine.coverageRatio(frame, in: cgScreen)
                 guard coverage >= 0.85 else { continue }
 
                 if let frontmostPID = frontmostPID, pid == frontmostPID {
@@ -975,14 +930,8 @@ final class WindowManager {
 
     private func cgBounds(for screen: NSScreen) -> CGRect {
         let primary = NSScreen.screens.first(where: { $0.frame.origin == .zero }) ?? NSScreen.main
-        let primaryHeight = primary?.frame.height ?? screen.frame.height
-        let sf = screen.frame
-        return CGRect(
-            x: sf.minX,
-            y: primaryHeight - sf.maxY,
-            width: sf.width,
-            height: sf.height
-        )
+        let primaryFrame = primary?.frame ?? screen.frame
+        return WindowGroupingEngine.cgBounds(screenFrame: screen.frame, primaryScreenFrame: primaryFrame)
     }
 
     func recordWindowFocus(bundleIdentifier: String, windowID: CGWindowID) {

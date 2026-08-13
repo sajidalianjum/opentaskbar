@@ -46,12 +46,19 @@ OpenTaskbar/
 │   │   ├── main.swift              # NSApplication, .accessory activation policy
 │   │   ├── AppDelegate.swift       # Lifecycle, per-screen panels, menu bar item, permission polling
 │   │   └── PermissionsManager.swift# AX + Screen Recording runtime checks
+├── Tests/OpenTaskbarTests/         # XCTest suite (@testable import OpenTaskbar); run via swift test
+│   ├── TestSupport.swift           # makeWindow/makeGroup factories
+│   ├── WindowGroupingEngineTests.swift
+│   ├── TaskbarSettingsTests.swift
+│   └── ModelAndUtilityTests.swift  # WindowInfo, AppGroup, ScreenGeometry, CrashGuard
+├── .github/workflows/ci.yml        # swift build + swift test on push/PR
 │   ├── Models/
 │   │   ├── WindowInfo.swift        # CGWindowID, pid, title, frame, minimized, fullscreen, layer, alpha, ownerName, isValid (Hashable)
 │   │   ├── AppGroup.swift          # Bundle grouping: windows[WindowInfo], icon, active state, insertionOrder, isRunning, isPinned, hasMultipleWindows (Hashable)
 │   │   └── TaskbarSettings.swift   # Singleton, @Published + NotificationCenter, UserDefaults persistence (dockMode, barAlignment, barSpacing, iconSize, showStartButton, showAppNames, showThumbnails, showOnAllScreens, backgroundTheme, quitOnLastWindowClose, customBackgroundColor, pinnedBundleIdentifiers)
 │   ├── Services/
 │   │   ├── WindowManager.swift     # Central orchestrator: app groups, polling (1s), activate/cycle apps, context menus, drag-to-reorder, pin/unpin, focus tracking, MenuItemActions singleton
+│   │   ├── WindowGroupingEngine.swift # Pure window-grouping logic (merge/dedup, sort, closed-app eligibility, resurrection filter, insertion-order TTL, launch grace, zoomed-window math, miss tracker) — unit tested
 │   │   ├── AccessibilityService.swift# AX wrappers: raise/minimize/unminimize/close/toggle-fullscreen windows, windowsForPID, windowElement lookup
 │   │   ├── AXObserverManager.swift # Per-PID AXObserver C callbacks for window events
 │   │   ├── WorkspaceMonitor.swift  # NSWorkspace notifications (launch/terminate/activate/deactivate/screens)
@@ -151,11 +158,14 @@ swift build -c release --arch arm64 --arch x86_64
 
 # Run (debug binary)
 .build/debug/OpenTaskbar
+
+# Run tests
+swift test
 ```
 
 **Icons:** The app icon (`OpenTaskbar.icns`) and status bar PNGs (18×18 (1x), 36×36 (@2x), 54×54 (@3x)) are committed under `Resources/` and copied into the app bundle by `Scripts/build.sh`. They are **not** regenerated at build time. To regenerate them (manual, local-only): edit the SVG sources in `myscripts/` (gitignored) and run `myscripts/generate_status_icon.sh` for the status bar PNGs or `myscripts/svg2icns.sh` for the app icon. Requires `brew install svg2png`. If you change the icons, commit the generated PNGs/icns.
 
-**No tests, no CI, no linter/formatter currently exist.**
+**Tests run via `swift test` (SPM test target, `Tests/OpenTaskbarTests/`); CI via GitHub Actions (`.github/workflows/ci.yml`). No linter/formatter currently exists.**
 
 ---
 
@@ -181,8 +191,8 @@ swift build -c release --arch arm64 --arch x86_64
 2. **SettingsWindowController** uses manual frame layout helpers (`FlippedView`, `labeled()`/`sliderRow()`/`checkbox()` functions), not a proper Auto Layout constraints-based layout
 3. **1s poll timer** compares full window sets each cycle; could be optimized to avoid full refresh when nothing changed
 4. **`MenuItemActions`** is a singleton (`shared`) that creates its own `AccessibilityService` instance rather than sharing the one from `WindowManager`; callback wiring is fragile
-5. **No tests** — no test target in Package.swift, no test files
-6. **No CI** — no GitHub Actions or similar
+5. **Tests cover pure logic only** — `WindowGroupingEngine`, models, and `TaskbarSettings` are unit tested; AppKit/AX-driven flows (panels, observers, popovers) have no test coverage
+6. **CI runs `swift build` + `swift test` only** — no linting, formatting, or release-bundle verification in CI
 7. **No localization** — all strings hardcoded in English
 8. **No SwiftUI `@main`** — uses classic `NSApplicationMain` pattern
 9. **`StartMenuButton`** simulates Cmd+Space via `CGEvent` — fragile if Spotlight is remapped or disabled, and requires accessibility permissions

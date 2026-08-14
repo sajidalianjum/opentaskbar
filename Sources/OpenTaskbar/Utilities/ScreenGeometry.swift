@@ -1,5 +1,11 @@
 import AppKit
 
+extension NSScreen {
+    var displayID: CGDirectDisplayID {
+        deviceDescription[NSDeviceDescriptionKey("NSScreenNumber")] as? CGDirectDisplayID ?? 0
+    }
+}
+
 enum ScreenGeometry {
     static let dockStyleBottomOffset: CGFloat = 6
 

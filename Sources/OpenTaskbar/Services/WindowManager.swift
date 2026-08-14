@@ -34,7 +34,7 @@ final class WindowManager {
     var onAppGroupsChanged: (() -> Void)?
     var onFullscreenScreensChanged: (([NSScreen]) -> Void)?
 
-    private var lastFullscreenScreenIDs: Set<ObjectIdentifier> = []
+    private var lastFullscreenScreenIDs: Set<CGDirectDisplayID> = []
     private var cancellables = Set<AnyCancellable>()
 
     init() {
@@ -786,10 +786,10 @@ final class WindowManager {
         }
 
         var screens: [NSScreen] = []
-        var ids = Set<ObjectIdentifier>()
+        var ids = Set<CGDirectDisplayID>()
 
         for screen in screensWithCoveringWindows() {
-            let id = ObjectIdentifier(screen)
+            let id = screen.displayID
             if ids.insert(id).inserted {
                 screens.append(screen)
             }
@@ -798,7 +798,7 @@ final class WindowManager {
         for group in appGroups {
             for window in group.windows where !window.isMinimized && window.isFullscreen {
                 guard let screen = screenContaining(frame: window.frame) else { continue }
-                let id = ObjectIdentifier(screen)
+                let id = screen.displayID
                 if ids.insert(id).inserted {
                     screens.append(screen)
                 }
@@ -807,7 +807,7 @@ final class WindowManager {
 
         if let frontApp = NSWorkspace.shared.frontmostApplication {
             for screen in screensWithAXFullscreen(app: frontApp) {
-                let id = ObjectIdentifier(screen)
+                let id = screen.displayID
                 if ids.insert(id).inserted {
                     screens.append(screen)
                 }
@@ -815,6 +815,7 @@ final class WindowManager {
         }
 
         guard ids != lastFullscreenScreenIDs else { return }
+        guard onFullscreenScreensChanged != nil else { return }
         lastFullscreenScreenIDs = ids
         onFullscreenScreensChanged?(screens)
     }
@@ -849,8 +850,11 @@ final class WindowManager {
                     height: boundsDict["Height"] ?? 0
                 )
 
+                // >=0.98 separates true fullscreen (Chrome HTML5 video fullscreen covers
+                // the full screen, 1.0) from large windowed/maximized windows
+                // (max ~0.97 with a visible menu bar).
                 let coverage = WindowGroupingEngine.coverageRatio(frame, in: cgScreen)
-                guard coverage >= 0.85 else { continue }
+                guard coverage >= 0.98 else { continue }
 
                 if let frontmostPID = frontmostPID, pid == frontmostPID {
                     frontmostCovers = true

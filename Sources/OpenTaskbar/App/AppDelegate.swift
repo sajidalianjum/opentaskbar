@@ -1,7 +1,7 @@
 import AppKit
 
 final class AppDelegate: NSObject, NSApplicationDelegate {
-    private var taskbarPanels: [NSScreen: TaskbarPanel] = [:]
+    private var taskbarPanels: [CGDirectDisplayID: TaskbarPanel] = [:]
     private let windowManager = WindowManager()
     private let dockManager = DockManager()
     private let crashGuard: CrashGuard
@@ -60,8 +60,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             LoginItemManager.setLaunchAtLogin(true)
         }
         dockManager.hideDock()
-        windowManager.start()
         createTaskbarPanels()
+        windowManager.start()
         setupStatusItem()
     }
 
@@ -78,7 +78,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
         for screen in NSScreen.screens {
             let panel = TaskbarPanel(screen: screen, windowManager: windowManager)
-            taskbarPanels[screen] = panel
+            taskbarPanels[screen.displayID] = panel
             panel.orderFront(nil)
         }
 
@@ -92,29 +92,30 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     private func updatePanelVisibility(fullscreenScreens: [NSScreen]) {
-        let fullscreenIDs = Set(fullscreenScreens.map { ObjectIdentifier($0) })
-        for (screen, panel) in taskbarPanels {
-            panel.setHiddenForFullscreen(fullscreenIDs.contains(ObjectIdentifier(screen)))
+        let fullscreenIDs = Set(fullscreenScreens.map { $0.displayID })
+        for (displayID, panel) in taskbarPanels {
+            panel.setHiddenForFullscreen(fullscreenIDs.contains(displayID))
         }
     }
 
     private func updatePanelsForScreenChanges() {
-        let currentScreens = Set(NSScreen.screens)
-        let existingScreens = Set(taskbarPanels.keys)
+        let currentScreens = NSScreen.screens
+        let currentIDs = Set(currentScreens.map(\.displayID))
+        let existingIDs = Set(taskbarPanels.keys)
 
-        for screen in currentScreens.subtracting(existingScreens) {
+        for screen in currentScreens where !existingIDs.contains(screen.displayID) {
             let panel = TaskbarPanel(screen: screen, windowManager: windowManager)
-            taskbarPanels[screen] = panel
+            taskbarPanels[screen.displayID] = panel
             panel.orderFront(nil)
         }
 
-        for screen in existingScreens.subtracting(currentScreens) {
-            taskbarPanels[screen]?.close()
-            taskbarPanels.removeValue(forKey: screen)
+        for id in existingIDs.subtracting(currentIDs) {
+            taskbarPanels[id]?.close()
+            taskbarPanels.removeValue(forKey: id)
         }
 
-        for (screen, panel) in taskbarPanels {
-            panel.updateFrame(for: screen)
+        for screen in currentScreens {
+            taskbarPanels[screen.displayID]?.updateFrame(for: screen)
         }
     }
 

@@ -840,7 +840,8 @@ final class WindowManager {
             for info in windowList {
                 guard let pid = info[kCGWindowOwnerPID as String] as? pid_t, pid != ourPid,
                       let alpha = info[kCGWindowAlpha as String] as? Double, alpha > 0,
-                      let layer = info[kCGWindowLayer as String] as? Int, layer >= 0,
+                      let layer = info[kCGWindowLayer as String] as? Int,
+                      layer >= 0, layer <= 3, // kCGNormalWindowLevel...kCGFloatingWindowLevel
                       let boundsDict = info[kCGWindowBounds as String] as? [String: CGFloat]
                 else { continue }
 
@@ -851,11 +852,16 @@ final class WindowManager {
                     height: boundsDict["Height"] ?? 0
                 )
 
-                // Only windows at the normal level or above can be fullscreen.
-                // Background windows (Finder desktop, wallpaper, backstop) live
-                // below kCGNormalWindowLevel (0) and always cover the whole
-                // screen, so without this filter the taskbar would hide
-                // whenever their owner (e.g. Finder) is frontmost.
+                // Only normal-level (0) and floating-level (3) windows can be an
+                // app's fullscreen window. Everything else is an overlay that
+                // must not hide the taskbar:
+                //   - background windows (Finder desktop, wallpaper, backstop)
+                //     live below 0 and always cover the whole screen;
+                //   - Chrome/Finder periodically create anonymous full-screen
+                //     overlay windows at layer 500, and the Screenshot app owns
+                //     a persistent full-screen overlay at layer 24. Without this
+                //     filter, the taskbar would hide whenever the frontmost app
+                //     has such an overlay on screen (e.g. while using Chrome).
                 //
                 // >=0.98 separates true fullscreen (Chrome HTML5 video fullscreen covers
                 // the full screen, 1.0) from large windowed/maximized windows

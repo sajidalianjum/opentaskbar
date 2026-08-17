@@ -840,6 +840,7 @@ final class WindowManager {
             for info in windowList {
                 guard let pid = info[kCGWindowOwnerPID as String] as? pid_t, pid != ourPid,
                       let alpha = info[kCGWindowAlpha as String] as? Double, alpha > 0,
+                      let layer = info[kCGWindowLayer as String] as? Int, layer >= 0,
                       let boundsDict = info[kCGWindowBounds as String] as? [String: CGFloat]
                 else { continue }
 
@@ -850,6 +851,12 @@ final class WindowManager {
                     height: boundsDict["Height"] ?? 0
                 )
 
+                // Only windows at the normal level or above can be fullscreen.
+                // Background windows (Finder desktop, wallpaper, backstop) live
+                // below kCGNormalWindowLevel (0) and always cover the whole
+                // screen, so without this filter the taskbar would hide
+                // whenever their owner (e.g. Finder) is frontmost.
+                //
                 // >=0.98 separates true fullscreen (Chrome HTML5 video fullscreen covers
                 // the full screen, 1.0) from large windowed/maximized windows
                 // (max ~0.97 with a visible menu bar).

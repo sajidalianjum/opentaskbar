@@ -34,7 +34,8 @@ OpenTaskbar/
 │   ├── status-icon@3x.png          # Status bar icon 54×54 (generated)
 │   └── OpenTaskbar.icns            # Full app icon
 ├── Scripts/
-│   ├── build.sh                    # swift build -c release + codesign → .app bundle
+│   ├── build.sh                    # swift build -c release (universal, with native-arch fallback) + codesign + entitlements + zip → build/OpenTaskbar-<version>.zip
+│   ├── release.sh                  # build.sh + printable (or automated via gh) GitHub Release publishing
 │   └── run.sh                      # build.sh + open the .app bundle
 ├── myscripts/                      # gitignored — local icon sources, not part of the repo
 │   ├── opentaskbar.svg             # Full app icon SVG source
@@ -64,19 +65,26 @@ OpenTaskbar/
 │   │   ├── AXObserverManager.swift # Per-PID AXObserver C callbacks for window events
 │   │   ├── WorkspaceMonitor.swift  # NSWorkspace notifications (launch/terminate/activate/deactivate/screens)
 │   │   ├── DockManager.swift       # Save/restore Dock autohide/coexist via defaults + killall, ~/.config/opentaskbar/dock-state.plist
+│   │   ├── ThemeManager.swift      # Background theme resolution (system/dark/light/glassmorphism/custom, translucent-vibrancy)
 │   │   └── ThumbnailService.swift  # Async SCScreenshotManager (macOS 14+) / CGWindowList fallback
 │   ├── Utilities/
 │   │   ├── SingleInstanceLock.swift# PID file at /tmp/com.opentaskbar.lock
 │   │   ├── ScreenGeometry.swift    # Taskbar rect from NSScreen, dynamic height based on icon size
 │   │   ├── CGWindowExtensions.swift# CGWindowListCopyWindowInfo filtered wrapper
-│   │   └── NSImageExtensions.swift # resized(to:), roundedCorners(radius:), systemIcon(for:size:)
+│   │   ├── NSImageExtensions.swift # resized(to:), roundedCorners(radius:), systemIcon(for:size:)
+│   │   ├── CrashGuard.swift        # Dock state save/restore on unexpected exit, clean-exit marker
+│   │   ├── Logger.swift            # /tmp/opentaskbar.log debug logging
+│   │   └── LoginItemManager.swift  # Launch-at-login registration (SMAppService / legacy)
 │   └── Views/
 │       ├── TaskbarPanel.swift      # NSPanel: borderless, statusBar level, click-through, per-screen
-│       ├── TaskbarContentView.swift# NSVisualEffectView + NSStackView + start/center/right sections, theme support, drag-drop reorder, insertion indicator
+│       ├── TaskbarContentView.swift# NSVisualEffectView + NSStackView + start/center/right sections, theme support, drag-drop reorder, insertion indicator, overflow
 │       ├── AppButtonView.swift     # App icon, name, active indicator bar, count badge, hover, right-click, drag source, window list or thumbnail popover on hover (based on showThumbnails setting)
 │       ├── StartMenuButton.swift   # SF Symbol "magnifyingglass" button, triggers Cmd+Space via CGEvent
 │       ├── WindowListPopover.swift # Floating NSWindow with per-window rows (icon, title, close button), activate/close/hover-dismiss
 │       ├── ThumbnailPopover.swift  # Floating NSWindow with per-window thumbnail cards in a horizontal row, close button on hover, async thumbnail loading via ThumbnailService
+│       ├── OverflowChevronButton.swift # "…" button shown when taskbar items overflow the screen width
+│       ├── OverflowPopover.swift   # Window listing all overflowed app buttons
+│       ├── TooltipWindow.swift     # Lightweight hover tooltip showing window titles
 │       └── SettingsWindowController.swift # 420×520 preferences window (NSScrollView + FlippedView, popup buttons, sliders, checkboxes, color well, reset)
 ├── Package.swift                   # Swift 5.9, macOS 14, single executable target
 └── AGENTS.md                       # This file

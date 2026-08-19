@@ -2,7 +2,11 @@
 
 A macOS menubar utility that replaces the Dock with a customizable, Windows-style taskbar. It shows all running apps with active-state indicators, window badges, hover window previews (thumbnails or a window list), a Spotlight-triggering Start button, drag-to-reorder, per-app window cycling, and per-app context menus with pin/unpin and quit actions.
 
-> **Status:** This project is in active development. It works, but there is no stable release or automated test suite yet — see [Contributing](#contributing).
+> **Status:** OpenTaskbar ships as a prebuilt release and is tested in CI (110+ tests). The prebuilt app is **ad-hoc signed** (no Apple Developer ID), so first launch needs a one-time Gatekeeper override — see [From a release](#from-a-release).
+
+[![CI](https://github.com/sajidalianjum/opentaskbar/actions/workflows/ci.yml/badge.svg)](https://github.com/sajidalianjum/opentaskbar/actions/workflows/ci.yml)
+[![Release](https://img.shields.io/github/v/release/sajidalianjum/opentaskbar)](https://github.com/sajidalianjum/opentaskbar/releases)
+[![License: AGPL-3.0](https://img.shields.io/badge/License-AGPL--3.0-blue.svg)](LICENSE)
 
 ## Screenshots
 
@@ -36,22 +40,30 @@ Screenshots are coming soon. They will live in [`docs/screenshots/`](docs/screen
 
 ### From a release
 
-Prebuilt releases are not published yet. Until then, build from source (below) or watch the [Releases](https://github.com/opentaskbar/opentaskbar/releases) page.
+Download the latest `OpenTaskbar-*.zip` from the [Releases](https://github.com/sajidalianjum/opentaskbar/releases) page.
+
+1. Unzip and drag `OpenTaskbar.app` into your **Applications** folder.
+2. **First launch:** prebuilt releases are ad-hoc signed (no Apple Developer ID), so Gatekeeper blocks the first double-click. Do one of these **once**:
+   - **Right-click** `OpenTaskbar.app` → **Open** → **Open**, or
+   - run `xattr -dr com.apple.quarantine /Applications/OpenTaskbar.app` in Terminal
+3. Grant **Accessibility** permission when prompted (required), and optionally **Screen Recording** for hover thumbnails.
+
+> **Updating:** because release builds are ad-hoc signed, the app's signature changes between versions, so you may need to re-grant Accessibility / Screen Recording after updating. Your settings are unaffected.
 
 ### Build from source
 
 Requires Xcode Command Line Tools (`xcode-select --install`) or a full Xcode installation — `swift` must be available on your `PATH`.
 
 ```bash
-git clone https://github.com/opentaskbar/opentaskbar.git
+git clone https://github.com/sajidalianjum/opentaskbar.git
 cd opentaskbar
 
 # Build, package into OpenTaskbar.app, and launch it
 ./Scripts/run.sh
 
-# Or just build the .app bundle without launching
+# Or just build the .app bundle (+ distributable zip) without launching
 ./Scripts/build.sh
-# Output: build/OpenTaskbar.app
+# Output: build/OpenTaskbar.app, build/OpenTaskbar-<version>.zip
 ```
 
 Debug / release builds without the app bundle:
@@ -61,7 +73,7 @@ swift build                 # debug binary
 swift build -c release      # release binary
 ```
 
-> **Note:** `Scripts/build.sh` code-signs the bundle. It uses your identity if the `OPENTASKBAR_SIGN_IDENTITY` environment variable is set (or a local `OpenTaskbarDev` identity), and falls back to ad-hoc signing otherwise. Ad-hoc-signed builds run fine locally.
+> **Note:** `Scripts/build.sh` builds a **universal** (Intel + Apple Silicon) release binary, assembles `OpenTaskbar.app`, embeds the accessibility entitlement, code-signs it, and packages a distributable `build/OpenTaskbar-<version>.zip`. It signs with your identity if `OPENTASKBAR_SIGN_IDENTITY` is set (or a local `OpenTaskbarDev` identity), and falls back to ad-hoc signing otherwise. For a one-command release artifact, use `./Scripts/release.sh`.
 
 ### First launch & permissions
 
@@ -140,14 +152,16 @@ Open **Preferences…** from the menu bar (⌘,). Changes apply immediately.
 | Spotlight button does nothing | The shortcut was remapped or Spotlight is disabled; OpenTaskbar simulates `Cmd+Space` |
 | Taskbar hidden | A fullscreen window is active (disable "Hide Taskbar on Fullscreen"), or check "Show on All Screens" |
 | Dock is gone and OpenTaskbar is not running | Launch OpenTaskbar again — it restores the Dock — or run `defaults write com.apple.dock autohide -bool false && killall Dock` |
-| Build fails with codesign error | Ensure a signing identity exists (`OPENTASKBAR_SIGN_IDENTITY`), or edit `Scripts/build.sh` to use ad-hoc signing (`--sign -`) |
+| Gatekeeper blocks the app ("Apple cannot check it…" / "unidentified developer") | Expected for ad-hoc-signed releases. Right-click `OpenTaskbar.app` → **Open** → **Open** once, or run `xattr -dr com.apple.quarantine /Applications/OpenTaskbar.app` |
+| Access granted but permissions reset after an update | Release builds change signature between versions; re-grant Accessibility / Screen Recording once after updating |
+| Build fails with codesign error | Ensure a signing identity exists (`OPENTASKBAR_SIGN_IDENTITY`), or let `Scripts/build.sh` fall back to ad-hoc signing (`--sign -`) |
 
 ## Privacy
 
 - **No telemetry, no analytics, no network calls.** OpenTaskbar never contacts a server.
 - **Local logs only** — a debug log is written to `/tmp/opentaskbar.log`; crash state to `/tmp/opentaskbar.crash`. Nothing leaves your machine.
 - **Permissions are scoped** — Accessibility is used solely to control windows; Screen Recording is used solely to render your own thumbnails on hover.
-- **Private API** — window identification uses the private `_AXUIElementGetWindow` symbol, loaded at runtime via `dlsym`. This is why OpenTaskbar cannot be distributed through the Mac App Store; it is distributed as source and (in the future) signed releases.
+- **Private API** — window identification uses the private `_AXUIElementGetWindow` symbol, loaded at runtime via `dlsym`. This is why OpenTaskbar cannot be distributed through the Mac App Store. The prebuilt release is ad-hoc signed — verify the build from source if you'd prefer.
 
 ## FAQ
 
@@ -157,6 +171,8 @@ Open **Preferences…** from the menu bar (⌘,). Changes apply immediately.
 
 **Why does it need Accessibility?** The same reason Dock-alternative and window-management apps do — controlling other apps' windows requires the Accessibility API. Without it, the taskbar is display-only.
 
+**Why does macOS warn "Apple cannot check it for malicious software"?** The prebuilt release is ad-hoc signed because the project has no Apple Developer ID (required for notarization). This is how many open-source Mac utilities (e.g. yabai, SketchyBar) ship — the app is distributed with its source code and the AGPL license notice so you can verify and build it yourself if you wish. The one-time override is **right-click → Open**, or `xattr -dr com.apple.quarantine /Applications/OpenTaskbar.app`.
+
 **Can I contribute?** Yes — see [Contributing](#contributing).
 
 ## Contributing
@@ -164,8 +180,8 @@ Open **Preferences…** from the menu bar (⌘,). Changes apply immediately.
 Contributions are welcome! Please read **[AGENTS.md](AGENTS.md)** first — it documents the architecture, coding conventions (pure AppKit, programmatic Auto Layout, no third-party dependencies), and known pain points.
 
 - Open an issue for bugs (include macOS version and permission state) or feature requests
-- Keep pull requests focused; verify `swift build` succeeds before submitting
-- There is no test suite yet — adding tests is a great first contribution
+- Keep pull requests focused; verify `swift build` and `swift test` succeed before submitting
+- Tests live in `Tests/OpenTaskbarTests/` — improving coverage of the AppKit/AX-driven flows is a great first contribution
 
 ## License
 

@@ -13,7 +13,6 @@ final class TaskbarSettings {
         case system
         case dark
         case light
-        case glassmorphism
         case custom
     }
 
@@ -59,14 +58,6 @@ final class TaskbarSettings {
         @Published var backgroundTheme: BackgroundTheme {
             didSet {
                 UserDefaults.standard.set(backgroundTheme.rawValue, forKey: "backgroundTheme")
-                switch backgroundTheme {
-                case .system:
-                    translucentBar = !NSWorkspace.shared.accessibilityDisplayShouldReduceTransparency
-                case .glassmorphism:
-                    translucentBar = true
-                default:
-                    break
-                }
                 postChange()
             }
         }
@@ -83,8 +74,8 @@ final class TaskbarSettings {
         didSet { UserDefaults.standard.set(hideOnFullscreen, forKey: "hideOnFullscreen"); postChange() }
     }
 
-    @Published var translucentBar: Bool {
-        didSet { UserDefaults.standard.set(translucentBar, forKey: "translucentBar"); postChange() }
+    var translucentBar: Bool {
+        !NSWorkspace.shared.accessibilityDisplayShouldReduceTransparency
     }
 
     @Published var customBackgroundColorData: Data {
@@ -200,8 +191,8 @@ final class TaskbarSettings {
         self.hoverDelay = defaults.object(forKey: "hoverDelay") as? Double ?? 0.4
         self.constrainZoomedWindows = defaults.object(forKey: "constrainZoomedWindows") as? Bool ?? false
         self.hideOnFullscreen = defaults.object(forKey: "hideOnFullscreen") as? Bool ?? true
-        self.translucentBar = defaults.object(forKey: "translucentBar") as? Bool ?? !NSWorkspace.shared.accessibilityDisplayShouldReduceTransparency
         self.backgroundTheme = BackgroundTheme(rawValue: defaults.string(forKey: "backgroundTheme") ?? "") ?? .system
+        defaults.removeObject(forKey: "translucentBar")
         self.pinnedBundleIdentifiers = defaults.stringArray(forKey: "pinnedBundleIdentifiers") ?? []
         self.neverQuitBundleIdentifiers = defaults.stringArray(forKey: "neverQuitBundleIdentifiers") ?? []
         if let saved = defaults.data(forKey: "customBackgroundColor") {
@@ -216,12 +207,7 @@ final class TaskbarSettings {
             object: nil,
             queue: .main
         ) { [weak self] _ in
-            guard let self, self.backgroundTheme == .system else { return }
-            self.translucentBar = !NSWorkspace.shared.accessibilityDisplayShouldReduceTransparency
-        }
-
-        if backgroundTheme == .glassmorphism {
-            translucentBar = true
+            self?.postChange()
         }
     }
 }

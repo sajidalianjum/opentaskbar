@@ -14,10 +14,6 @@ final class SettingsWindowController {
     private var colorRowHeight: NSLayoutConstraint?
     private weak var spacingValueLabel: NSTextField?
     private weak var iconSizeValueLabel: NSTextField?
-    private weak var translucentCheckbox: NSButton?
-    private weak var reduceLabel: NSTextField?
-    private var reduceLabelHeight: NSLayoutConstraint?
-    private var accessibilityObserver: NSObjectProtocol?
 
     private init() {}
 
@@ -59,16 +55,6 @@ final class SettingsWindowController {
         ])
 
         setupControls(in: contentView)
-
-        if accessibilityObserver == nil {
-            accessibilityObserver = NSWorkspace.shared.notificationCenter.addObserver(
-                forName: NSWorkspace.accessibilityDisplayOptionsDidChangeNotification,
-                object: nil,
-                queue: .main
-            ) { [weak self] _ in
-                self?.updateReduceTransparencyUI()
-            }
-        }
 
         self.window = window
         window.makeKeyAndOrderFront(nil)
@@ -203,14 +189,12 @@ final class SettingsWindowController {
         themeSelect.addItem(withTitle: "System")
         themeSelect.addItem(withTitle: "Dark")
         themeSelect.addItem(withTitle: "Light")
-        themeSelect.addItem(withTitle: "Glassmorphism")
         themeSelect.addItem(withTitle: "Custom")
         switch settings.backgroundTheme {
         case .system: themeSelect.selectItem(at: 0)
         case .dark: themeSelect.selectItem(at: 1)
         case .light: themeSelect.selectItem(at: 2)
-        case .glassmorphism: themeSelect.selectItem(at: 3)
-        case .custom: themeSelect.selectItem(at: 4)
+        case .custom: themeSelect.selectItem(at: 3)
         }
         themeSelect.target = self
         themeSelect.action = #selector(themeChanged(_:))
@@ -257,39 +241,6 @@ final class SettingsWindowController {
         let hidden = settings.backgroundTheme != .custom
         cRow.isHidden = hidden
         prev = cRow
-
-        let translucentCheckbox = NSButton(checkboxWithTitle: "Translucent Bar", target: self, action: #selector(translucentChanged(_:)))
-        translucentCheckbox.state = settings.translucentBar ? .on : .off
-        translucentCheckbox.isEnabled = settings.backgroundTheme != .system
-        translucentCheckbox.translatesAutoresizingMaskIntoConstraints = false
-        self.translucentCheckbox = translucentCheckbox
-        view.addSubview(translucentCheckbox)
-
-        NSLayoutConstraint.activate([
-            translucentCheckbox.topAnchor.constraint(equalTo: prev?.bottomAnchor ?? view.topAnchor, constant: rowGap),
-            translucentCheckbox.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: hPad),
-        ])
-
-        let reduceLabel = NSTextField(labelWithString: "")
-        reduceLabel.font = NSFont.systemFont(ofSize: 11)
-        reduceLabel.textColor = NSColor.secondaryLabelColor
-        reduceLabel.translatesAutoresizingMaskIntoConstraints = false
-        view.addSubview(reduceLabel)
-
-        let reduceLabelHeight = reduceLabel.heightAnchor.constraint(equalToConstant: 0)
-        self.reduceLabel = reduceLabel
-        self.reduceLabelHeight = reduceLabelHeight
-
-        NSLayoutConstraint.activate([
-            reduceLabel.topAnchor.constraint(equalTo: translucentCheckbox.bottomAnchor, constant: 4),
-            reduceLabel.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: hPad + 24),
-            reduceLabel.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -hPad),
-            reduceLabelHeight,
-        ])
-
-        updateReduceTransparencyUI()
-
-        prev = reduceLabel
 
         let iconSlider = NSSlider()
         iconSlider.minValue = 16
@@ -415,18 +366,13 @@ final class SettingsWindowController {
         iconSizeValueLabel?.stringValue = "\(Int(sender.doubleValue))pt"
     }
 
-    @objc private func translucentChanged(_ sender: NSButton) {
-        settings.translucentBar = sender.state == .on
-    }
-
     @objc private func themeChanged(_ sender: NSPopUpButton) {
         let selected: TaskbarSettings.BackgroundTheme
         switch sender.indexOfSelectedItem {
         case 0: selected = .system
         case 1: selected = .dark
         case 2: selected = .light
-        case 3: selected = .glassmorphism
-        case 4: selected = .custom
+        case 3: selected = .custom
         default: selected = .system
         }
         settings.backgroundTheme = selected
@@ -434,37 +380,10 @@ final class SettingsWindowController {
         let isCustom = selected == .custom
         colorRow?.isHidden = !isCustom
         colorRowHeight?.constant = isCustom ? 24 : 0
-
-        let isSystem = selected == .system
-        if isSystem {
-            translucentCheckbox?.state = settings.translucentBar ? .on : .off
-        }
-        updateReduceTransparencyUI()
     }
 
     @objc private func customColorChanged(_ sender: NSColorWell) {
         settings.customBackgroundColor = sender.color
-    }
-
-    private func updateReduceTransparencyUI() {
-        let reduced = NSWorkspace.shared.accessibilityDisplayShouldReduceTransparency
-        let isGlass = settings.backgroundTheme == .glassmorphism
-        if reduced && isGlass {
-            reduceLabel?.stringValue = "\"Reduce Transparency\" is on — glassmorphism requires translucency"
-            reduceLabelHeight?.constant = 14
-            reduceLabel?.isHidden = false
-            translucentCheckbox?.isEnabled = false
-        } else if reduced {
-            reduceLabel?.stringValue = "\"Reduce Transparency\" is on — translucent effect unavailable"
-            reduceLabelHeight?.constant = 14
-            reduceLabel?.isHidden = false
-            translucentCheckbox?.isEnabled = false
-        } else {
-            reduceLabel?.stringValue = ""
-            reduceLabelHeight?.constant = 0
-            reduceLabel?.isHidden = true
-            translucentCheckbox?.isEnabled = settings.backgroundTheme != .system && !isGlass
-        }
     }
 
     @objc private func resetDefaults() {
@@ -482,7 +401,6 @@ final class SettingsWindowController {
         settings.launchAtLogin = true
         settings.animationsEnabled = true
         settings.constrainZoomedWindows = false
-        settings.translucentBar = !NSWorkspace.shared.accessibilityDisplayShouldReduceTransparency
         settings.backgroundTheme = .system
         settings.customBackgroundColor = NSColor(calibratedRed: 0.15, green: 0.15, blue: 0.2, alpha: 1.0)
         settings.endBatchUpdates()

@@ -23,32 +23,28 @@ final class ThemeManager {
 
             switch settings.backgroundTheme {
             case .system:
-                hideShadow(&shadowView)
                 effectView.appearance = nil
                 parent.appearance = nil
 
             case .dark:
-                hideShadow(&shadowView)
                 effectView.appearance = NSAppearance(named: .darkAqua)
                 parent.appearance = NSAppearance(named: .darkAqua)
 
             case .light:
-                hideShadow(&shadowView)
                 effectView.appearance = NSAppearance(named: .aqua)
                 parent.appearance = NSAppearance(named: .aqua)
 
-            case .glassmorphism:
-                effectView.material = .hudWindow
-                effectView.appearance = nil
-                parent.appearance = nil
-                showShadow(on: &shadowView, parent: parent, effectView: effectView, cornerRadius: cornerRadius)
-
             case .custom:
-                hideShadow(&shadowView)
                 let color = settings.customBackgroundColor
                 effectView.layer?.backgroundColor = color.withAlphaComponent(0.35).cgColor
                 effectView.appearance = Self.appearance(for: color)
                 parent.appearance = Self.appearance(for: color)
+            }
+
+            if cornerRadius > 0 {
+                showShadow(on: &shadowView, parent: parent, effectView: effectView, cornerRadius: cornerRadius)
+            } else {
+                hideShadow(&shadowView)
             }
         } else {
             effectView.isHidden = true
@@ -66,10 +62,6 @@ final class ThemeManager {
             case .light:
                 opaqueColor = NSColor(calibratedWhite: 0.92, alpha: 1.0)
                 parent.appearance = NSAppearance(named: .aqua)
-            case .glassmorphism:
-                let isDark = parent.effectiveAppearance.bestMatch(from: [.darkAqua, .aqua]) == .darkAqua
-                opaqueColor = isDark ? NSColor(calibratedWhite: 0.08, alpha: 1.0) : NSColor(calibratedWhite: 0.92, alpha: 1.0)
-                parent.appearance = nil
             case .custom:
                 opaqueColor = settings.customBackgroundColor
                 parent.appearance = Self.appearance(for: opaqueColor)

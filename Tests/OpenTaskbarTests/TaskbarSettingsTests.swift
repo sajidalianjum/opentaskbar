@@ -6,7 +6,6 @@ final class TaskbarSettingsTests: XCTestCase {
     private var originalNeverQuit: [String] = []
     private var originalBackgroundColorData: Data = Data()
     private var originalBackgroundTheme: TaskbarSettings.BackgroundTheme = .system
-    private var originalTranslucentBar = false
     private var originalIconSize: Double = 32
 
     override func setUp() {
@@ -15,7 +14,6 @@ final class TaskbarSettingsTests: XCTestCase {
         originalNeverQuit = TaskbarSettings.shared.neverQuitBundleIdentifiers
         originalBackgroundColorData = TaskbarSettings.shared.customBackgroundColorData
         originalBackgroundTheme = TaskbarSettings.shared.backgroundTheme
-        originalTranslucentBar = TaskbarSettings.shared.translucentBar
         originalIconSize = TaskbarSettings.shared.iconSize
     }
 
@@ -24,7 +22,6 @@ final class TaskbarSettingsTests: XCTestCase {
         TaskbarSettings.shared.neverQuitBundleIdentifiers = originalNeverQuit
         TaskbarSettings.shared.customBackgroundColorData = originalBackgroundColorData
         TaskbarSettings.shared.backgroundTheme = originalBackgroundTheme
-        TaskbarSettings.shared.translucentBar = originalTranslucentBar
         TaskbarSettings.shared.iconSize = originalIconSize
         super.tearDown()
     }
@@ -117,20 +114,13 @@ final class TaskbarSettingsTests: XCTestCase {
         XCTAssertEqual(restored.blueComponent, color.blueComponent, accuracy: 0.0001)
     }
 
-    func testGlassmorphismThemeEnablesTranslucentBar() {
-        let settings = TaskbarSettings.shared
-        settings.translucentBar = false
-        settings.backgroundTheme = .glassmorphism
-        XCTAssertTrue(settings.translucentBar)
+    func testTranslucentBarFollowsSystemReduceTransparency() {
+        let expected = !NSWorkspace.shared.accessibilityDisplayShouldReduceTransparency
+        XCTAssertEqual(TaskbarSettings.shared.translucentBar, expected)
     }
 
-    func testSystemThemeFollowsReduceTransparency() {
-        let settings = TaskbarSettings.shared
-        settings.backgroundTheme = .dark
-        settings.translucentBar = false
-        settings.backgroundTheme = .system
-        let expected = !NSWorkspace.shared.accessibilityDisplayShouldReduceTransparency
-        XCTAssertEqual(settings.translucentBar, expected)
+    func testGlassmorphismNoLongerValidTheme() {
+        XCTAssertNil(TaskbarSettings.BackgroundTheme(rawValue: "glassmorphism"))
     }
 
     func testReorderPinnedSuppressesChangeNotifications() {

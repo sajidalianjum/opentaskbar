@@ -170,6 +170,28 @@ final class WindowManager {
         refreshAppGroups()
         workspaceMonitor.start()
         startPolling()
+
+        // At login/boot the Dock has just been hidden and the screen geometry
+        // (visible frame) has not settled yet, so a maximized window restored by
+        // macOS can be constrained against a stale frame and end up too short.
+        // Restarting the app re-runs the constraint once the geometry is settled,
+        // which is why that appears to "fix" the height. Rebuild the app groups and
+        // re-evaluate the constraint a moment after startup so a fresh boot
+        // produces the same result, and again whenever the display layout changes.
+        DispatchQueue.main.asyncAfter(deadline: .now() + 3.0) { [weak self] in
+            self?.refreshAppGroups()
+        }
+
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(screenParametersChanged),
+            name: NSApplication.didChangeScreenParametersNotification,
+            object: nil
+        )
+    }
+
+    @objc private func screenParametersChanged() {
+        constrainZoomedWindows()
     }
 
     func stop() {
@@ -177,6 +199,9 @@ final class WindowManager {
         axObserverManager.removeAllObservers()
         pollTimer?.invalidate()
         pollTimer = nil
+        constrainTimer?.invalidate()
+        constrainTimer = nil
+        NotificationCenter.default.removeObserver(self)
     }
 
     private func setupObservers() {

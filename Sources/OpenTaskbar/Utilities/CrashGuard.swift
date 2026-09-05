@@ -5,7 +5,14 @@ final class CrashGuard {
     private static var signalWriteFd: Int32 = 0
     private static weak var dockManager: DockManager?
 
-    private static let cleanExitPath = "/tmp/com.opentaskbar.clean_exit"
+    // The clean-exit marker must survive a reboot, so it lives in the same
+    // persistent config directory as the Dock state backup (NOT /tmp, which is
+    // wiped on every reboot). Without this, isCleanExit() returns false after a
+    // reboot while hasSavedState() is true, so the app falsely reports that it
+    // "stopped unexpectedly" on every boot.
+    private static let cleanExitPath =
+        FileManager.default.homeDirectoryForCurrentUser
+            .appendingPathComponent(".config/opentaskbar/clean_exit").path
     private static let crashLogPath = "/tmp/opentaskbar.crash"
 
     private static func writeCrashLog(_ message: String) {
@@ -102,6 +109,8 @@ final class CrashGuard {
     }
 
     static func markCleanExit() {
+        let dir = (cleanExitPath as NSString).deletingLastPathComponent
+        try? FileManager.default.createDirectory(atPath: dir, withIntermediateDirectories: true)
         try? "".write(toFile: cleanExitPath, atomically: true, encoding: .utf8)
     }
 

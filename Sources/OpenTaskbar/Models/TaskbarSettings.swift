@@ -74,6 +74,10 @@ final class TaskbarSettings {
         didSet { UserDefaults.standard.set(hideOnFullscreen, forKey: "hideOnFullscreen"); postChange() }
     }
 
+    @Published var showRunningAppsWithoutWindows: Bool {
+        didSet { UserDefaults.standard.set(showRunningAppsWithoutWindows, forKey: "showRunningAppsWithoutWindows"); postChange() }
+    }
+
     var translucentBar: Bool {
         !NSWorkspace.shared.accessibilityDisplayShouldReduceTransparency
     }
@@ -191,6 +195,7 @@ final class TaskbarSettings {
         self.hoverDelay = defaults.object(forKey: "hoverDelay") as? Double ?? 0.4
         self.constrainZoomedWindows = defaults.object(forKey: "constrainZoomedWindows") as? Bool ?? false
         self.hideOnFullscreen = defaults.object(forKey: "hideOnFullscreen") as? Bool ?? true
+        self.showRunningAppsWithoutWindows = defaults.object(forKey: "showRunningAppsWithoutWindows") as? Bool ?? false
         self.backgroundTheme = BackgroundTheme(rawValue: defaults.string(forKey: "backgroundTheme") ?? "") ?? .system
         defaults.removeObject(forKey: "translucentBar")
         self.pinnedBundleIdentifiers = defaults.stringArray(forKey: "pinnedBundleIdentifiers") ?? []

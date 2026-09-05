@@ -59,9 +59,13 @@ enum WindowGroupingEngine {
         _ group: AppGroup,
         previousBundlesWithWindows: Set<String>,
         currentBundleIDs: Set<String>,
-        pinnedBundleIDs: Set<String>
+        pinnedBundleIDs: Set<String>,
+        keepRunningEmptyGroups: Bool = false
     ) -> Bool {
         if !group.windows.isEmpty || pinnedBundleIDs.contains(group.bundleIdentifier) || group.isLaunching {
+            return true
+        }
+        if keepRunningEmptyGroups && group.runningApplication?.isTerminated == false {
             return true
         }
         guard previousBundlesWithWindows.contains(group.bundleIdentifier) else { return false }
@@ -178,13 +182,17 @@ enum WindowGroupingEngine {
 
     static func closingEmptyGroups(
         _ groups: [AppGroup],
-        pinnedBundleIDs: [String]
+        pinnedBundleIDs: [String],
+        keepRunningEmptyGroups: Bool = false
     ) -> (groups: [AppGroup], closed: [AppGroup]) {
         var result = groups
         var closed: [AppGroup] = []
         result.removeAll { group in
             if group.windows.isEmpty && !pinnedBundleIDs.contains(group.bundleIdentifier) {
                 closed.append(group)
+                if keepRunningEmptyGroups && group.runningApplication?.isTerminated == false {
+                    return false
+                }
                 return true
             }
             return false
@@ -195,13 +203,14 @@ enum WindowGroupingEngine {
     static func removingWindow(
         _ windowID: CGWindowID,
         from groups: [AppGroup],
-        pinnedBundleIDs: [String]
+        pinnedBundleIDs: [String],
+        keepRunningEmptyGroups: Bool = false
     ) -> (groups: [AppGroup], closed: [AppGroup]) {
         var result = groups
         for i in result.indices {
             result[i].windows.removeAll { $0.windowID == windowID }
         }
-        return closingEmptyGroups(result, pinnedBundleIDs: pinnedBundleIDs)
+        return closingEmptyGroups(result, pinnedBundleIDs: pinnedBundleIDs, keepRunningEmptyGroups: keepRunningEmptyGroups)
     }
 
     struct WindowMissTracker {

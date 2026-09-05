@@ -281,6 +281,7 @@ final class SettingsWindowController {
         checkbox("Hide Taskbar on Fullscreen", action: #selector(hideOnFullscreenChanged(_:)), state: settings.hideOnFullscreen ? .on : .off)
         checkbox("Quit Apps When All Windows Close", action: #selector(quitOnCloseChanged(_:)), state: settings.quitOnLastWindowClose ? .on : .off)
         checkbox("Keep Zoomed Windows Above Taskbar", action: #selector(constrainZoomedChanged(_:)), state: settings.constrainZoomedWindows ? .on : .off)
+        checkbox("Show Running Apps With No Windows", action: #selector(showRunningAppsWithoutWindowsChanged(_:)), state: settings.showRunningAppsWithoutWindows ? .on : .off)
 
         separator()
 
@@ -346,6 +347,10 @@ final class SettingsWindowController {
         settings.hideOnFullscreen = sender.state == .on
     }
 
+    @objc private func showRunningAppsWithoutWindowsChanged(_ sender: NSButton) {
+        settings.showRunningAppsWithoutWindows = sender.state == .on
+    }
+
     @objc private func launchAtLoginChanged(_ sender: NSButton) {
         let enabled = sender.state == .on
         settings.launchAtLogin = enabled
@@ -401,6 +406,7 @@ final class SettingsWindowController {
         settings.launchAtLogin = true
         settings.animationsEnabled = true
         settings.constrainZoomedWindows = false
+        settings.showRunningAppsWithoutWindows = false
         settings.backgroundTheme = .system
         settings.customBackgroundColor = NSColor(calibratedRed: 0.15, green: 0.15, blue: 0.2, alpha: 1.0)
         settings.endBatchUpdates()

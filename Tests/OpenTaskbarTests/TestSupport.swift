@@ -29,13 +29,14 @@ func makeGroup(
     bundleID: String,
     windows: [WindowInfo] = [],
     isLaunching: Bool = false,
-    insertionOrder: Int = 0
+    insertionOrder: Int = 0,
+    runningApplication: NSRunningApplication? = nil
 ) -> AppGroup {
     AppGroup(
         bundleIdentifier: bundleID,
         localizedName: bundleID,
         icon: NSImage(),
-        runningApplication: nil,
+        runningApplication: runningApplication,
         windows: windows,
         isActive: false,
         insertionOrder: insertionOrder,

@@ -207,6 +207,29 @@ final class WindowGroupingEngineTests: XCTestCase {
         ))
     }
 
+    func testRunningEmptyGroupKeptWhenKeepRunningEmptyGroupsEnabled() {
+        let app = NSRunningApplication(processIdentifier: getpid())
+        let group = makeGroup(bundleID: "com.a", runningApplication: app)
+        XCTAssertTrue(WindowGroupingEngine.keepGroupAfterRebuild(
+            group,
+            previousBundlesWithWindows: [],
+            currentBundleIDs: [],
+            pinnedBundleIDs: [],
+            keepRunningEmptyGroups: true
+        ))
+    }
+
+    func testNotRunningEmptyGroupNotKeptEvenWhenKeepRunningEmptyGroupsEnabled() {
+        let group = makeGroup(bundleID: "com.a")
+        XCTAssertFalse(WindowGroupingEngine.keepGroupAfterRebuild(
+            group,
+            previousBundlesWithWindows: [],
+            currentBundleIDs: ["com.a"],
+            pinnedBundleIDs: [],
+            keepRunningEmptyGroups: true
+        ))
+    }
+
     // MARK: shouldKeepLaunching — grace period before launching state clears
 
     func testLaunchingKeptBeforeGraceElapses() {
@@ -407,6 +430,35 @@ final class WindowGroupingEngineTests: XCTestCase {
         let result = WindowGroupingEngine.closingEmptyGroups([a, empty1, b, empty2], pinnedBundleIDs: [])
         XCTAssertEqual(result.groups.map(\.bundleIdentifier), ["com.a", "com.b"])
         XCTAssertEqual(result.closed.map(\.bundleIdentifier), ["com.empty1", "com.empty2"])
+    }
+
+    func testClosingEmptyGroupsKeepsLiveEmptyGroupsWhenFlagEnabled() {
+        let app = NSRunningApplication(processIdentifier: getpid())
+        let empty = makeGroup(bundleID: "com.empty", runningApplication: app)
+        let result = WindowGroupingEngine.closingEmptyGroups([empty], pinnedBundleIDs: [], keepRunningEmptyGroups: true)
+        XCTAssertEqual(result.groups.map(\.bundleIdentifier), ["com.empty"])
+        XCTAssertEqual(result.closed.map(\.bundleIdentifier), ["com.empty"])
+    }
+
+    func testClosingEmptyGroupsRemovesNonRunningEmptyGroupsEvenWhenFlagEnabled() {
+        let empty = makeGroup(bundleID: "com.empty")
+        let result = WindowGroupingEngine.closingEmptyGroups([empty], pinnedBundleIDs: [], keepRunningEmptyGroups: true)
+        XCTAssertTrue(result.groups.isEmpty)
+        XCTAssertEqual(result.closed.map(\.bundleIdentifier), ["com.empty"])
+    }
+
+    func testRemovingWindowKeepsLiveEmptyGroupWhenFlagEnabled() {
+        let app = NSRunningApplication(processIdentifier: getpid())
+        let group = makeGroup(bundleID: "com.a", windows: [makeWindow(id: 1)], runningApplication: app)
+        let result = WindowGroupingEngine.removingWindow(
+            1,
+            from: [group],
+            pinnedBundleIDs: [],
+            keepRunningEmptyGroups: true
+        )
+        XCTAssertEqual(result.groups.map(\.bundleIdentifier), ["com.a"])
+        XCTAssertTrue(result.groups[0].windows.isEmpty)
+        XCTAssertEqual(result.closed.map(\.bundleIdentifier), ["com.a"])
     }
 
     // MARK: removingWindow — window removal + empty-group closure

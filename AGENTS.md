@@ -57,7 +57,7 @@ OpenTaskbar/
 │   ├── Models/
 │   │   ├── WindowInfo.swift        # CGWindowID, pid, title, frame, minimized, fullscreen, layer, alpha, ownerName, isValid (Hashable)
 │   │   ├── AppGroup.swift          # Bundle grouping: windows[WindowInfo], icon, active state, insertionOrder, isRunning, isPinned, hasMultipleWindows (Hashable)
-│   │   └── TaskbarSettings.swift   # Singleton, @Published + NotificationCenter, UserDefaults persistence (dockMode, barAlignment, barSpacing, iconSize, showStartButton, showAppNames, showThumbnails, showOnAllScreens, backgroundTheme, quitOnLastWindowClose, customBackgroundColor, pinnedBundleIdentifiers)
+│   │   └── TaskbarSettings.swift   # Singleton, @Published + NotificationCenter, UserDefaults persistence (dockMode, barAlignment, barSpacing, iconSize, showStartButton, showAppNames, showThumbnails, showOnAllScreens, backgroundTheme, quitOnLastWindowClose, customBackgroundColor, pinnedBundleIdentifiers, showRunningAppsWithoutWindows)
 │   ├── Services/
 │   │   ├── WindowManager.swift     # Central orchestrator: app groups, polling (1s), activate/cycle apps, context menus, drag-to-reorder, pin/unpin, focus tracking, MenuItemActions singleton
 │   │   ├── WindowGroupingEngine.swift # Pure window-grouping logic (merge/dedup, sort, closed-app eligibility, resurrection filter, insertion-order TTL, launch grace, zoomed-window math, miss tracker) — unit tested

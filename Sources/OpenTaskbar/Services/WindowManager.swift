@@ -246,6 +246,14 @@ final class WindowManager {
                 self?.notifyChanged()
             }
             .store(in: &cancellables)
+
+        TaskbarSettings.shared.$showRunningAppsWithoutWindows
+            .removeFirst()
+            .receive(on: RunLoop.main)
+            .sink { [weak self] _ in
+                self?.refreshAppGroups()
+            }
+            .store(in: &cancellables)
     }
 
     private func startPolling() {
@@ -340,7 +348,8 @@ final class WindowManager {
         let groupCountBefore = appGroups.count
         let closingResult = WindowGroupingEngine.closingEmptyGroups(
             appGroups,
-            pinnedBundleIDs: TaskbarSettings.shared.pinnedBundleIdentifiers
+            pinnedBundleIDs: TaskbarSettings.shared.pinnedBundleIdentifiers,
+            keepRunningEmptyGroups: TaskbarSettings.shared.showRunningAppsWithoutWindows
         )
         appGroups = closingResult.groups
         for group in closingResult.closed {
@@ -582,7 +591,8 @@ final class WindowManager {
                 group,
                 previousBundlesWithWindows: previousBundlesWithWindows,
                 currentBundleIDs: currentBundleIDs,
-                pinnedBundleIDs: Set(pinnedIDs)
+                pinnedBundleIDs: Set(pinnedIDs),
+                keepRunningEmptyGroups: TaskbarSettings.shared.showRunningAppsWithoutWindows
             )
         }
 
@@ -778,7 +788,8 @@ final class WindowManager {
         let removalResult = WindowGroupingEngine.removingWindow(
             windowID,
             from: appGroups,
-            pinnedBundleIDs: TaskbarSettings.shared.pinnedBundleIdentifiers
+            pinnedBundleIDs: TaskbarSettings.shared.pinnedBundleIdentifiers,
+            keepRunningEmptyGroups: TaskbarSettings.shared.showRunningAppsWithoutWindows
         )
         appGroups = removalResult.groups
         missTracker.hit(windowID: windowID)
@@ -1229,7 +1240,8 @@ final class WindowManager {
         let removalResult = WindowGroupingEngine.removingWindow(
             windowID,
             from: appGroups,
-            pinnedBundleIDs: TaskbarSettings.shared.pinnedBundleIdentifiers
+            pinnedBundleIDs: TaskbarSettings.shared.pinnedBundleIdentifiers,
+            keepRunningEmptyGroups: TaskbarSettings.shared.showRunningAppsWithoutWindows
         )
         appGroups = removalResult.groups
         for group in removalResult.closed {

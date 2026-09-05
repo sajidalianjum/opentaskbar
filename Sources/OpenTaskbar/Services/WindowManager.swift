@@ -248,7 +248,7 @@ final class WindowManager {
             .store(in: &cancellables)
 
         TaskbarSettings.shared.$showRunningAppsWithoutWindows
-            .removeFirst()
+            .dropFirst()
             .receive(on: RunLoop.main)
             .sink { [weak self] _ in
                 self?.refreshAppGroups()

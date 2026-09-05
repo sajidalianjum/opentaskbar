@@ -1196,15 +1196,6 @@ final class WindowManager {
         menu.addItem(pinItem)
 
         if group.isRunning {
-            let isNeverQuit = TaskbarSettings.shared.isNeverQuit(group.bundleIdentifier)
-            let neverQuitItem = NSMenuItem(title: isNeverQuit ? "Allow Quit When Closed" : "Don't Quit When Closed", action: #selector(MenuItemActions.shared.toggleNeverQuit(_:)), keyEquivalent: "")
-            neverQuitItem.target = MenuItemActions.shared
-            neverQuitItem.representedObject = ["bundleID": group.bundleIdentifier]
-            neverQuitItem.state = isNeverQuit ? .on : .off
-            menu.addItem(neverQuitItem)
-        }
-
-        if group.isRunning {
             menu.addItem(NSMenuItem.separator())
 
             let quitMenu = NSMenu()

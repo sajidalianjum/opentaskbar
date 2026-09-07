@@ -13,7 +13,7 @@ final class OverflowChevronButton: NSView {
         didSet {
             if overflowCount > 0 {
                 if badgeLabel == nil {
-                    let label = NSTextField(labelWithString: "\(overflowCount)")
+                    let label = NSTextField(labelWithString: L10n.number(overflowCount))
                     label.font = NSFont.systemFont(ofSize: 10, weight: .semibold)
                     label.textColor = .labelColor
                     label.alignment = .center
@@ -25,7 +25,7 @@ final class OverflowChevronButton: NSView {
                         label.topAnchor.constraint(equalTo: imageView.bottomAnchor, constant: 1),
                     ])
                 }
-                badgeLabel?.stringValue = "\(overflowCount)"
+                badgeLabel?.stringValue = L10n.number(overflowCount)
             } else {
                 badgeLabel?.removeFromSuperview()
                 badgeLabel = nil
@@ -54,7 +54,7 @@ final class OverflowChevronButton: NSView {
         hoverOverlay.isHidden = true
         addSubview(hoverOverlay)
 
-        let image = NSImage(systemSymbolName: "chevron.right", accessibilityDescription: "More apps")
+        let image = NSImage(systemSymbolName: "chevron.right", accessibilityDescription: L10n.moreAppsAccessibility)
         imageView = NSImageView(image: image ?? NSImage())
         imageView.imageScaling = .scaleProportionallyUpOrDown
         imageView.contentTintColor = .labelColor

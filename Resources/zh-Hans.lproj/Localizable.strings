@@ -1,0 +1,96 @@
+/* 简体中文翻译。 */
+
+"crash.unexpectedExit.title" = "OpenTaskbar 意外退出";
+"crash.dockRestored.message" = "Dock 已恢复。要重新启动 OpenTaskbar 吗？";
+"crash.launch.button" = "启动 OpenTaskbar";
+
+"menu.about" = "关于 OpenTaskbar";
+"menu.preferences" = "偏好设置…";
+"menu.restoreDockQuit" = "恢复 Dock 并退出";
+
+"common.cancel" = "取消";
+"common.close" = "关闭";
+"common.emptyTrash" = "清倒废纸篓";
+"common.forceQuit" = "强制退出";
+"common.ok" = "好";
+"common.open" = "打开";
+"common.openSystemSettings" = "打开系统设置";
+"common.quit" = "退出";
+"common.quitAll" = "全部退出";
+
+"alert.quitAllApps.title" = "退出所有应用";
+"alert.forceQuit.title" = "强制退出 %@？";
+"alert.unsavedChanges.message" = "你将丢失所有未保存的更改。此操作无法撤销。";
+"alert.quitAppsToRight.title" = "退出右侧的应用";
+"alert.emptyTrash.title" = "清倒废纸篓？";
+"alert.emptyTrash.message" = "确定要永久删除废纸篓中的所有项目吗？";
+"alert.couldNotEmptyTrash.title" = "无法清倒废纸篓";
+"alert.finderError.message" = "访达报告了错误（%d）。详情请参阅 /tmp/opentaskbar.log。";
+"alert.finderPermission.title" = "需要访达权限";
+"alert.finderPermission.message" = "macOS 阻止了 OpenTaskbar 控制访达。要解决此问题，请在“系统设置”>“隐私与安全性”>“自动化”中允许访问。";
+
+"window.fallback" = "窗口 %d";
+"window.fallbackGeneric" = "窗口";
+"app.unknown" = "未知";
+"window.closeAll" = "全部关闭";
+"window.closeAllWindows" = "关闭所有窗口";
+
+"finder.newWindow" = "新建访达窗口";
+"finder.home" = "个人";
+"finder.desktop" = "桌面";
+"finder.downloads" = "下载";
+"finder.documents" = "文稿";
+"finder.applications" = "应用程序";
+"finder.emptyTrash" = "清倒废纸篓…";
+
+"menu.pin" = "固定到任务栏";
+"menu.unpin" = "从任务栏取消固定";
+"menu.quitApp" = "退出 %@";
+"menu.quitAppsToRight" = "退出右侧的应用";
+"menu.forceQuitApp" = "强制退出 %@";
+
+"tooltip.searchSpotlight" = "搜索（聚焦）";
+"accessibility.search" = "搜索";
+"accessibility.moreApps" = "更多应用";
+"overflow.more" = "+%d 个";
+
+"taskbar.showDesktop" = "显示桌面";
+"taskbar.activityMonitor" = "活动监视器";
+"taskbar.openTrash" = "打开废纸篓";
+"taskbar.quitAllClosedApps" = "退出所有窗口已关闭的应用";
+"taskbar.quitAllApps" = "退出所有应用";
+"taskbar.dontQuitTheseApps" = "不退出这些应用";
+"taskbar.noApps" = "没有应用";
+
+"settings.windowTitle" = "OpenTaskbar 偏好设置";
+"settings.general" = "通用";
+"settings.appearance" = "外观";
+"settings.displayOptions" = "显示选项";
+"settings.style" = "样式";
+"settings.taskbar" = "任务栏";
+"settings.dock" = "Dock";
+"settings.barAlignment" = "任务栏对齐方式";
+"settings.left" = "左";
+"settings.center" = "居中";
+"settings.right" = "右";
+"settings.showOnAllScreens" = "在所有屏幕上显示";
+"settings.backgroundTheme" = "背景主题";
+"settings.system" = "系统";
+"settings.dark" = "深色";
+"settings.light" = "浅色";
+"settings.custom" = "自定义";
+"settings.customColor" = "自定义颜色";
+"settings.appIconSize" = "应用图标大小";
+"settings.barSpacing" = "任务栏间距";
+"settings.iconSizeValue" = "%@ 磅";
+"settings.spacingValue" = "%@ 像素";
+"settings.launchAtLogin" = "登录时启动";
+"settings.enableAnimations" = "启用动画";
+"settings.showWindowThumbnails" = "悬停时显示窗口缩略图";
+"settings.showAppNames" = "显示应用名称";
+"settings.showSpotlightButton" = "显示聚焦按钮";
+"settings.hideOnFullscreen" = "全屏时隐藏任务栏";
+"settings.quitAppsWhenWindowsClose" = "所有窗口关闭时退出应用";
+"settings.keepZoomedWindowsAboveTaskbar" = "将缩放窗口保持在任务栏上方";
+"settings.showRunningAppsWithoutWindows" = "显示没有窗口的正在运行的应用";
+"settings.resetDefaults" = "恢复默认设置";

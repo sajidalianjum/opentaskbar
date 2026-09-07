@@ -318,7 +318,7 @@ extension ThumbnailPopover {
             imageView.layer?.masksToBounds = true
             imageView.unregisterDraggedTypes()
 
-            let title = windowInfo.title.isEmpty ? "Window" : windowInfo.title
+            let title = windowInfo.title.isEmpty ? L10n.genericWindow : windowInfo.title
             titleLabel = NSTextField(labelWithString: title)
             titleLabel.font = NSFont.systemFont(ofSize: 11, weight: .medium)
             titleLabel.textColor = windowInfo.isMinimized ? .tertiaryLabelColor : .labelColor
@@ -330,7 +330,7 @@ extension ThumbnailPopover {
             closeButton = NSButton()
             closeButton.bezelStyle = .smallSquare
             closeButton.isBordered = false
-            closeButton.image = NSImage(systemSymbolName: "xmark.circle.fill", accessibilityDescription: "Close")
+            closeButton.image = NSImage(systemSymbolName: "xmark.circle.fill", accessibilityDescription: L10n.close)
             if let image = closeButton.image {
                 let config = NSImage.SymbolConfiguration(pointSize: 18, weight: .medium)
                 closeButton.image = image.withSymbolConfiguration(config)

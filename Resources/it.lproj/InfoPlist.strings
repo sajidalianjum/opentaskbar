@@ -1,0 +1,3 @@
+"NSAccessibilityUsageDescription" = "OpenTaskbar richiede l’accesso all’Accessibilità per passare da una finestra all’altra e gestirle.";
+"NSScreenCaptureUsageDescription" = "OpenTaskbar richiede la registrazione dello schermo per mostrare le miniature delle finestre al passaggio del mouse.";
+"NSAppleEventsUsageDescription" = "OpenTaskbar richiede il controllo di Finder per svuotare il Cestino e aprire le cartelle.";

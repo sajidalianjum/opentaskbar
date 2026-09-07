@@ -1,0 +1,97 @@
+/* English is the development language. Add another <language>.lproj/Localizable.strings
+   with the same keys to translate the app for that language. */
+
+"crash.unexpectedExit.title" = "OpenTaskbar exited unexpectedly";
+"crash.dockRestored.message" = "Your Dock has been restored. Would you like to launch OpenTaskbar again?";
+"crash.launch.button" = "Launch OpenTaskbar";
+
+"menu.about" = "About OpenTaskbar";
+"menu.preferences" = "Preferences…";
+"menu.restoreDockQuit" = "Restore Dock & Quit";
+
+"common.cancel" = "Cancel";
+"common.close" = "Close";
+"common.emptyTrash" = "Empty Trash";
+"common.forceQuit" = "Force Quit";
+"common.ok" = "OK";
+"common.open" = "Open";
+"common.openSystemSettings" = "Open System Settings";
+"common.quit" = "Quit";
+"common.quitAll" = "Quit All";
+
+"alert.quitAllApps.title" = "Quit All Apps";
+"alert.forceQuit.title" = "Force Quit %@?";
+"alert.unsavedChanges.message" = "You will lose any unsaved changes. This action cannot be undone.";
+"alert.quitAppsToRight.title" = "Quit Apps to the Right";
+"alert.emptyTrash.title" = "Empty the Trash?";
+"alert.emptyTrash.message" = "Are you sure you want to permanently delete all items in the Trash?";
+"alert.couldNotEmptyTrash.title" = "Couldn't Empty the Trash";
+"alert.finderError.message" = "Finder reported an error (%d). See /tmp/opentaskbar.log for details.";
+"alert.finderPermission.title" = "Finder Permission Needed";
+"alert.finderPermission.message" = "macOS blocked OpenTaskbar from controlling Finder. To fix this, allow it in System Settings > Privacy & Security > Automation.";
+
+"window.fallback" = "Window %d";
+"window.fallbackGeneric" = "Window";
+"app.unknown" = "Unknown";
+"window.closeAll" = "Close All";
+"window.closeAllWindows" = "Close All Windows";
+
+"finder.newWindow" = "New Finder Window";
+"finder.home" = "Home";
+"finder.desktop" = "Desktop";
+"finder.downloads" = "Downloads";
+"finder.documents" = "Documents";
+"finder.applications" = "Applications";
+"finder.emptyTrash" = "Empty Trash…";
+
+"menu.pin" = "Pin to taskbar";
+"menu.unpin" = "Unpin from taskbar";
+"menu.quitApp" = "Quit %@";
+"menu.quitAppsToRight" = "Quit Apps to the Right";
+"menu.forceQuitApp" = "Force Quit %@";
+
+"tooltip.searchSpotlight" = "Search (Spotlight)";
+"accessibility.search" = "Search";
+"accessibility.moreApps" = "More apps";
+"overflow.more" = "+%d more";
+
+"taskbar.showDesktop" = "Show Desktop";
+"taskbar.activityMonitor" = "Activity Monitor";
+"taskbar.openTrash" = "Open Trash";
+"taskbar.quitAllClosedApps" = "Quit All Closed Apps";
+"taskbar.quitAllApps" = "Quit All Apps";
+"taskbar.dontQuitTheseApps" = "Don't Quit These Apps";
+"taskbar.noApps" = "No apps";
+
+"settings.windowTitle" = "OpenTaskbar Preferences";
+"settings.general" = "General";
+"settings.appearance" = "Appearance";
+"settings.displayOptions" = "Display Options";
+"settings.style" = "Style";
+"settings.taskbar" = "Taskbar";
+"settings.dock" = "Dock";
+"settings.barAlignment" = "Bar Alignment";
+"settings.left" = "Left";
+"settings.center" = "Center";
+"settings.right" = "Right";
+"settings.showOnAllScreens" = "Show on All Screens";
+"settings.backgroundTheme" = "Background Theme";
+"settings.system" = "System";
+"settings.dark" = "Dark";
+"settings.light" = "Light";
+"settings.custom" = "Custom";
+"settings.customColor" = "Custom Color";
+"settings.appIconSize" = "App Icon Size";
+"settings.barSpacing" = "Bar Spacing";
+"settings.iconSizeValue" = "%@ pt";
+"settings.spacingValue" = "%@ px";
+"settings.launchAtLogin" = "Launch at Login";
+"settings.enableAnimations" = "Enable Animations";
+"settings.showWindowThumbnails" = "Show Window Thumbnails on Hover";
+"settings.showAppNames" = "Show App Names";
+"settings.showSpotlightButton" = "Show Spotlight Button";
+"settings.hideOnFullscreen" = "Hide Taskbar on Fullscreen";
+"settings.quitAppsWhenWindowsClose" = "Quit Apps When All Windows Close";
+"settings.keepZoomedWindowsAboveTaskbar" = "Keep Zoomed Windows Above Taskbar";
+"settings.showRunningAppsWithoutWindows" = "Show Running Apps With No Windows";
+"settings.resetDefaults" = "Reset to Defaults";

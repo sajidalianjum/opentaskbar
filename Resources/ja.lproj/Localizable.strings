@@ -1,0 +1,96 @@
+/* 日本語訳。 */
+
+"crash.unexpectedExit.title" = "OpenTaskbarが予期せず終了しました";
+"crash.dockRestored.message" = "Dockは復元されました。OpenTaskbarをもう一度起動しますか？";
+"crash.launch.button" = "OpenTaskbarを起動";
+
+"menu.about" = "OpenTaskbarについて";
+"menu.preferences" = "環境設定…";
+"menu.restoreDockQuit" = "Dockを復元して終了";
+
+"common.cancel" = "キャンセル";
+"common.close" = "閉じる";
+"common.emptyTrash" = "ゴミ箱を空にする";
+"common.forceQuit" = "強制終了";
+"common.ok" = "OK";
+"common.open" = "開く";
+"common.openSystemSettings" = "システム設定を開く";
+"common.quit" = "終了";
+"common.quitAll" = "すべて終了";
+
+"alert.quitAllApps.title" = "すべてのアプリを終了";
+"alert.forceQuit.title" = "%@を強制終了しますか？";
+"alert.unsavedChanges.message" = "保存していない変更は失われます。この操作は取り消せません。";
+"alert.quitAppsToRight.title" = "右側のアプリを終了";
+"alert.emptyTrash.title" = "ゴミ箱を空にしますか？";
+"alert.emptyTrash.message" = "ゴミ箱内のすべての項目を完全に削除してもよろしいですか？";
+"alert.couldNotEmptyTrash.title" = "ゴミ箱を空にできませんでした";
+"alert.finderError.message" = "Finderからエラー（%d）が報告されました。詳しくは /tmp/opentaskbar.log を参照してください。";
+"alert.finderPermission.title" = "Finderのアクセス許可が必要です";
+"alert.finderPermission.message" = "macOSにより、OpenTaskbarによるFinderの操作がブロックされました。解決するには、「システム設定」>「プライバシーとセキュリティ」>「オートメーション」で許可してください。";
+
+"window.fallback" = "ウインドウ %d";
+"window.fallbackGeneric" = "ウインドウ";
+"app.unknown" = "不明";
+"window.closeAll" = "すべて閉じる";
+"window.closeAllWindows" = "すべてのウインドウを閉じる";
+
+"finder.newWindow" = "新規Finderウインドウ";
+"finder.home" = "ホーム";
+"finder.desktop" = "デスクトップ";
+"finder.downloads" = "ダウンロード";
+"finder.documents" = "書類";
+"finder.applications" = "アプリケーション";
+"finder.emptyTrash" = "ゴミ箱を空にする…";
+
+"menu.pin" = "タスクバーに固定";
+"menu.unpin" = "タスクバーから固定を解除";
+"menu.quitApp" = "%@を終了";
+"menu.quitAppsToRight" = "右側のアプリを終了";
+"menu.forceQuitApp" = "%@を強制終了";
+
+"tooltip.searchSpotlight" = "検索（Spotlight）";
+"accessibility.search" = "検索";
+"accessibility.moreApps" = "その他のアプリ";
+"overflow.more" = "+%d個";
+
+"taskbar.showDesktop" = "デスクトップを表示";
+"taskbar.activityMonitor" = "アクティビティモニタ";
+"taskbar.openTrash" = "ゴミ箱を開く";
+"taskbar.quitAllClosedApps" = "ウインドウをすべて閉じたアプリを終了";
+"taskbar.quitAllApps" = "すべてのアプリを終了";
+"taskbar.dontQuitTheseApps" = "これらのアプリを終了しない";
+"taskbar.noApps" = "アプリなし";
+
+"settings.windowTitle" = "OpenTaskbar環境設定";
+"settings.general" = "一般";
+"settings.appearance" = "外観";
+"settings.displayOptions" = "表示オプション";
+"settings.style" = "スタイル";
+"settings.taskbar" = "タスクバー";
+"settings.dock" = "Dock";
+"settings.barAlignment" = "バーの配置";
+"settings.left" = "左";
+"settings.center" = "中央";
+"settings.right" = "右";
+"settings.showOnAllScreens" = "すべての画面に表示";
+"settings.backgroundTheme" = "背景テーマ";
+"settings.system" = "システム";
+"settings.dark" = "ダーク";
+"settings.light" = "ライト";
+"settings.custom" = "カスタム";
+"settings.customColor" = "カスタムカラー";
+"settings.appIconSize" = "アプリアイコンのサイズ";
+"settings.barSpacing" = "バーの間隔";
+"settings.iconSizeValue" = "%@ pt";
+"settings.spacingValue" = "%@ px";
+"settings.launchAtLogin" = "ログイン時に起動";
+"settings.enableAnimations" = "アニメーションを有効にする";
+"settings.showWindowThumbnails" = "ホバー時にウインドウのサムネールを表示";
+"settings.showAppNames" = "アプリ名を表示";
+"settings.showSpotlightButton" = "Spotlightボタンを表示";
+"settings.hideOnFullscreen" = "フルスクリーン時にタスクバーを隠す";
+"settings.quitAppsWhenWindowsClose" = "すべてのウインドウを閉じたときにアプリを終了";
+"settings.keepZoomedWindowsAboveTaskbar" = "拡大したウインドウをタスクバーの上に表示";
+"settings.showRunningAppsWithoutWindows" = "ウインドウのない実行中のアプリを表示";
+"settings.resetDefaults" = "デフォルトに戻す";

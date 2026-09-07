@@ -1,0 +1,96 @@
+/* الإنجليزية هي لغة التطوير. فيما يلي ترجمة جميع المفاتيح لهذه اللغة. */
+
+"crash.unexpectedExit.title" = "تم إنهاء OpenTaskbar بشكل غير متوقع";
+"crash.dockRestored.message" = "تمت استعادة Dock. هل تريد تشغيل OpenTaskbar مرة أخرى؟";
+"crash.launch.button" = "تشغيل OpenTaskbar";
+
+"menu.about" = "حول OpenTaskbar";
+"menu.preferences" = "التفضيلات…";
+"menu.restoreDockQuit" = "استعادة Dock وإنهاء التطبيق";
+
+"common.cancel" = "إلغاء";
+"common.close" = "إغلاق";
+"common.emptyTrash" = "إفراغ سلة المهملات";
+"common.forceQuit" = "إنهاء بالقوة";
+"common.ok" = "موافق";
+"common.open" = "فتح";
+"common.openSystemSettings" = "فتح إعدادات النظام";
+"common.quit" = "إنهاء";
+"common.quitAll" = "إنهاء الكل";
+
+"alert.quitAllApps.title" = "إنهاء جميع التطبيقات";
+"alert.forceQuit.title" = "هل تريد إنهاء %@ بالقوة؟";
+"alert.unsavedChanges.message" = "ستفقد أي تغييرات غير محفوظة. لا يمكن التراجع عن هذا الإجراء.";
+"alert.quitAppsToRight.title" = "إنهاء التطبيقات على اليمين";
+"alert.emptyTrash.title" = "هل تريد إفراغ سلة المهملات؟";
+"alert.emptyTrash.message" = "هل أنت متأكد من رغبتك في حذف جميع العناصر الموجودة في سلة المهملات نهائيًا؟";
+"alert.couldNotEmptyTrash.title" = "تعذر إفراغ سلة المهملات";
+"alert.finderError.message" = "أبلغ Finder عن خطأ (%d). راجع /tmp/opentaskbar.log لمعرفة التفاصيل.";
+"alert.finderPermission.title" = "يلزم الحصول على إذن Finder";
+"alert.finderPermission.message" = "حظر macOS على OpenTaskbar التحكم في Finder. لإصلاح ذلك، اسمح له في إعدادات النظام > الخصوصية والأمان > التشغيل الآلي.";
+
+"window.fallback" = "نافذة %d";
+"window.fallbackGeneric" = "نافذة";
+"app.unknown" = "غير معروف";
+"window.closeAll" = "إغلاق الكل";
+"window.closeAllWindows" = "إغلاق جميع النوافذ";
+
+"finder.newWindow" = "نافذة Finder جديدة";
+"finder.home" = "الصفحة الرئيسية";
+"finder.desktop" = "سطح المكتب";
+"finder.downloads" = "التنزيلات";
+"finder.documents" = "المستندات";
+"finder.applications" = "التطبيقات";
+"finder.emptyTrash" = "إفراغ سلة المهملات…";
+
+"menu.pin" = "تثبيت في شريط المهام";
+"menu.unpin" = "إلغاء التثبيت من شريط المهام";
+"menu.quitApp" = "إنهاء %@";
+"menu.quitAppsToRight" = "إنهاء التطبيقات على اليمين";
+"menu.forceQuitApp" = "إنهاء %@ بالقوة";
+
+"tooltip.searchSpotlight" = "بحث (Spotlight)";
+"accessibility.search" = "بحث";
+"accessibility.moreApps" = "المزيد من التطبيقات";
+"overflow.more" = "+%d إضافية";
+
+"taskbar.showDesktop" = "إظهار سطح المكتب";
+"taskbar.activityMonitor" = "مراقب النشاط";
+"taskbar.openTrash" = "فتح سلة المهملات";
+"taskbar.quitAllClosedApps" = "إنهاء جميع التطبيقات المغلقة";
+"taskbar.quitAllApps" = "إنهاء جميع التطبيقات";
+"taskbar.dontQuitTheseApps" = "عدم إنهاء هذه التطبيقات";
+"taskbar.noApps" = "لا توجد تطبيقات";
+
+"settings.windowTitle" = "تفضيلات OpenTaskbar";
+"settings.general" = "عام";
+"settings.appearance" = "المظهر";
+"settings.displayOptions" = "خيارات العرض";
+"settings.style" = "النمط";
+"settings.taskbar" = "شريط المهام";
+"settings.dock" = "Dock";
+"settings.barAlignment" = "محاذاة الشريط";
+"settings.left" = "اليسار";
+"settings.center" = "الوسط";
+"settings.right" = "اليمين";
+"settings.showOnAllScreens" = "إظهار على جميع الشاشات";
+"settings.backgroundTheme" = "سمة الخلفية";
+"settings.system" = "النظام";
+"settings.dark" = "داكن";
+"settings.light" = "فاتح";
+"settings.custom" = "مخصص";
+"settings.customColor" = "لون مخصص";
+"settings.appIconSize" = "حجم أيقونة التطبيق";
+"settings.barSpacing" = "تباعد الشريط";
+"settings.iconSizeValue" = "%@ pt";
+"settings.spacingValue" = "%@ px";
+"settings.launchAtLogin" = "التشغيل عند تسجيل الدخول";
+"settings.enableAnimations" = "تفعيل الحركات";
+"settings.showWindowThumbnails" = "إظهار صور النوافذ المصغرة عند التمرير فوقها";
+"settings.showAppNames" = "إظهار أسماء التطبيقات";
+"settings.showSpotlightButton" = "إظهار زر Spotlight";
+"settings.hideOnFullscreen" = "إخفاء شريط المهام في وضع ملء الشاشة";
+"settings.quitAppsWhenWindowsClose" = "إنهاء التطبيقات عند إغلاق جميع النوافذ";
+"settings.keepZoomedWindowsAboveTaskbar" = "إبقاء النوافذ المكبرة فوق شريط المهام";
+"settings.showRunningAppsWithoutWindows" = "إظهار التطبيقات قيد التشغيل التي بلا نوافذ";
+"settings.resetDefaults" = "إعادة التعيين إلى الإعدادات الافتراضية";

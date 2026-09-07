@@ -1,0 +1,3 @@
+"NSAccessibilityUsageDescription" = "OpenTaskbar a besoin de l’autorisation d’accessibilité pour basculer entre les fenêtres et les gérer.";
+"NSScreenCaptureUsageDescription" = "OpenTaskbar a besoin de l’enregistrement de l’écran pour afficher les vignettes des fenêtres au survol.";
+"NSAppleEventsUsageDescription" = "OpenTaskbar a besoin de contrôler Finder pour vider la corbeille et ouvrir des dossiers.";

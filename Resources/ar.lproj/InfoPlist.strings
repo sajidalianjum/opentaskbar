@@ -1,0 +1,3 @@
+"NSAccessibilityUsageDescription" = "يحتاج OpenTaskbar إلى إذن الوصول للتبديل بين النوافذ وإدارتها.";
+"NSScreenCaptureUsageDescription" = "يحتاج OpenTaskbar إلى إذن تسجيل الشاشة لعرض صور النوافذ المصغرة عند التمرير فوقها.";
+"NSAppleEventsUsageDescription" = "يحتاج OpenTaskbar إلى التحكم في Finder لإفراغ سلة المهملات وفتح المجلدات.";

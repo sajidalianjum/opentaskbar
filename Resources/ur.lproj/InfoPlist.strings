@@ -1,0 +1,3 @@
+"NSAccessibilityUsageDescription" = "ونڈوز کے درمیان سوئچ کرنے اور انہیں منظم کرنے کے لیے OpenTaskbar کو رسائی کی اجازت درکار ہے۔";
+"NSScreenCaptureUsageDescription" = "ہوور کرنے پر ونڈو کے تھمب نیلز دکھانے کے لیے OpenTaskbar کو اسکرین ریکارڈنگ کی اجازت درکار ہے۔";
+"NSAppleEventsUsageDescription" = "ردی کی ٹوکری خالی کرنے اور فولڈرز کھولنے کے لیے OpenTaskbar کو Finder کنٹرول کرنے کی اجازت درکار ہے۔";

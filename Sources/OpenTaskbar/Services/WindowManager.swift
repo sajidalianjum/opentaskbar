@@ -89,10 +89,10 @@ final class WindowManager {
             }
             guard !names.isEmpty else { return }
             let alert = NSAlert()
-            alert.messageText = "Quit All Apps"
-            alert.informativeText = "Are you sure you want to quit the following \(names.count) \(names.count == 1 ? "app" : "apps")?\n\n\(names.joined(separator: "\n"))"
-            alert.addButton(withTitle: "Quit All")
-            alert.addButton(withTitle: "Cancel")
+            alert.messageText = L10n.quitAllAppsTitle
+            alert.informativeText = L10n.appsQuestion(count: names.count, names: names.joined(separator: "\n"))
+            alert.addButton(withTitle: L10n.quitAll)
+            alert.addButton(withTitle: L10n.cancel)
             alert.alertStyle = .critical
             guard alert.runModal() == .alertFirstButtonReturn else { return }
             for app in apps {
@@ -126,10 +126,10 @@ final class WindowManager {
             guard let app = NSWorkspace.shared.runningApplications.first(where: { $0.bundleIdentifier == bundleID }) else { return }
             let appName = app.localizedName ?? bundleID
             let alert = NSAlert()
-            alert.messageText = "Force Quit \(appName)?"
-            alert.informativeText = "You will lose any unsaved changes. This action cannot be undone."
-            alert.addButton(withTitle: "Force Quit")
-            alert.addButton(withTitle: "Cancel")
+            alert.messageText = L10n.forceQuitTitle(appName: appName)
+            alert.informativeText = L10n.unsavedChangesMessage
+            alert.addButton(withTitle: L10n.forceQuit)
+            alert.addButton(withTitle: L10n.cancel)
             alert.alertStyle = .critical
             guard alert.runModal() == .alertFirstButtonReturn else { return }
             app.forceTerminate()
@@ -150,10 +150,10 @@ final class WindowManager {
             }
             guard !names.isEmpty else { return }
             let alert = NSAlert()
-            alert.messageText = "Quit Apps to the Right"
-            alert.informativeText = "Do you want to quit the following \(names.count) \(names.count == 1 ? "app" : "apps")?\n\n\(names.joined(separator: "\n"))"
-            alert.addButton(withTitle: "Quit All")
-            alert.addButton(withTitle: "Cancel")
+            alert.messageText = L10n.quitAppsToRightTitle
+            alert.informativeText = L10n.quitAppsToRightQuestion(count: names.count, names: names.joined(separator: "\n"))
+            alert.addButton(withTitle: L10n.quitAll)
+            alert.addButton(withTitle: L10n.cancel)
             alert.alertStyle = .critical
             guard alert.runModal() == .alertFirstButtonReturn else { return }
             for app in apps {
@@ -484,7 +484,7 @@ final class WindowManager {
 
             let group = AppGroup(
                 bundleIdentifier: bundleID,
-                localizedName: app.localizedName ?? "Unknown",
+                localizedName: app.localizedName ?? L10n.unknownApp,
                 icon: app.icon ?? NSImage(),
                 runningApplication: app,
                 windows: mergedWindows.isEmpty && appWindows.isEmpty ? [] : mergedWindows,
@@ -1110,7 +1110,7 @@ final class WindowManager {
         let menu = NSMenu()
 
         for (i, window) in group.windows.enumerated() {
-            let title = window.title.isEmpty ? "Window \(i + 1)" : window.title
+            let title = window.title.isEmpty ? L10n.window(number: i + 1) : window.title
             let item = NSMenuItem(title: title, action: #selector(MenuItemActions.shared.activateWindow(_:)), keyEquivalent: "")
             item.target = MenuItemActions.shared
             item.representedObject = ["windowID": Int(window.windowID), "pid": Int(window.pid)]
@@ -1119,7 +1119,7 @@ final class WindowManager {
 
         if group.windows.count > 1 {
             menu.addItem(NSMenuItem.separator())
-            let closeAll = NSMenuItem(title: "Close All Windows", action: #selector(MenuItemActions.shared.closeAllWindows(_:)), keyEquivalent: "")
+            let closeAll = NSMenuItem(title: L10n.closeAllWindows, action: #selector(MenuItemActions.shared.closeAllWindows(_:)), keyEquivalent: "")
             closeAll.target = MenuItemActions.shared
             closeAll.representedObject = ["pid": Int(group.runningApplication?.processIdentifier ?? 0)]
             menu.addItem(closeAll)
@@ -1140,21 +1140,21 @@ final class WindowManager {
         menu.addItem(NSMenuItem.separator())
 
         if group.bundleIdentifier == "com.apple.finder" {
-            let newWindow = NSMenuItem(title: "New Finder Window", action: #selector(MenuItemActions.shared.newFinderWindow(_:)), keyEquivalent: "n")
+            let newWindow = NSMenuItem(title: L10n.newFinderWindow, action: #selector(MenuItemActions.shared.newFinderWindow(_:)), keyEquivalent: "n")
             newWindow.target = MenuItemActions.shared
             menu.addItem(newWindow)
 
             let openSub = NSMenu()
-            let openItem = NSMenuItem(title: "Open", action: nil, keyEquivalent: "")
+            let openItem = NSMenuItem(title: L10n.open, action: nil, keyEquivalent: "")
             openItem.submenu = openSub
             menu.addItem(openItem)
 
             let locations: [(String, String)] = [
-                ("Home", NSHomeDirectory()),
-                ("Desktop", "\(NSHomeDirectory())/Desktop"),
-                ("Downloads", "\(NSHomeDirectory())/Downloads"),
-                ("Documents", "\(NSHomeDirectory())/Documents"),
-                ("Applications", "/Applications"),
+                (L10n.home, NSHomeDirectory()),
+                (L10n.desktop, "\(NSHomeDirectory())/Desktop"),
+                (L10n.downloads, "\(NSHomeDirectory())/Downloads"),
+                (L10n.documents, "\(NSHomeDirectory())/Documents"),
+                (L10n.applications, "/Applications"),
             ]
             for (name, path) in locations {
                 let item = NSMenuItem(title: name, action: #selector(MenuItemActions.shared.openFolder(_:)), keyEquivalent: "")
@@ -1163,7 +1163,7 @@ final class WindowManager {
                 openSub.addItem(item)
             }
 
-            let emptyTrash = NSMenuItem(title: "Empty Trash…", action: #selector(MenuItemActions.shared.emptyTrash(_:)), keyEquivalent: "")
+            let emptyTrash = NSMenuItem(title: L10n.emptyTrashMenu, action: #selector(MenuItemActions.shared.emptyTrash(_:)), keyEquivalent: "")
             emptyTrash.target = MenuItemActions.shared
             menu.addItem(emptyTrash)
 
@@ -1171,7 +1171,7 @@ final class WindowManager {
         }
 
         for (i, window) in group.windows.enumerated() {
-            let title = window.title.isEmpty ? "Window \(i + 1)" : window.title
+            let title = window.title.isEmpty ? L10n.window(number: i + 1) : window.title
             let windowItem = NSMenuItem(title: title, action: #selector(MenuItemActions.shared.activateWindow(_:)), keyEquivalent: "\(i + 1)")
             windowItem.target = MenuItemActions.shared
             windowItem.representedObject = ["windowID": Int(window.windowID), "pid": Int(window.pid)]
@@ -1181,7 +1181,7 @@ final class WindowManager {
         if !group.windows.isEmpty {
             menu.addItem(NSMenuItem.separator())
 
-            let closeAll = NSMenuItem(title: "Close All", action: #selector(MenuItemActions.shared.closeAllWindows(_:)), keyEquivalent: "")
+            let closeAll = NSMenuItem(title: L10n.closeAll, action: #selector(MenuItemActions.shared.closeAllWindows(_:)), keyEquivalent: "")
             closeAll.target = MenuItemActions.shared
             closeAll.representedObject = ["pid": Int(group.runningApplication?.processIdentifier ?? 0)]
             menu.addItem(closeAll)
@@ -1190,7 +1190,7 @@ final class WindowManager {
         menu.addItem(NSMenuItem.separator())
 
         let isPinned = TaskbarSettings.shared.isPinned(group.bundleIdentifier)
-        let pinItem = NSMenuItem(title: isPinned ? "Unpin from taskbar" : "Pin to taskbar", action: #selector(MenuItemActions.shared.togglePin(_:)), keyEquivalent: "")
+        let pinItem = NSMenuItem(title: isPinned ? L10n.unpin : L10n.pin, action: #selector(MenuItemActions.shared.togglePin(_:)), keyEquivalent: "")
         pinItem.target = MenuItemActions.shared
         pinItem.representedObject = ["bundleID": group.bundleIdentifier]
         menu.addItem(pinItem)
@@ -1199,18 +1199,18 @@ final class WindowManager {
             menu.addItem(NSMenuItem.separator())
 
             let quitMenu = NSMenu()
-            let quitSubItem = NSMenuItem(title: "Quit", action: nil, keyEquivalent: "")
+            let quitSubItem = NSMenuItem(title: L10n.quit, action: nil, keyEquivalent: "")
             quitSubItem.submenu = quitMenu
             menu.addItem(quitSubItem)
 
-            let quitItem = NSMenuItem(title: "Quit \(appName)", action: #selector(MenuItemActions.shared.quitApp(_:)), keyEquivalent: "q")
+            let quitItem = NSMenuItem(title: L10n.quitApp(appName: appName), action: #selector(MenuItemActions.shared.quitApp(_:)), keyEquivalent: "q")
             quitItem.target = MenuItemActions.shared
             quitItem.representedObject = ["bundleID": group.bundleIdentifier]
             quitMenu.addItem(quitItem)
 
             let hasAppsToRight = (index + 1) < appGroups.count && !appGroups[(index + 1)...].allSatisfy { !$0.isRunning }
             if hasAppsToRight {
-                let quitRightItem = NSMenuItem(title: "Quit Apps to the Right", action: #selector(MenuItemActions.shared.quitAppsToTheRight(_:)), keyEquivalent: "")
+                let quitRightItem = NSMenuItem(title: L10n.quitAppsToRight, action: #selector(MenuItemActions.shared.quitAppsToTheRight(_:)), keyEquivalent: "")
                 quitRightItem.target = MenuItemActions.shared
                 quitRightItem.representedObject = ["index": index]
                 quitMenu.addItem(quitRightItem)
@@ -1218,7 +1218,7 @@ final class WindowManager {
 
             quitMenu.addItem(NSMenuItem.separator())
 
-            let forceQuitItem = NSMenuItem(title: "Force Quit \(appName)", action: #selector(MenuItemActions.shared.forceQuitApp(_:)), keyEquivalent: "")
+            let forceQuitItem = NSMenuItem(title: L10n.forceQuitApp(appName: appName), action: #selector(MenuItemActions.shared.forceQuitApp(_:)), keyEquivalent: "")
             forceQuitItem.target = MenuItemActions.shared
             forceQuitItem.representedObject = ["bundleID": group.bundleIdentifier]
             quitMenu.addItem(forceQuitItem)
@@ -1419,10 +1419,10 @@ final class MenuItemActions: NSObject {
 
     @objc func emptyTrash(_ sender: NSMenuItem) {
         let alert = NSAlert()
-        alert.messageText = "Empty the Trash?"
-        alert.informativeText = "Are you sure you want to permanently delete all items in the Trash?"
-        alert.addButton(withTitle: "Empty Trash")
-        alert.addButton(withTitle: "Cancel")
+        alert.messageText = L10n.emptyTrashTitle
+        alert.informativeText = L10n.emptyTrashMessage
+        alert.addButton(withTitle: L10n.emptyTrash)
+        alert.addButton(withTitle: L10n.cancel)
         alert.alertStyle = .critical
         guard alert.runModal() == .alertFirstButtonReturn else { return }
 
@@ -1444,10 +1444,10 @@ final class MenuItemActions: NSObject {
                 showAutomationPermissionAlert()
             } else {
                 let failure = NSAlert()
-                failure.messageText = "Couldn't Empty the Trash"
-                failure.informativeText = "Finder reported an error (\(code)). See /tmp/opentaskbar.log for details."
+                failure.messageText = L10n.couldNotEmptyTrashTitle
+                failure.informativeText = L10n.finderErrorMessage(code: code)
                 failure.alertStyle = .warning
-                failure.addButton(withTitle: "OK")
+                failure.addButton(withTitle: L10n.ok)
                 failure.runModal()
             }
         }
@@ -1455,11 +1455,11 @@ final class MenuItemActions: NSObject {
 
     private func showAutomationPermissionAlert() {
         let alert = NSAlert()
-        alert.messageText = "Finder Permission Needed"
-        alert.informativeText = "macOS blocked OpenTaskbar from controlling Finder. To fix this, allow it in System Settings > Privacy & Security > Automation."
+        alert.messageText = L10n.finderPermissionTitle
+        alert.informativeText = L10n.finderPermissionMessage
         alert.alertStyle = .warning
-        alert.addButton(withTitle: "Open System Settings")
-        alert.addButton(withTitle: "OK")
+        alert.addButton(withTitle: L10n.openSystemSettings)
+        alert.addButton(withTitle: L10n.ok)
         if alert.runModal() == .alertFirstButtonReturn {
             openAutomationSettings()
         }

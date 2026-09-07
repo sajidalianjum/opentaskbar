@@ -1,0 +1,94 @@
+"crash.unexpectedExit.title" = "OpenTaskbar si è chiuso inaspettatamente";
+"crash.dockRestored.message" = "Il Dock è stato ripristinato. Vuoi avviare di nuovo OpenTaskbar?";
+"crash.launch.button" = "Avvia OpenTaskbar";
+
+"menu.about" = "Informazioni su OpenTaskbar";
+"menu.preferences" = "Preferenze…";
+"menu.restoreDockQuit" = "Ripristina il Dock ed esci";
+
+"common.cancel" = "Annulla";
+"common.close" = "Chiudi";
+"common.emptyTrash" = "Svuota il Cestino";
+"common.forceQuit" = "Uscita forzata";
+"common.ok" = "OK";
+"common.open" = "Apri";
+"common.openSystemSettings" = "Apri Impostazioni di Sistema";
+"common.quit" = "Esci";
+"common.quitAll" = "Esci da tutte";
+
+"alert.quitAllApps.title" = "Esci da tutte le app";
+"alert.forceQuit.title" = "Forzare l’uscita da %@?";
+"alert.unsavedChanges.message" = "Perderai tutte le modifiche non salvate. Questa azione non può essere annullata.";
+"alert.quitAppsToRight.title" = "Esci dalle app a destra";
+"alert.emptyTrash.title" = "Svuotare il Cestino?";
+"alert.emptyTrash.message" = "Vuoi eliminare definitivamente tutti gli elementi nel Cestino?";
+"alert.couldNotEmptyTrash.title" = "Impossibile svuotare il Cestino";
+"alert.finderError.message" = "Finder ha segnalato un errore (%d). Consulta /tmp/opentaskbar.log per i dettagli.";
+"alert.finderPermission.title" = "Autorizzazione Finder necessaria";
+"alert.finderPermission.message" = "macOS ha impedito a OpenTaskbar di controllare Finder. Per risolvere il problema, consentilo in Impostazioni di Sistema > Privacy e sicurezza > Automazione.";
+
+"window.fallback" = "Finestra %d";
+"window.fallbackGeneric" = "Finestra";
+"app.unknown" = "Sconosciuta";
+"window.closeAll" = "Chiudi tutto";
+"window.closeAllWindows" = "Chiudi tutte le finestre";
+
+"finder.newWindow" = "Nuova finestra del Finder";
+"finder.home" = "Home";
+"finder.desktop" = "Scrivania";
+"finder.downloads" = "Download";
+"finder.documents" = "Documenti";
+"finder.applications" = "Applicazioni";
+"finder.emptyTrash" = "Svuota il Cestino…";
+
+"menu.pin" = "Fissa alla barra delle applicazioni";
+"menu.unpin" = "Rimuovi dalla barra delle applicazioni";
+"menu.quitApp" = "Esci da %@";
+"menu.quitAppsToRight" = "Esci dalle app a destra";
+"menu.forceQuitApp" = "Forza l’uscita da %@";
+
+"tooltip.searchSpotlight" = "Cerca (Spotlight)";
+"accessibility.search" = "Cerca";
+"accessibility.moreApps" = "Altre app";
+"overflow.more" = "+%d altre";
+
+"taskbar.showDesktop" = "Mostra scrivania";
+"taskbar.activityMonitor" = "Monitoraggio Attività";
+"taskbar.openTrash" = "Apri il Cestino";
+"taskbar.quitAllClosedApps" = "Esci da tutte le app chiuse";
+"taskbar.quitAllApps" = "Esci da tutte le app";
+"taskbar.dontQuitTheseApps" = "Non uscire da queste app";
+"taskbar.noApps" = "Nessuna app";
+
+"settings.windowTitle" = "Preferenze di OpenTaskbar";
+"settings.general" = "Generali";
+"settings.appearance" = "Aspetto";
+"settings.displayOptions" = "Opzioni di visualizzazione";
+"settings.style" = "Stile";
+"settings.taskbar" = "Barra delle applicazioni";
+"settings.dock" = "Dock";
+"settings.barAlignment" = "Allineamento della barra";
+"settings.left" = "Sinistra";
+"settings.center" = "Centro";
+"settings.right" = "Destra";
+"settings.showOnAllScreens" = "Mostra su tutti gli schermi";
+"settings.backgroundTheme" = "Tema dello sfondo";
+"settings.system" = "Sistema";
+"settings.dark" = "Scuro";
+"settings.light" = "Chiaro";
+"settings.custom" = "Personalizzato";
+"settings.customColor" = "Colore personalizzato";
+"settings.appIconSize" = "Dimensioni delle icone delle app";
+"settings.barSpacing" = "Spaziatura della barra";
+"settings.iconSizeValue" = "%@ pt";
+"settings.spacingValue" = "%@ px";
+"settings.launchAtLogin" = "Avvia al login";
+"settings.enableAnimations" = "Abilita animazioni";
+"settings.showWindowThumbnails" = "Mostra miniature delle finestre al passaggio del mouse";
+"settings.showAppNames" = "Mostra nomi delle app";
+"settings.showSpotlightButton" = "Mostra pulsante Spotlight";
+"settings.hideOnFullscreen" = "Nascondi la barra delle applicazioni a schermo intero";
+"settings.quitAppsWhenWindowsClose" = "Esci dalle app quando tutte le finestre sono chiuse";
+"settings.keepZoomedWindowsAboveTaskbar" = "Mantieni le finestre ingrandite sopra la barra delle applicazioni";
+"settings.showRunningAppsWithoutWindows" = "Mostra le app in esecuzione senza finestre";
+"settings.resetDefaults" = "Ripristina impostazioni di default";

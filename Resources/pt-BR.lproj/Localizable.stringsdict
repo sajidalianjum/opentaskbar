@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>alert.apps.question</key>
+    <dict>
+        <key>NSStringLocalizedFormatKey</key>
+        <string>%#@appCount@&#10;&#10;%@</string>
+        <key>appCount</key>
+        <dict>
+            <key>NSStringFormatSpecTypeKey</key>
+            <string>NSStringPluralRuleType</string>
+            <key>NSStringFormatValueTypeKey</key>
+            <string>d</string>
+            <key>one</key>
+            <string>Tem certeza de que deseja sair do app a seguir (%d)?</string>
+            <key>other</key>
+            <string>Tem certeza de que deseja sair dos %d apps a seguir?</string>
+        </dict>
+    </dict>
+    <key>alert.quitAppsToRight.question</key>
+    <dict>
+        <key>NSStringLocalizedFormatKey</key>
+        <string>%#@appCount@&#10;&#10;%@</string>
+        <key>appCount</key>
+        <dict>
+            <key>NSStringFormatSpecTypeKey</key>
+            <string>NSStringPluralRuleType</string>
+            <key>NSStringFormatValueTypeKey</key>
+            <string>d</string>
+            <key>one</key>
+            <string>Deseja sair do app a seguir (%d)?</string>
+            <key>other</key>
+            <string>Deseja sair dos %d apps a seguir?</string>
+        </dict>
+    </dict>
+    <key>taskbar.quitClosedApps</key>
+    <dict>
+        <key>NSStringLocalizedFormatKey</key>
+        <string>%#@closedAppCount@</string>
+        <key>closedAppCount</key>
+        <dict>
+            <key>NSStringFormatSpecTypeKey</key>
+            <string>NSStringPluralRuleType</string>
+            <key>NSStringFormatValueTypeKey</key>
+            <string>d</string>
+            <key>one</key>
+            <string>Sair de %d app fechado</string>
+            <key>other</key>
+            <string>Sair de %d apps fechados</string>
+        </dict>
+    </dict>
+</dict>
+</plist>

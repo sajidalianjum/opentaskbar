@@ -36,6 +36,18 @@ Screenshots are coming soon. They will live in [`docs/screenshots/`](docs/screen
 - **Accessibility permission (required)** — needed to switch, focus, minimize, and close windows. OpenTaskbar cannot function without it.
 - **Screen Recording permission (optional)** — only needed for live hover thumbnails. Without it, hover shows the window list instead.
 
+## Localization
+
+OpenTaskbar uses the native macOS bundle localization system. All static UI text goes through `L10n`, and macOS chooses the best matching locale from the user's preferred languages (including a per-app language override) when the app launches. English is the development-language fallback. Bundled locales currently include English, Spanish, French, German, Italian, Brazilian Portuguese, Simplified Chinese, Japanese, Korean, Hindi, Arabic, and Urdu.
+
+To add a translation, create `Resources/<locale>.lproj/` and add:
+
+- `Localizable.strings` with the keys from `Resources/en.lproj/Localizable.strings`
+- `Localizable.stringsdict` for pluralized strings, using the English file as the structural template
+- `InfoPlist.strings` for localized Accessibility, Screen Recording, and Automation permission prompts
+
+`Scripts/build.sh` copies every `*.lproj` directory into `OpenTaskbar.app/Contents/Resources`, which is required because the app bundle is assembled manually. A language change normally takes effect after relaunching OpenTaskbar. macOS cannot translate arbitrary languages automatically; each supported language needs its own reviewed translation file. App names and window titles supplied by macOS remain untouched.
+
 ## Installation
 
 ### From a release

@@ -1,0 +1,96 @@
+/* انگریزی ترقی کی زبان ہے۔ اس زبان کے لیے تمام کلیدوں کے تراجم ذیل میں دیے گئے ہیں۔ */
+
+"crash.unexpectedExit.title" = "OpenTaskbar غیر متوقع طور پر بند ہو گیا";
+"crash.dockRestored.message" = "آپ کا Dock بحال کر دیا گیا ہے۔ کیا آپ OpenTaskbar دوبارہ شروع کرنا چاہتے ہیں؟";
+"crash.launch.button" = "OpenTaskbar شروع کریں";
+
+"menu.about" = "OpenTaskbar کے بارے میں";
+"menu.preferences" = "ترجیحات…";
+"menu.restoreDockQuit" = "Dock بحال کریں اور بند کریں";
+
+"common.cancel" = "منسوخ کریں";
+"common.close" = "بند کریں";
+"common.emptyTrash" = "ردی کی ٹوکری خالی کریں";
+"common.forceQuit" = "زبردستی بند کریں";
+"common.ok" = "ٹھیک ہے";
+"common.open" = "کھولیں";
+"common.openSystemSettings" = "سسٹم سیٹنگز کھولیں";
+"common.quit" = "بند کریں";
+"common.quitAll" = "سب بند کریں";
+
+"alert.quitAllApps.title" = "تمام ایپس بند کریں";
+"alert.forceQuit.title" = "کیا %@ کو زبردستی بند کرنا ہے؟";
+"alert.unsavedChanges.message" = "آپ کی محفوظ نہ کی گئی تبدیلیاں ضائع ہو جائیں گی۔ یہ کارروائی واپس نہیں لی جا سکتی۔";
+"alert.quitAppsToRight.title" = "دائیں جانب کی ایپس بند کریں";
+"alert.emptyTrash.title" = "ردی کی ٹوکری خالی کریں؟";
+"alert.emptyTrash.message" = "کیا آپ واقعی ردی کی ٹوکری میں موجود تمام اشیا کو مستقل طور پر حذف کرنا چاہتے ہیں؟";
+"alert.couldNotEmptyTrash.title" = "ردی کی ٹوکری خالی نہیں کی جا سکی";
+"alert.finderError.message" = "Finder نے ایک خرابی کی اطلاع دی (%d)۔ تفصیلات کے لیے /tmp/opentaskbar.log دیکھیں۔";
+"alert.finderPermission.title" = "Finder کی اجازت درکار ہے";
+"alert.finderPermission.message" = "macOS نے OpenTaskbar کو Finder کنٹرول کرنے سے روک دیا۔ اسے درست کرنے کے لیے سسٹم سیٹنگز > رازداری اور سکیورٹی > آٹومیشن میں اجازت دیں۔";
+
+"window.fallback" = "ونڈو %d";
+"window.fallbackGeneric" = "ونڈو";
+"app.unknown" = "نامعلوم";
+"window.closeAll" = "سب بند کریں";
+"window.closeAllWindows" = "تمام ونڈوز بند کریں";
+
+"finder.newWindow" = "نئی Finder ونڈو";
+"finder.home" = "ہوم";
+"finder.desktop" = "ڈیسک ٹاپ";
+"finder.downloads" = "ڈاؤن لوڈز";
+"finder.documents" = "دستاویزات";
+"finder.applications" = "ایپلیکیشنز";
+"finder.emptyTrash" = "ردی کی ٹوکری خالی کریں…";
+
+"menu.pin" = "ٹاسک بار پر پن کریں";
+"menu.unpin" = "ٹاسک بار سے پن ہٹائیں";
+"menu.quitApp" = "%@ بند کریں";
+"menu.quitAppsToRight" = "دائیں جانب کی ایپس بند کریں";
+"menu.forceQuitApp" = "%@ کو زبردستی بند کریں";
+
+"tooltip.searchSpotlight" = "تلاش (Spotlight)";
+"accessibility.search" = "تلاش";
+"accessibility.moreApps" = "مزید ایپس";
+"overflow.more" = "+%d مزید";
+
+"taskbar.showDesktop" = "ڈیسک ٹاپ دکھائیں";
+"taskbar.activityMonitor" = "ایکٹیویٹی مانیٹر";
+"taskbar.openTrash" = "ردی کی ٹوکری کھولیں";
+"taskbar.quitAllClosedApps" = "تمام بند ایپس بند کریں";
+"taskbar.quitAllApps" = "تمام ایپس بند کریں";
+"taskbar.dontQuitTheseApps" = "ان ایپس کو بند نہ کریں";
+"taskbar.noApps" = "کوئی ایپ نہیں";
+
+"settings.windowTitle" = "OpenTaskbar ترجیحات";
+"settings.general" = "عام";
+"settings.appearance" = "ظاہری شکل";
+"settings.displayOptions" = "ڈسپلے کے اختیارات";
+"settings.style" = "انداز";
+"settings.taskbar" = "ٹاسک بار";
+"settings.dock" = "Dock";
+"settings.barAlignment" = "بار کی سیدھ";
+"settings.left" = "بائیں";
+"settings.center" = "درمیان";
+"settings.right" = "دائیں";
+"settings.showOnAllScreens" = "تمام اسکرینوں پر دکھائیں";
+"settings.backgroundTheme" = "پس منظر کی تھیم";
+"settings.system" = "سسٹم";
+"settings.dark" = "گہرا";
+"settings.light" = "ہلکا";
+"settings.custom" = "حسبِ ضرورت";
+"settings.customColor" = "حسبِ ضرورت رنگ";
+"settings.appIconSize" = "ایپ آئیکن کا سائز";
+"settings.barSpacing" = "بار کا فاصلہ";
+"settings.iconSizeValue" = "%@ pt";
+"settings.spacingValue" = "%@ px";
+"settings.launchAtLogin" = "لاگ اِن پر شروع کریں";
+"settings.enableAnimations" = "اینیمیشنز فعال کریں";
+"settings.showWindowThumbnails" = "ہوور کرنے پر ونڈو کے تھمب نیلز دکھائیں";
+"settings.showAppNames" = "ایپ کے نام دکھائیں";
+"settings.showSpotlightButton" = "Spotlight بٹن دکھائیں";
+"settings.hideOnFullscreen" = "فل اسکرین پر ٹاسک بار چھپائیں";
+"settings.quitAppsWhenWindowsClose" = "تمام ونڈوز بند ہونے پر ایپس بند کریں";
+"settings.keepZoomedWindowsAboveTaskbar" = "زوم کی گئی ونڈوز کو ٹاسک بار کے اوپر رکھیں";
+"settings.showRunningAppsWithoutWindows" = "بغیر ونڈوز کے چلنے والی ایپس دکھائیں";
+"settings.resetDefaults" = "ڈیفالٹس پر ری سیٹ کریں";

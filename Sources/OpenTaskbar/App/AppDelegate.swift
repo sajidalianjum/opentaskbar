@@ -43,10 +43,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             CrashGuard.clearCleanExit()
 
             let alert = NSAlert()
-            alert.messageText = "OpenTaskbar exited unexpectedly"
-            alert.informativeText = "Your Dock has been restored. Would you like to launch OpenTaskbar again?"
-            alert.addButton(withTitle: "Launch OpenTaskbar")
-            alert.addButton(withTitle: "Quit")
+            alert.messageText = L10n.unexpectedExitTitle
+            alert.informativeText = L10n.dockRestoredMessage
+            alert.addButton(withTitle: L10n.launchOpenTaskbar)
+            alert.addButton(withTitle: L10n.quit)
             alert.alertStyle = .informational
 
             let response = alert.runModal()
@@ -144,11 +144,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
 
         let menu = NSMenu()
-        menu.addItem(NSMenuItem(title: "About OpenTaskbar", action: #selector(showAbout), keyEquivalent: ""))
+        menu.addItem(NSMenuItem(title: L10n.aboutOpenTaskbar, action: #selector(showAbout), keyEquivalent: ""))
         menu.addItem(NSMenuItem.separator())
-        menu.addItem(NSMenuItem(title: "Preferences...", action: #selector(showPreferences), keyEquivalent: ","))
+        menu.addItem(NSMenuItem(title: L10n.preferences, action: #selector(showPreferences), keyEquivalent: ","))
         menu.addItem(NSMenuItem.separator())
-        menu.addItem(NSMenuItem(title: "Restore Dock & Quit", action: #selector(restoreAndQuit), keyEquivalent: "q"))
+        menu.addItem(NSMenuItem(title: L10n.restoreDockAndQuit, action: #selector(restoreAndQuit), keyEquivalent: "q"))
         item.menu = menu
         statusItem = item
     }

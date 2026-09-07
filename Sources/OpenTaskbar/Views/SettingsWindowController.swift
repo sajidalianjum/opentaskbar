@@ -30,7 +30,7 @@ final class SettingsWindowController {
             backing: .buffered,
             defer: false
         )
-        window.title = "OpenTaskbar Preferences"
+        window.title = L10n.settingsWindowTitle
         window.isReleasedWhenClosed = false
         window.minSize = NSSize(width: 420, height: 400)
         window.center()
@@ -71,7 +71,7 @@ final class SettingsWindowController {
         var prev: NSView?
 
         func section(_ title: String) {
-            let label = NSTextField(labelWithString: title.uppercased())
+            let label = NSTextField(labelWithString: title)
             label.font = NSFont.systemFont(ofSize: 11, weight: .semibold)
             label.textColor = NSColor.secondaryLabelColor
             label.translatesAutoresizingMaskIntoConstraints = false
@@ -155,20 +155,20 @@ final class SettingsWindowController {
         }
 
         // ─── General ───
-        section("General")
+        section(L10n.general)
 
         let styleSelect = NSPopUpButton()
-        styleSelect.addItem(withTitle: "Taskbar")
-        styleSelect.addItem(withTitle: "Dock")
+        styleSelect.addItem(withTitle: L10n.taskbar)
+        styleSelect.addItem(withTitle: L10n.dock)
         styleSelect.selectItem(at: settings.style == .taskbar ? 0 : 1)
         styleSelect.target = self
         styleSelect.action = #selector(styleChanged(_:))
-        labeled("Style", control: styleSelect)
+        labeled(L10n.style, control: styleSelect)
 
         let alignSelect = NSPopUpButton()
-        alignSelect.addItem(withTitle: "Left")
-        alignSelect.addItem(withTitle: "Center")
-        alignSelect.addItem(withTitle: "Right")
+        alignSelect.addItem(withTitle: L10n.left)
+        alignSelect.addItem(withTitle: L10n.center)
+        alignSelect.addItem(withTitle: L10n.right)
         switch settings.barAlignment {
         case .left: alignSelect.selectItem(at: 0)
         case .center: alignSelect.selectItem(at: 1)
@@ -176,20 +176,20 @@ final class SettingsWindowController {
         }
         alignSelect.target = self
         alignSelect.action = #selector(alignmentChanged(_:))
-        labeled("Bar Alignment", control: alignSelect)
+        labeled(L10n.barAlignment, control: alignSelect)
 
-        checkbox("Show on All Screens", action: #selector(allScreensChanged(_:)), state: settings.showOnAllScreens ? .on : .off)
+        checkbox(L10n.showOnAllScreens, action: #selector(allScreensChanged(_:)), state: settings.showOnAllScreens ? .on : .off)
 
         separator()
 
         // ─── Appearance ───
-        section("Appearance")
+        section(L10n.appearance)
 
         let themeSelect = NSPopUpButton()
-        themeSelect.addItem(withTitle: "System")
-        themeSelect.addItem(withTitle: "Dark")
-        themeSelect.addItem(withTitle: "Light")
-        themeSelect.addItem(withTitle: "Custom")
+        themeSelect.addItem(withTitle: L10n.system)
+        themeSelect.addItem(withTitle: L10n.dark)
+        themeSelect.addItem(withTitle: L10n.light)
+        themeSelect.addItem(withTitle: L10n.custom)
         switch settings.backgroundTheme {
         case .system: themeSelect.selectItem(at: 0)
         case .dark: themeSelect.selectItem(at: 1)
@@ -199,13 +199,13 @@ final class SettingsWindowController {
         themeSelect.target = self
         themeSelect.action = #selector(themeChanged(_:))
         themeSelect.tag = 200
-        labeled("Background Theme", control: themeSelect)
+        labeled(L10n.backgroundTheme, control: themeSelect)
 
         let cRow = NSView()
         cRow.translatesAutoresizingMaskIntoConstraints = false
         view.addSubview(cRow)
 
-        let cLabel = NSTextField(labelWithString: "Custom Color")
+        let cLabel = NSTextField(labelWithString: L10n.customColor)
         cLabel.font = NSFont.systemFont(ofSize: 13)
         cLabel.translatesAutoresizingMaskIntoConstraints = false
         cRow.addSubview(cLabel)
@@ -249,11 +249,11 @@ final class SettingsWindowController {
         iconSlider.target = self
         iconSlider.action = #selector(iconSizeChanged(_:))
 
-        let iconVal = NSTextField(labelWithString: "\(Int(settings.iconSize))pt")
+        let iconVal = NSTextField(labelWithString: L10n.iconSizeValue(Int(settings.iconSize)))
         iconVal.font = NSFont.systemFont(ofSize: 12)
         iconVal.alignment = .right
         iconSizeValueLabel = iconVal
-        sliderRow("App Icon Size", slider: iconSlider, valueLabel: iconVal)
+        sliderRow(L10n.appIconSize, slider: iconSlider, valueLabel: iconVal)
 
         let spaceSlider = NSSlider()
         spaceSlider.minValue = 0
@@ -262,30 +262,30 @@ final class SettingsWindowController {
         spaceSlider.target = self
         spaceSlider.action = #selector(spacingChanged(_:))
 
-        let spaceVal = NSTextField(labelWithString: "\(Int(settings.barSpacing))px")
+        let spaceVal = NSTextField(labelWithString: L10n.spacingValue(Int(settings.barSpacing)))
         spaceVal.font = NSFont.systemFont(ofSize: 12)
         spaceVal.alignment = .right
         spacingValueLabel = spaceVal
-        sliderRow("Bar Spacing", slider: spaceSlider, valueLabel: spaceVal)
+        sliderRow(L10n.barSpacing, slider: spaceSlider, valueLabel: spaceVal)
 
         separator()
 
         // ─── Display Options ───
-        section("Display Options")
+        section(L10n.displayOptions)
 
-        checkbox("Launch at Login", action: #selector(launchAtLoginChanged(_:)), state: settings.launchAtLogin ? .on : .off)
-        checkbox("Enable Animations", action: #selector(animationsChanged(_:)), state: settings.animationsEnabled ? .on : .off)
-        checkbox("Show Window Thumbnails on Hover", action: #selector(thumbnailsChanged(_:)), state: settings.showThumbnails ? .on : .off)
-        checkbox("Show App Names", action: #selector(namesChanged(_:)), state: settings.showAppNames ? .on : .off)
-        checkbox("Show Spotlight Button", action: #selector(startButtonChanged(_:)), state: settings.showStartButton ? .on : .off)
-        checkbox("Hide Taskbar on Fullscreen", action: #selector(hideOnFullscreenChanged(_:)), state: settings.hideOnFullscreen ? .on : .off)
-        checkbox("Quit Apps When All Windows Close", action: #selector(quitOnCloseChanged(_:)), state: settings.quitOnLastWindowClose ? .on : .off)
-        checkbox("Keep Zoomed Windows Above Taskbar", action: #selector(constrainZoomedChanged(_:)), state: settings.constrainZoomedWindows ? .on : .off)
-        checkbox("Show Running Apps With No Windows", action: #selector(showRunningAppsWithoutWindowsChanged(_:)), state: settings.showRunningAppsWithoutWindows ? .on : .off)
+        checkbox(L10n.launchAtLogin, action: #selector(launchAtLoginChanged(_:)), state: settings.launchAtLogin ? .on : .off)
+        checkbox(L10n.enableAnimations, action: #selector(animationsChanged(_:)), state: settings.animationsEnabled ? .on : .off)
+        checkbox(L10n.showWindowThumbnails, action: #selector(thumbnailsChanged(_:)), state: settings.showThumbnails ? .on : .off)
+        checkbox(L10n.showAppNames, action: #selector(namesChanged(_:)), state: settings.showAppNames ? .on : .off)
+        checkbox(L10n.showSpotlightButton, action: #selector(startButtonChanged(_:)), state: settings.showStartButton ? .on : .off)
+        checkbox(L10n.hideOnFullscreen, action: #selector(hideOnFullscreenChanged(_:)), state: settings.hideOnFullscreen ? .on : .off)
+        checkbox(L10n.quitAppsWhenWindowsClose, action: #selector(quitOnCloseChanged(_:)), state: settings.quitOnLastWindowClose ? .on : .off)
+        checkbox(L10n.keepZoomedWindowsAboveTaskbar, action: #selector(constrainZoomedChanged(_:)), state: settings.constrainZoomedWindows ? .on : .off)
+        checkbox(L10n.showRunningAppsWithoutWindows, action: #selector(showRunningAppsWithoutWindowsChanged(_:)), state: settings.showRunningAppsWithoutWindows ? .on : .off)
 
         separator()
 
-        let resetBtn = NSButton(title: "Reset to Defaults", target: self, action: #selector(resetDefaults))
+        let resetBtn = NSButton(title: L10n.resetDefaults, target: self, action: #selector(resetDefaults))
         resetBtn.bezelStyle = .rounded
         resetBtn.translatesAutoresizingMaskIntoConstraints = false
         view.addSubview(resetBtn)
@@ -363,12 +363,12 @@ final class SettingsWindowController {
 
     @objc private func spacingChanged(_ sender: NSSlider) {
         settings.barSpacing = sender.doubleValue
-        spacingValueLabel?.stringValue = "\(Int(sender.doubleValue))px"
+        spacingValueLabel?.stringValue = L10n.spacingValue(Int(sender.doubleValue))
     }
 
     @objc private func iconSizeChanged(_ sender: NSSlider) {
         settings.iconSize = sender.doubleValue
-        iconSizeValueLabel?.stringValue = "\(Int(sender.doubleValue))pt"
+        iconSizeValueLabel?.stringValue = L10n.iconSizeValue(Int(sender.doubleValue))
     }
 
     @objc private func themeChanged(_ sender: NSPopUpButton) {

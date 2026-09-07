@@ -79,7 +79,7 @@ final class TaskbarContentView: NSView {
         startMenuButton = StartMenuButton()
         startMenuButton.target = self
         startMenuButton.action = #selector(startMenuClicked(_:))
-        startMenuButton.toolTip = "Search (Spotlight)"
+        startMenuButton.toolTip = L10n.searchSpotlightTooltip
         startMenuButton.isHidden = !settings.showStartButton
 
         startSeparator = NSView()
@@ -470,17 +470,17 @@ final class TaskbarContentView: NSView {
         let menu = NSMenu()
         menu.autoenablesItems = false
 
-        let showDesktop = NSMenuItem(title: "Show Desktop", action: #selector(MenuItemActions.shared.showDesktop(_:)), keyEquivalent: "")
+        let showDesktop = NSMenuItem(title: L10n.showDesktop, action: #selector(MenuItemActions.shared.showDesktop(_:)), keyEquivalent: "")
         showDesktop.target = MenuItemActions.shared
         menu.addItem(showDesktop)
 
-        let activityMonitor = NSMenuItem(title: "Activity Monitor", action: #selector(MenuItemActions.shared.openActivityMonitor(_:)), keyEquivalent: "")
+        let activityMonitor = NSMenuItem(title: L10n.activityMonitor, action: #selector(MenuItemActions.shared.openActivityMonitor(_:)), keyEquivalent: "")
         activityMonitor.target = MenuItemActions.shared
         menu.addItem(activityMonitor)
 
         menu.addItem(NSMenuItem.separator())
 
-        let openTrash = NSMenuItem(title: "Open Trash", action: #selector(MenuItemActions.shared.openTrash(_:)), keyEquivalent: "")
+        let openTrash = NSMenuItem(title: L10n.openTrash, action: #selector(MenuItemActions.shared.openTrash(_:)), keyEquivalent: "")
         openTrash.target = MenuItemActions.shared
         menu.addItem(openTrash)
 
@@ -488,19 +488,19 @@ final class TaskbarContentView: NSView {
 
         let closedAppCount = windowManager.closedApps.count
         let quitClosedTitle = closedAppCount > 0
-            ? "Quit \(closedAppCount) Closed App\(closedAppCount == 1 ? "" : "s")"
-            : "Quit All Closed Apps"
+            ? L10n.quitClosedApps(count: closedAppCount)
+            : L10n.quitAllClosedApps
         let quitClosed = NSMenuItem(title: quitClosedTitle, action: #selector(MenuItemActions.shared.quitAllClosed(_:)), keyEquivalent: "")
         quitClosed.target = MenuItemActions.shared
         quitClosed.isEnabled = closedAppCount > 0
         menu.addItem(quitClosed)
 
-        let quitAll = NSMenuItem(title: "Quit All Apps", action: #selector(MenuItemActions.shared.quitAllApps(_:)), keyEquivalent: "")
+        let quitAll = NSMenuItem(title: L10n.quitAllApps, action: #selector(MenuItemActions.shared.quitAllApps(_:)), keyEquivalent: "")
         quitAll.target = MenuItemActions.shared
         menu.addItem(quitAll)
 
         let neverQuitSub = NSMenu()
-        let neverQuitItem = NSMenuItem(title: "Don't Quit These Apps", action: nil, keyEquivalent: "")
+        let neverQuitItem = NSMenuItem(title: L10n.dontQuitTheseApps, action: nil, keyEquivalent: "")
         neverQuitItem.submenu = neverQuitSub
         menu.addItem(neverQuitItem)
 
@@ -527,14 +527,14 @@ final class TaskbarContentView: NSView {
             }
         }
         if !addedAny {
-            let noneItem = NSMenuItem(title: "No apps", action: nil, keyEquivalent: "")
+            let noneItem = NSMenuItem(title: L10n.noApps, action: nil, keyEquivalent: "")
             noneItem.isEnabled = false
             neverQuitSub.addItem(noneItem)
         }
 
         menu.addItem(NSMenuItem.separator())
 
-        let prefs = NSMenuItem(title: "Preferences\u{2026}", action: #selector(MenuItemActions.shared.openPreferences(_:)), keyEquivalent: ",")
+        let prefs = NSMenuItem(title: L10n.preferences, action: #selector(MenuItemActions.shared.openPreferences(_:)), keyEquivalent: ",")
         prefs.target = MenuItemActions.shared
         menu.addItem(prefs)
 

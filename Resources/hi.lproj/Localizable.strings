@@ -1,0 +1,96 @@
+/* अंग्रेज़ी विकास भाषा है। इस भाषा के लिए सभी कुंजियों का अनुवाद नीचे दिया गया है। */
+
+"crash.unexpectedExit.title" = "OpenTaskbar अप्रत्याशित रूप से बंद हो गया";
+"crash.dockRestored.message" = "आपका Dock पुनर्स्थापित कर दिया गया है। क्या आप OpenTaskbar को फिर से लॉन्च करना चाहेंगे?";
+"crash.launch.button" = "OpenTaskbar लॉन्च करें";
+
+"menu.about" = "OpenTaskbar के बारे में";
+"menu.preferences" = "प्राथमिकताएँ…";
+"menu.restoreDockQuit" = "Dock पुनर्स्थापित करें और बाहर निकलें";
+
+"common.cancel" = "रद्द करें";
+"common.close" = "बंद करें";
+"common.emptyTrash" = "ट्रैश खाली करें";
+"common.forceQuit" = "बलपूर्वक बंद करें";
+"common.ok" = "ठीक है";
+"common.open" = "खोलें";
+"common.openSystemSettings" = "सिस्टम सेटिंग्स खोलें";
+"common.quit" = "बाहर निकलें";
+"common.quitAll" = "सभी से बाहर निकलें";
+
+"alert.quitAllApps.title" = "सभी ऐप्स से बाहर निकलें";
+"alert.forceQuit.title" = "%@ को बलपूर्वक बंद करें?";
+"alert.unsavedChanges.message" = "आपके सहेजे न गए बदलाव खो जाएंगे। यह कार्रवाई पूर्ववत नहीं की जा सकती।";
+"alert.quitAppsToRight.title" = "दाईं ओर के ऐप्स बंद करें";
+"alert.emptyTrash.title" = "ट्रैश खाली करें?";
+"alert.emptyTrash.message" = "क्या आप वाकई ट्रैश में मौजूद सभी आइटम स्थायी रूप से हटाना चाहते हैं?";
+"alert.couldNotEmptyTrash.title" = "ट्रैश खाली नहीं किया जा सका";
+"alert.finderError.message" = "Finder ने एक त्रुटि बताई (%d)। विवरण के लिए /tmp/opentaskbar.log देखें।";
+"alert.finderPermission.title" = "Finder की अनुमति आवश्यक है";
+"alert.finderPermission.message" = "macOS ने OpenTaskbar को Finder नियंत्रित करने से रोक दिया। इसे ठीक करने के लिए सिस्टम सेटिंग्स > गोपनीयता और सुरक्षा > ऑटोमेशन में इसे अनुमति दें।";
+
+"window.fallback" = "विंडो %d";
+"window.fallbackGeneric" = "विंडो";
+"app.unknown" = "अज्ञात";
+"window.closeAll" = "सभी बंद करें";
+"window.closeAllWindows" = "सभी विंडो बंद करें";
+
+"finder.newWindow" = "नई Finder विंडो";
+"finder.home" = "होम";
+"finder.desktop" = "डेस्कटॉप";
+"finder.downloads" = "डाउनलोड";
+"finder.documents" = "दस्तावेज़";
+"finder.applications" = "ऐप्लिकेशन";
+"finder.emptyTrash" = "ट्रैश खाली करें…";
+
+"menu.pin" = "टास्कबार पर पिन करें";
+"menu.unpin" = "टास्कबार से पिन हटाएँ";
+"menu.quitApp" = "%@ से बाहर निकलें";
+"menu.quitAppsToRight" = "दाईं ओर के ऐप्स बंद करें";
+"menu.forceQuitApp" = "%@ को बलपूर्वक बंद करें";
+
+"tooltip.searchSpotlight" = "खोजें (Spotlight)";
+"accessibility.search" = "खोजें";
+"accessibility.moreApps" = "अधिक ऐप्स";
+"overflow.more" = "+%d और";
+
+"taskbar.showDesktop" = "डेस्कटॉप दिखाएँ";
+"taskbar.activityMonitor" = "गतिविधि मॉनिटर";
+"taskbar.openTrash" = "ट्रैश खोलें";
+"taskbar.quitAllClosedApps" = "सभी बंद ऐप्स से बाहर निकलें";
+"taskbar.quitAllApps" = "सभी ऐप्स से बाहर निकलें";
+"taskbar.dontQuitTheseApps" = "इन ऐप्स से बाहर न निकलें";
+"taskbar.noApps" = "कोई ऐप नहीं";
+
+"settings.windowTitle" = "OpenTaskbar प्राथमिकताएँ";
+"settings.general" = "सामान्य";
+"settings.appearance" = "दिखावट";
+"settings.displayOptions" = "प्रदर्शन विकल्प";
+"settings.style" = "शैली";
+"settings.taskbar" = "टास्कबार";
+"settings.dock" = "Dock";
+"settings.barAlignment" = "बार संरेखण";
+"settings.left" = "बायाँ";
+"settings.center" = "मध्य";
+"settings.right" = "दायाँ";
+"settings.showOnAllScreens" = "सभी स्क्रीन पर दिखाएँ";
+"settings.backgroundTheme" = "पृष्ठभूमि थीम";
+"settings.system" = "सिस्टम";
+"settings.dark" = "गहरा";
+"settings.light" = "हल्का";
+"settings.custom" = "कस्टम";
+"settings.customColor" = "कस्टम रंग";
+"settings.appIconSize" = "ऐप आइकन का आकार";
+"settings.barSpacing" = "बार अंतराल";
+"settings.iconSizeValue" = "%@ pt";
+"settings.spacingValue" = "%@ px";
+"settings.launchAtLogin" = "लॉगिन पर लॉन्च करें";
+"settings.enableAnimations" = "एनिमेशन सक्षम करें";
+"settings.showWindowThumbnails" = "होवर करने पर विंडो थंबनेल दिखाएँ";
+"settings.showAppNames" = "ऐप के नाम दिखाएँ";
+"settings.showSpotlightButton" = "Spotlight बटन दिखाएँ";
+"settings.hideOnFullscreen" = "फ़ुलस्क्रीन पर टास्कबार छिपाएँ";
+"settings.quitAppsWhenWindowsClose" = "सभी विंडो बंद होने पर ऐप्स से बाहर निकलें";
+"settings.keepZoomedWindowsAboveTaskbar" = "ज़ूम की गई विंडो को टास्कबार के ऊपर रखें";
+"settings.showRunningAppsWithoutWindows" = "बिना विंडो वाले चल रहे ऐप्स दिखाएँ";
+"settings.resetDefaults" = "डिफ़ॉल्ट पर रीसेट करें";

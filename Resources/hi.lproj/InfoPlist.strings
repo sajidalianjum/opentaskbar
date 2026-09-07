@@ -1,0 +1,3 @@
+"NSAccessibilityUsageDescription" = "विंडो के बीच स्विच करने और उन्हें प्रबंधित करने के लिए OpenTaskbar को ऐक्सेसिबिलिटी की आवश्यकता है।";
+"NSScreenCaptureUsageDescription" = "होवर करने पर विंडो थंबनेल दिखाने के लिए OpenTaskbar को स्क्रीन रिकॉर्डिंग की आवश्यकता है।";
+"NSAppleEventsUsageDescription" = "ट्रैश खाली करने और फ़ोल्डर खोलने के लिए OpenTaskbar को Finder नियंत्रित करने की आवश्यकता है।";

@@ -315,7 +315,7 @@ private final class WindowRowView: NSView {
         self.windowInfo = windowInfo
         self.index = index
 
-        let title = windowInfo.title.isEmpty ? "Window \(index + 1)" : windowInfo.title
+        let title = windowInfo.title.isEmpty ? L10n.window(number: index + 1) : windowInfo.title
         titleLabel = NSTextField(labelWithString: title)
         titleLabel.font = NSFont.systemFont(ofSize: 12, weight: .medium)
         titleLabel.lineBreakMode = .byTruncatingTail
@@ -330,7 +330,7 @@ private final class WindowRowView: NSView {
         closeButton = NSButton()
         closeButton.bezelStyle = .smallSquare
         closeButton.isBordered = false
-        closeButton.image = NSImage(systemSymbolName: "xmark", accessibilityDescription: "Close")
+        closeButton.image = NSImage(systemSymbolName: "xmark", accessibilityDescription: L10n.close)
         closeButton.imagePosition = .imageOnly
         closeButton.contentTintColor = .secondaryLabelColor
         closeButton.isHidden = true

@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>alert.apps.question</key>
+    <dict>
+        <key>NSStringLocalizedFormatKey</key>
+        <string>%#@appCount@&#10;&#10;%@</string>
+        <key>appCount</key>
+        <dict>
+            <key>NSStringFormatSpecTypeKey</key>
+            <string>NSStringPluralRuleType</string>
+            <key>NSStringFormatValueTypeKey</key>
+            <string>d</string>
+            <key>other</key>
+            <string>确定要退出以下 %d 个应用吗？</string>
+        </dict>
+    </dict>
+    <key>alert.quitAppsToRight.question</key>
+    <dict>
+        <key>NSStringLocalizedFormatKey</key>
+        <string>%#@appCount@&#10;&#10;%@</string>
+        <key>appCount</key>
+        <dict>
+            <key>NSStringFormatSpecTypeKey</key>
+            <string>NSStringPluralRuleType</string>
+            <key>NSStringFormatValueTypeKey</key>
+            <string>d</string>
+            <key>other</key>
+            <string>要退出以下 %d 个应用吗？</string>
+        </dict>
+    </dict>
+    <key>taskbar.quitClosedApps</key>
+    <dict>
+        <key>NSStringLocalizedFormatKey</key>
+        <string>%#@closedAppCount@</string>
+        <key>closedAppCount</key>
+        <dict>
+            <key>NSStringFormatSpecTypeKey</key>
+            <string>NSStringPluralRuleType</string>
+            <key>NSStringFormatValueTypeKey</key>
+            <string>d</string>
+            <key>other</key>
+            <string>退出 %d 个已关闭窗口的应用</string>
+        </dict>
+    </dict>
+</dict>
+</plist>

@@ -1,0 +1,3 @@
+"NSAccessibilityUsageDescription" = "OpenTaskbarは、ウインドウの切り替えと管理にアクセシビリティの許可が必要です。";
+"NSScreenCaptureUsageDescription" = "OpenTaskbarは、ホバー時にウインドウのサムネールを表示するために画面収録の許可が必要です。";
+"NSAppleEventsUsageDescription" = "OpenTaskbarは、ゴミ箱を空にしたりフォルダを開いたりするためにFinderの操作許可が必要です。";

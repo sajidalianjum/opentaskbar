@@ -202,7 +202,7 @@ swift test
 4. **`MenuItemActions`** is a singleton (`shared`) that creates its own `AccessibilityService` instance rather than sharing the one from `WindowManager`; callback wiring is fragile
 5. **Tests cover pure logic only** — `WindowGroupingEngine` (including state transitions), models, `DockManager`, and utilities (`ScreenGeometry`, `ThemeManager`, `SingleInstanceLock`, `NSImageExtensions`) are unit tested; AppKit/AX-driven flows (panels, observers, popovers) have no test coverage
 6. **CI runs `swift build` + `swift test --enable-code-coverage` with an llvm-cov threshold** — no linting, formatting, or release-bundle verification in CI
-7. **No localization** — all strings hardcoded in English
+7. **Localization translations need native-speaker review** — the `L10n` layer and locale resource packaging are in place, with initial catalogs bundled for 12 locales; add reviewed `<locale>.lproj` catalogs as languages are supported
 8. **No SwiftUI `@main`** — uses classic `NSApplicationMain` pattern
 9. **`StartMenuButton`** simulates Cmd+Space via `CGEvent` — fragile if Spotlight is remapped or disabled, and requires accessibility permissions
 10. **`WindowListPopover` and `ThumbnailPopover`** are mutually exclusive based on `showThumbnails`; no toggle to show both simultaneously

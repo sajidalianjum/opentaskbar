@@ -1,0 +1,3 @@
+"NSAccessibilityUsageDescription" = "O OpenTaskbar precisa de acesso à Acessibilidade para alternar entre janelas e gerenciá-las.";
+"NSScreenCaptureUsageDescription" = "O OpenTaskbar precisa da gravação de tela para mostrar miniaturas das janelas ao passar o cursor.";
+"NSAppleEventsUsageDescription" = "O OpenTaskbar precisa controlar o Finder para esvaziar a Lixeira e abrir pastas.";

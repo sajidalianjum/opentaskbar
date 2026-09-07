@@ -1,0 +1,3 @@
+"NSAccessibilityUsageDescription" = "OpenTaskbar benötigt Bedienungshilfen, um zwischen Fenstern zu wechseln und sie zu verwalten.";
+"NSScreenCaptureUsageDescription" = "OpenTaskbar benötigt Bildschirmaufnahme, um Fensterminiaturen beim Überfahren anzuzeigen.";
+"NSAppleEventsUsageDescription" = "OpenTaskbar benötigt die Steuerung von Finder, um den Papierkorb zu entleeren und Ordner zu öffnen.";

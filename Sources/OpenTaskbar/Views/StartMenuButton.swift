@@ -31,7 +31,7 @@ final class StartMenuButton: NSView {
         hoverOverlay.isHidden = true
         addSubview(hoverOverlay)
 
-        let image = NSImage(systemSymbolName: "magnifyingglass", accessibilityDescription: "Search")
+        let image = NSImage(systemSymbolName: "magnifyingglass", accessibilityDescription: L10n.searchAccessibility)
         imageView = NSImageView(image: image ?? NSImage())
         imageView.imageScaling = .scaleProportionallyUpOrDown
         imageView.contentTintColor = .labelColor

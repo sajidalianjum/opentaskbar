@@ -55,6 +55,13 @@ cp "${PROJECT_DIR}/Resources/status-icon.png" "${APP_BUNDLE}/Contents/Resources/
 cp "${PROJECT_DIR}/Resources/status-icon@2x.png" "${APP_BUNDLE}/Contents/Resources/" 2>/dev/null || true
 cp "${PROJECT_DIR}/Resources/status-icon@3x.png" "${APP_BUNDLE}/Contents/Resources/" 2>/dev/null || true
 
+# The app bundle is assembled manually, so copy locale resources explicitly.
+for localization in "${PROJECT_DIR}"/Resources/*.lproj; do
+    if [ -d "${localization}" ]; then
+        ditto "${localization}" "${APP_BUNDLE}/Contents/Resources/$(basename "${localization}")"
+    fi
+done
+
 echo "Code signing..."
 SIGN_IDENTITY="${OPENTASKBAR_SIGN_IDENTITY:-OpenTaskbarDev}"
 try_sign() {

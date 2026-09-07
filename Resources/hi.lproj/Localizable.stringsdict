@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>alert.apps.question</key>
+    <dict>
+        <key>NSStringLocalizedFormatKey</key>
+        <string>%#@appCount@&#10;&#10;%@</string>
+        <key>appCount</key>
+        <dict>
+            <key>NSStringFormatSpecTypeKey</key>
+            <string>NSStringPluralRuleType</string>
+            <key>NSStringFormatValueTypeKey</key>
+            <string>d</string>
+            <key>one</key>
+            <string>क्या आप निम्नलिखित %d ऐप से बाहर निकलना चाहते हैं?</string>
+            <key>other</key>
+            <string>क्या आप निम्नलिखित %d ऐप्स से बाहर निकलना चाहते हैं?</string>
+        </dict>
+    </dict>
+    <key>alert.quitAppsToRight.question</key>
+    <dict>
+        <key>NSStringLocalizedFormatKey</key>
+        <string>%#@appCount@&#10;&#10;%@</string>
+        <key>appCount</key>
+        <dict>
+            <key>NSStringFormatSpecTypeKey</key>
+            <string>NSStringPluralRuleType</string>
+            <key>NSStringFormatValueTypeKey</key>
+            <string>d</string>
+            <key>one</key>
+            <string>क्या आप दाईं ओर के निम्नलिखित %d ऐप से बाहर निकलना चाहते हैं?</string>
+            <key>other</key>
+            <string>क्या आप दाईं ओर के निम्नलिखित %d ऐप्स से बाहर निकलना चाहते हैं?</string>
+        </dict>
+    </dict>
+    <key>taskbar.quitClosedApps</key>
+    <dict>
+        <key>NSStringLocalizedFormatKey</key>
+        <string>%#@closedAppCount@</string>
+        <key>closedAppCount</key>
+        <dict>
+            <key>NSStringFormatSpecTypeKey</key>
+            <string>NSStringPluralRuleType</string>
+            <key>NSStringFormatValueTypeKey</key>
+            <string>d</string>
+            <key>one</key>
+            <string>%d बंद ऐप से बाहर निकलें</string>
+            <key>other</key>
+            <string>%d बंद ऐप्स से बाहर निकलें</string>
+        </dict>
+    </dict>
+</dict>
+</plist>

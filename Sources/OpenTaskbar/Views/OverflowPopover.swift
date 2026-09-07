@@ -108,7 +108,7 @@ final class OverflowPopover: NSWindow {
 
         if hasOverflow {
             let overflowCount = groups.count - Self.maxVisibleRows
-            let moreLabel = NSTextField(labelWithString: "+\(overflowCount) more")
+            let moreLabel = NSTextField(labelWithString: L10n.moreOverflow(count: overflowCount))
             moreLabel.font = NSFont.systemFont(ofSize: 11, weight: .medium)
             moreLabel.textColor = .secondaryLabelColor
             moreLabel.alignment = .center
@@ -250,7 +250,7 @@ private final class OverflowRowView: NSView {
         nameLabel.textColor = appGroup.isActive ? .labelColor : .secondaryLabelColor
 
         if appGroup.windowCount > 1 {
-            let count = NSTextField(labelWithString: "\(appGroup.windowCount)")
+            let count = NSTextField(labelWithString: L10n.number(appGroup.windowCount))
             count.font = NSFont.systemFont(ofSize: 11)
             count.textColor = .tertiaryLabelColor
             count.alignment = .right

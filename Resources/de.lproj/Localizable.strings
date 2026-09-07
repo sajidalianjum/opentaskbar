@@ -1,0 +1,94 @@
+"crash.unexpectedExit.title" = "OpenTaskbar wurde unerwartet beendet";
+"crash.dockRestored.message" = "Das Dock wurde wiederhergestellt. Möchten Sie OpenTaskbar erneut starten?";
+"crash.launch.button" = "OpenTaskbar starten";
+
+"menu.about" = "Über OpenTaskbar";
+"menu.preferences" = "Einstellungen…";
+"menu.restoreDockQuit" = "Dock wiederherstellen und beenden";
+
+"common.cancel" = "Abbrechen";
+"common.close" = "Schließen";
+"common.emptyTrash" = "Papierkorb entleeren";
+"common.forceQuit" = "Beenden erzwingen";
+"common.ok" = "OK";
+"common.open" = "Öffnen";
+"common.openSystemSettings" = "Systemeinstellungen öffnen";
+"common.quit" = "Beenden";
+"common.quitAll" = "Alle beenden";
+
+"alert.quitAllApps.title" = "Alle Apps beenden";
+"alert.forceQuit.title" = "Beenden von %@ erzwingen?";
+"alert.unsavedChanges.message" = "Nicht gespeicherte Änderungen gehen verloren. Diese Aktion kann nicht rückgängig gemacht werden.";
+"alert.quitAppsToRight.title" = "Apps rechts beenden";
+"alert.emptyTrash.title" = "Papierkorb entleeren?";
+"alert.emptyTrash.message" = "Möchten Sie wirklich alle Objekte im Papierkorb dauerhaft löschen?";
+"alert.couldNotEmptyTrash.title" = "Papierkorb konnte nicht geleert werden";
+"alert.finderError.message" = "Finder hat einen Fehler gemeldet (%d). Details finden Sie in /tmp/opentaskbar.log.";
+"alert.finderPermission.title" = "Finder-Berechtigung erforderlich";
+"alert.finderPermission.message" = "macOS hat OpenTaskbar daran gehindert, Finder zu steuern. Erlauben Sie dies in Systemeinstellungen > Datenschutz & Sicherheit > Automation.";
+
+"window.fallback" = "Fenster %d";
+"window.fallbackGeneric" = "Fenster";
+"app.unknown" = "Unbekannt";
+"window.closeAll" = "Alle schließen";
+"window.closeAllWindows" = "Alle Fenster schließen";
+
+"finder.newWindow" = "Neues Finder-Fenster";
+"finder.home" = "Privat";
+"finder.desktop" = "Schreibtisch";
+"finder.downloads" = "Downloads";
+"finder.documents" = "Dokumente";
+"finder.applications" = "Programme";
+"finder.emptyTrash" = "Papierkorb entleeren…";
+
+"menu.pin" = "An Taskleiste anheften";
+"menu.unpin" = "Von Taskleiste lösen";
+"menu.quitApp" = "%@ beenden";
+"menu.quitAppsToRight" = "Apps rechts beenden";
+"menu.forceQuitApp" = "Beenden von %@ erzwingen";
+
+"tooltip.searchSpotlight" = "Suchen (Spotlight)";
+"accessibility.search" = "Suchen";
+"accessibility.moreApps" = "Weitere Apps";
+"overflow.more" = "+%d weitere";
+
+"taskbar.showDesktop" = "Schreibtisch anzeigen";
+"taskbar.activityMonitor" = "Aktivitätsanzeige";
+"taskbar.openTrash" = "Papierkorb öffnen";
+"taskbar.quitAllClosedApps" = "Alle geschlossenen Apps beenden";
+"taskbar.quitAllApps" = "Alle Apps beenden";
+"taskbar.dontQuitTheseApps" = "Diese Apps nicht beenden";
+"taskbar.noApps" = "Keine Apps";
+
+"settings.windowTitle" = "OpenTaskbar-Einstellungen";
+"settings.general" = "Allgemein";
+"settings.appearance" = "Erscheinungsbild";
+"settings.displayOptions" = "Anzeigeoptionen";
+"settings.style" = "Stil";
+"settings.taskbar" = "Taskleiste";
+"settings.dock" = "Dock";
+"settings.barAlignment" = "Ausrichtung der Leiste";
+"settings.left" = "Links";
+"settings.center" = "Mitte";
+"settings.right" = "Rechts";
+"settings.showOnAllScreens" = "Auf allen Bildschirmen anzeigen";
+"settings.backgroundTheme" = "Hintergrundthema";
+"settings.system" = "System";
+"settings.dark" = "Dunkel";
+"settings.light" = "Hell";
+"settings.custom" = "Benutzerdefiniert";
+"settings.customColor" = "Benutzerdefinierte Farbe";
+"settings.appIconSize" = "App-Symbolgröße";
+"settings.barSpacing" = "Abstand der Leiste";
+"settings.iconSizeValue" = "%@ pt";
+"settings.spacingValue" = "%@ px";
+"settings.launchAtLogin" = "Beim Anmelden starten";
+"settings.enableAnimations" = "Animationen aktivieren";
+"settings.showWindowThumbnails" = "Fensterminiaturen beim Überfahren anzeigen";
+"settings.showAppNames" = "App-Namen anzeigen";
+"settings.showSpotlightButton" = "Spotlight-Taste anzeigen";
+"settings.hideOnFullscreen" = "Taskleiste im Vollbildmodus ausblenden";
+"settings.quitAppsWhenWindowsClose" = "Apps beenden, wenn alle Fenster geschlossen werden";
+"settings.keepZoomedWindowsAboveTaskbar" = "Vergrößerte Fenster über der Taskleiste halten";
+"settings.showRunningAppsWithoutWindows" = "Laufende Apps ohne Fenster anzeigen";
+"settings.resetDefaults" = "Auf Standardwerte zurücksetzen";

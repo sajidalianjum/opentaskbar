@@ -6,6 +6,8 @@
     <string>OpenTaskbar</string>
     <key>CFBundleDisplayName</key>
     <string>OpenTaskbar</string>
+    <key>CFBundleDevelopmentRegion</key>
+    <string>en</string>
     <key>CFBundleIdentifier</key>
     <string>com.opentaskbar.app</string>
     <key>CFBundleVersion</key>

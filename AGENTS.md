@@ -57,15 +57,15 @@ OpenTaskbar/
 │   ├── Models/
 │   │   ├── WindowInfo.swift        # CGWindowID, pid, title, frame, minimized, fullscreen, layer, alpha, ownerName, isValid (Hashable)
 │   │   ├── AppGroup.swift          # Bundle grouping: windows[WindowInfo], icon, active state, insertionOrder, isRunning, isPinned, hasMultipleWindows (Hashable)
-│   │   └── TaskbarSettings.swift   # Singleton, @Published + NotificationCenter, UserDefaults persistence (dockMode, barAlignment, barSpacing, iconSize, showStartButton, showAppNames, showThumbnails, showOnAllScreens, backgroundTheme, quitOnLastWindowClose, customBackgroundColor, pinnedBundleIdentifiers, showRunningAppsWithoutWindows, language)
+│   │   └── TaskbarSettings.swift   # Singleton, @Published + NotificationCenter, UserDefaults persistence (style, barAlignment, barSpacing, iconSize, showStartButton, showAppNames, showThumbnails, showOnAllScreens, backgroundTheme, constrainZoomedWindows, hideOnFullscreen, quitOnLastWindowClose, launchAtLogin, animationsEnabled, hoverDelay, customBackgroundColor, pinnedBundleIdentifiers, neverQuitBundleIdentifiers, showRunningAppsWithoutWindows, language)
 │   ├── Services/
-│   │   ├── WindowManager.swift     # Central orchestrator: app groups, polling (1s), activate/cycle apps, context menus, drag-to-reorder, pin/unpin, focus tracking, MenuItemActions singleton
+│   │   ├── WindowManager.swift     # Central orchestrator: app groups, polling (0.5s), activate/cycle apps, context menus, drag-to-reorder, pin/unpin, focus tracking, MenuItemActions singleton
 │   │   ├── WindowGroupingEngine.swift # Pure window-grouping logic (merge/dedup, sort, closed-app eligibility, resurrection filter, insertion-order TTL, launch grace, zoomed-window math, miss tracker) — unit tested
 │   │   ├── AccessibilityService.swift# AX wrappers: raise/minimize/unminimize/close/toggle-fullscreen windows, windowsForPID, windowElement lookup
 │   │   ├── AXObserverManager.swift # Per-PID AXObserver C callbacks for window events
 │   │   ├── WorkspaceMonitor.swift  # NSWorkspace notifications (launch/terminate/activate/deactivate/screens)
 │   │   ├── DockManager.swift       # Save/restore Dock autohide/coexist via defaults + killall, ~/.config/opentaskbar/dock-state.plist
-│   │   ├── ThemeManager.swift      # Background theme resolution (system/dark/light/glassmorphism/custom, translucent-vibrancy)
+│   │   ├── ThemeManager.swift      # Background theme resolution (system/dark/light/custom; translucent vibrancy)
 │   │   └── ThumbnailService.swift  # Async SCScreenshotManager (macOS 14+) / CGWindowList fallback
 │   ├── Utilities/
 │   │   ├── SingleInstanceLock.swift# PID file at /tmp/com.opentaskbar.lock
@@ -105,7 +105,7 @@ OpenTaskbar/
 ```
 NSWorkspace notifications → WorkspaceMonitor → WindowManager
 AXObserver callbacks     → AXObserverManager → WindowManager
-1s NSTimer poll          → WindowManager.pollWindows()
+0.5s NSTimer poll        → WindowManager.pollWindows()
                                   ↓
                          WindowManager.refreshAppGroups()
                          (merges AX windows + CGWindowList)
@@ -198,7 +198,7 @@ swift test
 
 1. **No window drag-to-reorder** on the taskbar (app-level drag-to-reorder exists; individual windows cannot be reordered)
 2. **SettingsWindowController** uses manual frame layout helpers (`FlippedView`, `labeled()`/`sliderRow()`/`checkbox()` functions), not a proper Auto Layout constraints-based layout
-3. **1s poll timer** compares full window sets each cycle; could be optimized to avoid full refresh when nothing changed
+3. **0.5s poll timer** compares full window sets each cycle; could be optimized to avoid full refresh when nothing changed
 4. **`MenuItemActions`** is a singleton (`shared`) that creates its own `AccessibilityService` instance rather than sharing the one from `WindowManager`; callback wiring is fragile
 5. **Tests cover pure logic only** — `WindowGroupingEngine` (including state transitions), models, `DockManager`, and utilities (`ScreenGeometry`, `ThemeManager`, `SingleInstanceLock`, `NSImageExtensions`) are unit tested; AppKit/AX-driven flows (panels, observers, popovers) have no test coverage
 6. **CI runs `swift build` + `swift test --enable-code-coverage` with an llvm-cov threshold** — no linting, formatting, or release-bundle verification in CI

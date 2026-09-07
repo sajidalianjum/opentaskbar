@@ -24,7 +24,7 @@ Screenshots are coming soon. They will live in [`docs/screenshots/`](docs/screen
 - **Fullscreen handling** — the taskbar hides automatically while a fullscreen or player window is active (configurable)
 - **Multi-screen support** — one taskbar per display (configurable)
 - **Two styles** — a full-width *Taskbar* or a floating *Dock*-style pill
-- **Themes** — system / dark / light / glassmorphism / custom background color, with a translucent-bar option
+- **Themes** — system / dark / light / custom background color, with automatic translucency (vibrancy)
 - **Zoomed-window handling** — optionally keep zoomed (green-button) windows above the taskbar
 - **Launch animation** — apps animate in when they launch; minimize/restore bounce animations
 - **Crash safety** — the Dock is saved before it's hidden and restored on unexpected exits
@@ -130,9 +130,8 @@ Open **Preferences…** from the menu bar (⌘,). Changes apply immediately.
 | General | Style | Taskbar | `Taskbar` (full-width bar) or `Dock` (floating pill) |
 | General | Bar Alignment | Center | Left / center / right placement of the bar on screen |
 | General | Show on All Screens | On | One taskbar per display vs. primary display only |
-| Appearance | Background Theme | System | System / Dark / Light / Glassmorphism / Custom |
+| Appearance | Background Theme | System | System / Dark / Light / Custom |
 | Appearance | Custom Color | — | Background color (shown when theme is Custom) |
-| Appearance | Translucent Bar | On | Translucent (vibrancy) bar effect; requires "Reduce Transparency" to be off |
 | Appearance | App Icon Size | 32 pt | Icon size, 16–64 pt |
 | Appearance | Bar Spacing | 4 px | Spacing between app buttons, 0–16 px |
 | Display Options | Launch at Login | On | Start automatically at login |
@@ -147,10 +146,11 @@ Open **Preferences…** from the menu bar (⌘,). Changes apply immediately.
 
 ## How it works
 
-- **Window tracking** — a 1-second poll of the window list plus `NSWorkspace` notifications (launch/terminate/activate) and per-app `AXObserver` callbacks (open/close/minimize/focus) keep the taskbar in sync without continuous AX traffic.
+- **Window tracking** — a 0.5-second poll of the window list plus `NSWorkspace` notifications (launch/terminate/activate) and per-app `AXObserver` callbacks (open/close/minimize/focus) keep the taskbar in sync without continuous AX traffic.
 - **Window management** — all focus, minimize, close, and fullscreen operations go through the Accessibility (AX) API.
 - **Thumbnails** — live previews are captured asynchronously with ScreenCaptureKit (`SCScreenshotManager`) on macOS 14+, with a `CGWindowList` fallback.
 - **Hiding the Dock** — the Dock's autohide state is saved to `~/.config/opentaskbar/dock-state.plist` before hiding and restored on quit or crash.
+- **Translucency** — the bar is translucent (vibrancy) automatically; enabling **Reduce Transparency** in System Settings forces an opaque bar.
 - **Spotlight button** — simulates `Cmd+Space` via `CGEvent` to open Spotlight. This depends on the standard Spotlight shortcut not being remapped.
 - **Permissions** — Accessibility is polled every 2 seconds until granted, then the app starts.
 

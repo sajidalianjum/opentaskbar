@@ -14,7 +14,7 @@ First public release.
 - **Drag-to-reorder** apps; pin/unpin with separate pinned ordering
 - **Per-app window cycling** and rich context menus (per-window activate/close, Close All, Quit / Force Quit / Quit Apps to the Right, Finder extras)
 - **Fullscreen handling** — auto-hide while fullscreen/player windows are active
-- **Multi-screen support**, **Taskbar / Dock (pill)** styles, **themes** (system/dark/light/glassmorphism/custom)
+- **Multi-screen support**, **Taskbar / Dock (pill)** styles, **themes** (system/dark/light/custom)
 - **Settings window**, menu bar icon, About panel
 - **CrashGuard** — Dock autohide state saved and restored on quit or unexpected exit
 - **Single-instance lock**

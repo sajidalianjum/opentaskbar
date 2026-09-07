@@ -92,3 +92,5 @@
 "settings.keepZoomedWindowsAboveTaskbar" = "Vergrößerte Fenster über der Taskleiste halten";
 "settings.showRunningAppsWithoutWindows" = "Laufende Apps ohne Fenster anzeigen";
 "settings.resetDefaults" = "Auf Standardwerte zurücksetzen";
+"settings.language" = "Sprache";
+"settings.languageSystem" = "Systemstandard";

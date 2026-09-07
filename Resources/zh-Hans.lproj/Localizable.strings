@@ -94,3 +94,5 @@
 "settings.keepZoomedWindowsAboveTaskbar" = "将缩放窗口保持在任务栏上方";
 "settings.showRunningAppsWithoutWindows" = "显示没有窗口的正在运行的应用";
 "settings.resetDefaults" = "恢复默认设置";
+"settings.language" = "语言";
+"settings.languageSystem" = "系统默认";

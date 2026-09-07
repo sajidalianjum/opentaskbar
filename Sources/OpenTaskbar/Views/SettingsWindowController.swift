@@ -157,6 +157,19 @@ final class SettingsWindowController {
         // ─── General ───
         section(L10n.general)
 
+        let languageSelect = NSPopUpButton()
+        let languageOptions = L10n.languageOptions
+        for option in languageOptions {
+            languageSelect.addItem(withTitle: option.displayName)
+            languageSelect.lastItem?.representedObject = option.code
+        }
+        if let index = languageOptions.firstIndex(where: { $0.code == settings.language }) {
+            languageSelect.selectItem(at: index)
+        }
+        languageSelect.target = self
+        languageSelect.action = #selector(languageChanged(_:))
+        labeled(L10n.settingsLanguage, control: languageSelect)
+
         let styleSelect = NSPopUpButton()
         styleSelect.addItem(withTitle: L10n.taskbar)
         styleSelect.addItem(withTitle: L10n.dock)
@@ -315,6 +328,16 @@ final class SettingsWindowController {
         settings.style = sender.indexOfSelectedItem == 0 ? .taskbar : .dock
     }
 
+    @objc private func languageChanged(_ sender: NSPopUpButton) {
+        guard let code = sender.selectedItem?.representedObject as? String,
+              code != settings.language else { return }
+        settings.language = code
+        // Rebuild the window so every label appears in the newly selected language.
+        window?.close()
+        self.window = nil
+        showWindow()
+    }
+
     @objc private func thumbnailsChanged(_ sender: NSButton) {
         let enabled = sender.state == .on
         if enabled && !PermissionsManager.shared.isScreenRecordingGranted {
@@ -409,6 +432,7 @@ final class SettingsWindowController {
         settings.showRunningAppsWithoutWindows = false
         settings.backgroundTheme = .system
         settings.customBackgroundColor = NSColor(calibratedRed: 0.15, green: 0.15, blue: 0.2, alpha: 1.0)
+        settings.language = ""
         settings.endBatchUpdates()
         window?.close()
         showWindow()

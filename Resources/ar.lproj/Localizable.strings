@@ -94,3 +94,5 @@
 "settings.keepZoomedWindowsAboveTaskbar" = "إبقاء النوافذ المكبرة فوق شريط المهام";
 "settings.showRunningAppsWithoutWindows" = "إظهار التطبيقات قيد التشغيل التي بلا نوافذ";
 "settings.resetDefaults" = "إعادة التعيين إلى الإعدادات الافتراضية";
+"settings.language" = "اللغة";
+"settings.languageSystem" = "افتراضي النظام";

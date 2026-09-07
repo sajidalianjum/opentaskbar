@@ -95,3 +95,5 @@
 "settings.keepZoomedWindowsAboveTaskbar" = "Keep Zoomed Windows Above Taskbar";
 "settings.showRunningAppsWithoutWindows" = "Show Running Apps With No Windows";
 "settings.resetDefaults" = "Reset to Defaults";
+"settings.language" = "Language";
+"settings.languageSystem" = "System Default";

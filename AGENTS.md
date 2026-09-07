@@ -57,7 +57,7 @@ OpenTaskbar/
 │   ├── Models/
 │   │   ├── WindowInfo.swift        # CGWindowID, pid, title, frame, minimized, fullscreen, layer, alpha, ownerName, isValid (Hashable)
 │   │   ├── AppGroup.swift          # Bundle grouping: windows[WindowInfo], icon, active state, insertionOrder, isRunning, isPinned, hasMultipleWindows (Hashable)
-│   │   └── TaskbarSettings.swift   # Singleton, @Published + NotificationCenter, UserDefaults persistence (dockMode, barAlignment, barSpacing, iconSize, showStartButton, showAppNames, showThumbnails, showOnAllScreens, backgroundTheme, quitOnLastWindowClose, customBackgroundColor, pinnedBundleIdentifiers, showRunningAppsWithoutWindows)
+│   │   └── TaskbarSettings.swift   # Singleton, @Published + NotificationCenter, UserDefaults persistence (dockMode, barAlignment, barSpacing, iconSize, showStartButton, showAppNames, showThumbnails, showOnAllScreens, backgroundTheme, quitOnLastWindowClose, customBackgroundColor, pinnedBundleIdentifiers, showRunningAppsWithoutWindows, language)
 │   ├── Services/
 │   │   ├── WindowManager.swift     # Central orchestrator: app groups, polling (1s), activate/cycle apps, context menus, drag-to-reorder, pin/unpin, focus tracking, MenuItemActions singleton
 │   │   ├── WindowGroupingEngine.swift # Pure window-grouping logic (merge/dedup, sort, closed-app eligibility, resurrection filter, insertion-order TTL, launch grace, zoomed-window math, miss tracker) — unit tested
@@ -202,7 +202,7 @@ swift test
 4. **`MenuItemActions`** is a singleton (`shared`) that creates its own `AccessibilityService` instance rather than sharing the one from `WindowManager`; callback wiring is fragile
 5. **Tests cover pure logic only** — `WindowGroupingEngine` (including state transitions), models, `DockManager`, and utilities (`ScreenGeometry`, `ThemeManager`, `SingleInstanceLock`, `NSImageExtensions`) are unit tested; AppKit/AX-driven flows (panels, observers, popovers) have no test coverage
 6. **CI runs `swift build` + `swift test --enable-code-coverage` with an llvm-cov threshold** — no linting, formatting, or release-bundle verification in CI
-7. **Localization translations need native-speaker review** — the `L10n` layer and locale resource packaging are in place, with initial catalogs bundled for 12 locales; add reviewed `<locale>.lproj` catalogs as languages are supported
+7. **Localization translations need native-speaker review** — the `L10n` layer and locale resource packaging are in place, with initial catalogs bundled for 12 locales; add reviewed `<locale>.lproj` catalogs as languages are supported. An in-app **language override** (`TaskbarSettings.language`, set in Settings > General) resolves strings through the matching `<locale>.lproj` sub-bundle via `L10n.applyLanguage(_:)` without touching `AppleLanguages`, so switching languages updates the UI live; choosing "System Default" falls back to `Bundle.main`
 8. **No SwiftUI `@main`** — uses classic `NSApplicationMain` pattern
 9. **`StartMenuButton`** simulates Cmd+Space via `CGEvent` — fragile if Spotlight is remapped or disabled, and requires accessibility permissions
 10. **`WindowListPopover` and `ThumbnailPopover`** are mutually exclusive based on `showThumbnails`; no toggle to show both simultaneously

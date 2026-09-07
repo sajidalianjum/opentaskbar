@@ -78,6 +78,14 @@ final class TaskbarSettings {
         didSet { UserDefaults.standard.set(showRunningAppsWithoutWindows, forKey: "showRunningAppsWithoutWindows"); postChange() }
     }
 
+    @Published var language: String {
+        didSet {
+            UserDefaults.standard.set(language, forKey: "language")
+            L10n.applyLanguage(language)
+            postChange()
+        }
+    }
+
     var translucentBar: Bool {
         !NSWorkspace.shared.accessibilityDisplayShouldReduceTransparency
     }
@@ -196,6 +204,7 @@ final class TaskbarSettings {
         self.constrainZoomedWindows = defaults.object(forKey: "constrainZoomedWindows") as? Bool ?? false
         self.hideOnFullscreen = defaults.object(forKey: "hideOnFullscreen") as? Bool ?? true
         self.showRunningAppsWithoutWindows = defaults.object(forKey: "showRunningAppsWithoutWindows") as? Bool ?? false
+        self.language = defaults.string(forKey: "language") ?? ""
         self.backgroundTheme = BackgroundTheme(rawValue: defaults.string(forKey: "backgroundTheme") ?? "") ?? .system
         defaults.removeObject(forKey: "translucentBar")
         self.pinnedBundleIdentifiers = defaults.stringArray(forKey: "pinnedBundleIdentifiers") ?? []
@@ -206,6 +215,8 @@ final class TaskbarSettings {
             let defaultColor = NSColor(calibratedRed: 0.15, green: 0.15, blue: 0.2, alpha: 1.0)
             self.customBackgroundColorData = (try? NSKeyedArchiver.archivedData(withRootObject: defaultColor, requiringSecureCoding: false)) ?? Data()
         }
+
+        L10n.applyLanguage(self.language)
 
         accessibilityObserver = NSWorkspace.shared.notificationCenter.addObserver(
             forName: NSWorkspace.accessibilityDisplayOptionsDidChangeNotification,

@@ -94,3 +94,5 @@
 "settings.keepZoomedWindowsAboveTaskbar" = "ज़ूम की गई विंडो को टास्कबार के ऊपर रखें";
 "settings.showRunningAppsWithoutWindows" = "बिना विंडो वाले चल रहे ऐप्स दिखाएँ";
 "settings.resetDefaults" = "डिफ़ॉल्ट पर रीसेट करें";
+"settings.language" = "भाषा";
+"settings.languageSystem" = "सिस्टम डिफ़ॉल्ट";

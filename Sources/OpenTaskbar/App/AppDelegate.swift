@@ -63,6 +63,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         createTaskbarPanels()
         windowManager.start()
         setupStatusItem()
+
+        NotificationCenter.default.addObserver(
+            forName: TaskbarSettings.settingsDidChange,
+            object: nil,
+            queue: .main
+        ) { [weak self] _ in
+            self?.rebuildStatusMenu()
+        }
     }
 
     private func createTaskbarPanels() {
@@ -138,19 +146,24 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     private func setupStatusItem() {
-        let item = NSStatusBar.system.statusItem(withLength: NSStatusItem.squareLength)
-        if let button = item.button {
-            button.image = loadStatusBarIcon()
+        if statusItem == nil {
+            let item = NSStatusBar.system.statusItem(withLength: NSStatusItem.squareLength)
+            if let button = item.button {
+                button.image = loadStatusBarIcon()
+            }
+            statusItem = item
         }
+        rebuildStatusMenu()
+    }
 
+    private func rebuildStatusMenu() {
         let menu = NSMenu()
         menu.addItem(NSMenuItem(title: L10n.aboutOpenTaskbar, action: #selector(showAbout), keyEquivalent: ""))
         menu.addItem(NSMenuItem.separator())
         menu.addItem(NSMenuItem(title: L10n.preferences, action: #selector(showPreferences), keyEquivalent: ","))
         menu.addItem(NSMenuItem.separator())
         menu.addItem(NSMenuItem(title: L10n.restoreDockAndQuit, action: #selector(restoreAndQuit), keyEquivalent: "q"))
-        item.menu = menu
-        statusItem = item
+        statusItem?.menu = menu
     }
 
     @objc private func showAbout() {

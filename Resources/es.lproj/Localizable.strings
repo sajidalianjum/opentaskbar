@@ -92,3 +92,5 @@
 "settings.keepZoomedWindowsAboveTaskbar" = "Mantener las ventanas ampliadas sobre la barra de tareas";
 "settings.showRunningAppsWithoutWindows" = "Mostrar apps en ejecución sin ventanas";
 "settings.resetDefaults" = "Restablecer valores por defecto";
+"settings.language" = "Idioma";
+"settings.languageSystem" = "Predeterminado del sistema";

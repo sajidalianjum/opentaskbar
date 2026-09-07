@@ -7,6 +7,7 @@ final class TaskbarSettingsTests: XCTestCase {
     private var originalBackgroundColorData: Data = Data()
     private var originalBackgroundTheme: TaskbarSettings.BackgroundTheme = .system
     private var originalIconSize: Double = 32
+    private var originalLanguage: String = ""
 
     override func setUp() {
         super.setUp()
@@ -15,6 +16,7 @@ final class TaskbarSettingsTests: XCTestCase {
         originalBackgroundColorData = TaskbarSettings.shared.customBackgroundColorData
         originalBackgroundTheme = TaskbarSettings.shared.backgroundTheme
         originalIconSize = TaskbarSettings.shared.iconSize
+        originalLanguage = TaskbarSettings.shared.language
     }
 
     override func tearDown() {
@@ -23,6 +25,7 @@ final class TaskbarSettingsTests: XCTestCase {
         TaskbarSettings.shared.customBackgroundColorData = originalBackgroundColorData
         TaskbarSettings.shared.backgroundTheme = originalBackgroundTheme
         TaskbarSettings.shared.iconSize = originalIconSize
+        TaskbarSettings.shared.language = originalLanguage
         super.tearDown()
     }
 
@@ -147,5 +150,37 @@ final class TaskbarSettingsTests: XCTestCase {
         let settings = TaskbarSettings.shared
         settings.iconSize = 42
         XCTAssertEqual(UserDefaults.standard.double(forKey: "iconSize"), 42)
+    }
+
+    func testLanguageChangePersistsToUserDefaults() {
+        let settings = TaskbarSettings.shared
+        let original = settings.language
+
+        settings.language = "fr"
+        XCTAssertEqual(settings.language, "fr")
+        XCTAssertEqual(UserDefaults.standard.string(forKey: "language"), "fr")
+
+        settings.language = original
+        XCTAssertEqual(settings.language, original)
+        XCTAssertEqual(UserDefaults.standard.string(forKey: "language"), original)
+    }
+
+    func testSupportedLanguageOptionsIncludeSystemDefaultAndLocales() {
+        let options = L10n.languageOptions
+        XCTAssertEqual(options.first?.code, "", "first option should be the system-default choice")
+        XCTAssertEqual(options.first?.displayName, L10n.systemDefaultLanguage)
+        for code in L10n.supportedLanguageCodes {
+            XCTAssertTrue(options.contains { $0.code == code }, "missing language option \(code)")
+        }
+        for option in options {
+            XCTAssertFalse(option.displayName.isEmpty)
+        }
+    }
+
+    func testApplyLanguageResolvesLocaleBundles() {
+        L10n.applyLanguage("")
+        // Main-bundle lookup should not crash and should return the table entry when present.
+        _ = L10n.settingsLanguage
+        XCTAssertEqual(L10n.languageOptions.first { $0.code == "de" }?.displayName, "Deutsch")
     }
 }

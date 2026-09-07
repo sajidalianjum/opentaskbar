@@ -101,10 +101,25 @@ enum L10n {
         case settingsKeepZoomedWindowsAboveTaskbar = "settings.keepZoomedWindowsAboveTaskbar"
         case settingsShowRunningAppsWithoutWindows = "settings.showRunningAppsWithoutWindows"
         case settingsResetDefaults = "settings.resetDefaults"
+        case settingsLanguage = "settings.language"
+        case settingsLanguageSystem = "settings.languageSystem"
     }
 
-    private static let bundle = Bundle.main
+    private static var languageOverride: String?
     private static let tableName = "Localizable"
+
+    private static var bundle: Bundle {
+        if let code = languageOverride, !code.isEmpty,
+           let path = Bundle.main.path(forResource: code, ofType: "lproj"),
+           let languageBundle = Bundle(path: path) {
+            return languageBundle
+        }
+        return Bundle.main
+    }
+
+    static func applyLanguage(_ code: String) {
+        languageOverride = code
+    }
 
     private static func text(_ key: Key, fallback: String) -> String {
         bundle.localizedString(forKey: key.rawValue, value: fallback, table: tableName)
@@ -485,6 +500,32 @@ enum L10n {
 
     static var resetDefaults: String {
         text(.settingsResetDefaults, fallback: "Reset to Defaults")
+    }
+
+    static var settingsLanguage: String {
+        text(.settingsLanguage, fallback: "Language")
+    }
+
+    static var systemDefaultLanguage: String {
+        text(.settingsLanguageSystem, fallback: "System Default")
+    }
+
+    struct LanguageOption {
+        let code: String
+        let displayName: String
+    }
+
+    static let supportedLanguageCodes = [
+        "en", "de", "fr", "es", "it", "ja", "ko", "zh-Hans", "pt-BR", "ar", "hi", "ur"
+    ]
+
+    static var languageOptions: [LanguageOption] {
+        var options = [LanguageOption(code: "", displayName: systemDefaultLanguage)]
+        for code in supportedLanguageCodes {
+            let name = Locale(identifier: code).localizedString(forIdentifier: code) ?? code
+            options.append(LanguageOption(code: code, displayName: name))
+        }
+        return options
     }
 
     static func number(_ value: Int) -> String {

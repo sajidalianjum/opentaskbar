@@ -94,3 +94,5 @@
 "settings.keepZoomedWindowsAboveTaskbar" = "拡大したウインドウをタスクバーの上に表示";
 "settings.showRunningAppsWithoutWindows" = "ウインドウのない実行中のアプリを表示";
 "settings.resetDefaults" = "デフォルトに戻す";
+"settings.language" = "言語";
+"settings.languageSystem" = "システムデフォルト";

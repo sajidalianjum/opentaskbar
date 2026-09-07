@@ -94,3 +94,5 @@
 "settings.keepZoomedWindowsAboveTaskbar" = "زوم کی گئی ونڈوز کو ٹاسک بار کے اوپر رکھیں";
 "settings.showRunningAppsWithoutWindows" = "بغیر ونڈوز کے چلنے والی ایپس دکھائیں";
 "settings.resetDefaults" = "ڈیفالٹس پر ری سیٹ کریں";
+"settings.language" = "زبان";
+"settings.languageSystem" = "سسٹم ڈیفالٹ";

@@ -92,3 +92,5 @@
 "settings.keepZoomedWindowsAboveTaskbar" = "Garder les fenêtres agrandies au-dessus de la barre des tâches";
 "settings.showRunningAppsWithoutWindows" = "Afficher les apps en cours sans fenêtre";
 "settings.resetDefaults" = "Rétablir les réglages par défaut";
+"settings.language" = "Langue";
+"settings.languageSystem" = "Par défaut du système";

@@ -1,6 +1,6 @@
 # OpenTaskbar
 
-A macOS menubar utility that replaces the Dock with a customizable, Windows-style taskbar. It shows all running apps with active-state indicators, window badges, hover window previews (thumbnails or a window list), a Spotlight-triggering Start button, drag-to-reorder, per-app window cycling, and per-app context menus with pin/unpin and quit actions.
+A lightweight, macOS menubar utility that replaces the Dock with a customizable, Windows-style taskbar. It shows all running apps with active-state indicators, window badges, hover window previews (thumbnails or a window list), a Spotlight-triggering Start button, drag-to-reorder, per-app window cycling, and per-app context menus with pin/unpin and quit actions.
 
 > **Status:** OpenTaskbar ships as a prebuilt release and is tested in CI (110+ tests). The prebuilt app is **ad-hoc signed** (no Apple Developer ID), so first launch needs a one-time Gatekeeper override — see [From a release](#from-a-release).
 

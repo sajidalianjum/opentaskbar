@@ -26,6 +26,8 @@
     <string>OpenTaskbar needs Accessibility to switch between windows and manage them.</string>
     <key>NSScreenCaptureUsageDescription</key>
     <string>OpenTaskbar needs Screen Recording to show window thumbnails on hover.</string>
+    <key>NSAppleEventsUsageDescription</key>
+    <string>OpenTaskbar needs to control Finder to empty the Trash and open folders.</string>
     <key>LSMinimumSystemVersion</key>
     <string>14.0</string>
     <key>NSHighResolutionCapable</key>

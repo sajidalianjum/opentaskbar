@@ -480,6 +480,12 @@ final class TaskbarContentView: NSView {
 
         menu.addItem(NSMenuItem.separator())
 
+        let openTrash = NSMenuItem(title: "Open Trash", action: #selector(MenuItemActions.shared.openTrash(_:)), keyEquivalent: "")
+        openTrash.target = MenuItemActions.shared
+        menu.addItem(openTrash)
+
+        menu.addItem(NSMenuItem.separator())
+
         let closedAppCount = windowManager.closedApps.count
         let quitClosedTitle = closedAppCount > 0
             ? "Quit \(closedAppCount) Closed App\(closedAppCount == 1 ? "" : "s")"

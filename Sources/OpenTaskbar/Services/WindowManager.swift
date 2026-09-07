@@ -1372,10 +1372,17 @@ final class MenuItemActions: NSObject {
             make new Finder window
         end tell
         """
+        guard let appleScript = NSAppleScript(source: script) else {
+            Logger.shared.log("newFinderWindow: failed to compile AppleScript")
+            return
+        }
         var error: NSDictionary?
-        NSAppleScript(source: script)?.executeAndReturnError(&error)
+        appleScript.executeAndReturnError(&error)
         if let error {
-            print("Failed to create new Finder window: \(error)")
+            Logger.shared.log("newFinderWindow: failed: \(error)")
+            if (error[NSAppleScript.errorNumber] as? Int) == -1743 { // errAEEventNotPermitted
+                showAutomationPermissionAlert()
+            }
         }
     }
 
@@ -1388,10 +1395,25 @@ final class MenuItemActions: NSObject {
             open POSIX file "\(path)"
         end tell
         """
+        guard let appleScript = NSAppleScript(source: script) else {
+            Logger.shared.log("openFolder: failed to compile AppleScript")
+            return
+        }
         var error: NSDictionary?
-        NSAppleScript(source: script)?.executeAndReturnError(&error)
+        appleScript.executeAndReturnError(&error)
         if let error {
-            print("Failed to open folder in Finder: \(error)")
+            Logger.shared.log("openFolder: failed: \(error)")
+            if (error[NSAppleScript.errorNumber] as? Int) == -1743 { // errAEEventNotPermitted
+                showAutomationPermissionAlert()
+            }
+        }
+    }
+
+    @objc func openTrash(_ sender: NSMenuItem) {
+        let trashURL = FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent(".Trash", isDirectory: true)
+        if !NSWorkspace.shared.open(trashURL) {
+            Logger.shared.log("openTrash: NSWorkspace.open failed, falling back to activateFileViewerSelecting")
+            NSWorkspace.shared.activateFileViewerSelecting([trashURL])
         }
     }
 
@@ -1409,10 +1431,50 @@ final class MenuItemActions: NSObject {
             empty trash
         end tell
         """
+        guard let appleScript = NSAppleScript(source: script) else {
+            Logger.shared.log("emptyTrash: failed to compile AppleScript")
+            return
+        }
         var error: NSDictionary?
-        NSAppleScript(source: script)?.executeAndReturnError(&error)
+        appleScript.executeAndReturnError(&error)
         if let error {
-            print("Failed to empty trash: \(error)")
+            let code = (error[NSAppleScript.errorNumber] as? Int) ?? -1
+            Logger.shared.log("emptyTrash: failed to empty trash: \(error)")
+            if code == -1743 { // errAEEventNotPermitted
+                showAutomationPermissionAlert()
+            } else {
+                let failure = NSAlert()
+                failure.messageText = "Couldn't Empty the Trash"
+                failure.informativeText = "Finder reported an error (\(code)). See /tmp/opentaskbar.log for details."
+                failure.alertStyle = .warning
+                failure.addButton(withTitle: "OK")
+                failure.runModal()
+            }
+        }
+    }
+
+    private func showAutomationPermissionAlert() {
+        let alert = NSAlert()
+        alert.messageText = "Finder Permission Needed"
+        alert.informativeText = "macOS blocked OpenTaskbar from controlling Finder. To fix this, allow it in System Settings > Privacy & Security > Automation."
+        alert.alertStyle = .warning
+        alert.addButton(withTitle: "Open System Settings")
+        alert.addButton(withTitle: "OK")
+        if alert.runModal() == .alertFirstButtonReturn {
+            openAutomationSettings()
+        }
+    }
+
+    private func openAutomationSettings() {
+        let candidates = [
+            "x-apple.systempreferences:com.apple.settings.PrivacySecurity.extension?Privacy_Automation",
+            "x-apple.systempreferences:com.apple.preference.security?Privacy_Automation",
+            "x-apple.systempreferences:com.apple.preference.security",
+        ]
+        for candidate in candidates {
+            if let url = URL(string: candidate), NSWorkspace.shared.open(url) {
+                return
+            }
         }
     }
 }

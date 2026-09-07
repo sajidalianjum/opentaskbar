@@ -1,0 +1,71 @@
+name: Release
+
+# Camp B: open-source, ad-hoc signed, no secrets. Builds the distributable
+# OpenTaskbar.app + .zip on a clean macOS runner and attaches it to a GitHub
+# Release using the auto-generated GITHUB_TOKEN.
+#
+# Uniquely triggerable by the BUTTON in the Actions tab
+# (repo > Actions > "Release" > "Run workflow") — no tag is required.
+# The release version and tag are derived automatically from the embedded
+# CFBundleShortVersionString in Resources/Info.plist, so there is no manual
+# version input step. The release lands at:
+#   https://github.com/OWNER/opentaskbar/releases/tag/v<version>
+
+on:
+  workflow_dispatch:   # the "button"
+    inputs:
+      ref:
+        description: 'Branch or SHA to build from (blank = default branch HEAD).'
+        required: false
+        default: ''
+        type: string
+
+permissions:
+  contents: write   # lets the auto-generated GITHUB_TOKEN create the Release
+
+jobs:
+  build-and-release:
+    runs-on: macos-14   # GitHub-hosted; Xcode + swift preinstalled
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.ref || github.sha }}
+
+      - name: Build release bundle (.app + zip)
+        run: ./Scripts/build.sh
+
+      - name: Resolve version, tag, and artifact paths from the project
+        id: artifact
+        run: |
+          VER="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' build/OpenTaskbar.app/Contents/Info.plist)"
+          VER="${VER#v}"                     # defensive: strip a "v" prefix if present
+          echo "version=${VER}" >> "$GITHUB_OUTPUT"
+          echo "tag=v${VER}" >> "$GITHUB_OUTPUT"
+          echo "zip=build/OpenTaskbar-${VER}.zip" >> "$GITHUB_OUTPUT"
+
+      - name: Verify bundle
+        run: |
+          file build/OpenTaskbar.app/Contents/MacOS/OpenTaskbar
+          codesign --verify --deep --strict build/OpenTaskbar.app
+          codesign -d --entitlements - build/OpenTaskbar.app || true
+
+      - name: Publish GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.artifact.outputs.tag }}
+          target_commitish: ${{ github.sha }}
+          name: OpenTaskbar ${{ steps.artifact.outputs.version }}
+          files: ${{ steps.artifact.outputs.zip }}
+          generate_release_notes: true
+          fail_on_unmatched_files: true
+          body: |
+            Ad-hoc signed universal build (no Apple Developer ID).
+
+            **One-time install step:** because this build is not notarized, macOS
+            blocks the first double-click launch. Right-click → **Open** (or run
+            `xattr -dr com.apple.quarantine /Applications/OpenTaskbar.app`).
+
+            > After updating, Accessibility / Screen Recording permissions may
+            > need to be re-granted once. Settings in UserDefaults are kept.

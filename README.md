@@ -163,10 +163,26 @@ Open **Preferences…** from the menu bar (⌘,). Changes apply immediately.
 | Thumbnails are black/empty | Screen Recording was granted after launch — relaunch OpenTaskbar |
 | Spotlight button does nothing | The shortcut was remapped or Spotlight is disabled; OpenTaskbar simulates `Cmd+Space` |
 | Taskbar hidden | A fullscreen window is active (disable "Hide Taskbar on Fullscreen"), or check "Show on All Screens" |
-| Dock is gone and OpenTaskbar is not running | Launch OpenTaskbar again — it restores the Dock — or run `defaults write com.apple.dock autohide -bool false && killall Dock` |
+| Dock is gone after an OpenTaskbar crash | If OpenTaskbar crashed and the Dock wasn't restored, bring it back with `defaults write com.apple.dock autohide -bool false && killall Dock` (see [Restore the Dock after a crash](#restore-the-dock-after-a-crash)) |
 | Gatekeeper blocks the app ("Apple cannot check it…" / "unidentified developer") | Expected for ad-hoc-signed releases. Right-click `OpenTaskbar.app` → **Open** → **Open** once, or run `xattr -dr com.apple.quarantine /Applications/OpenTaskbar.app` |
 | Access granted but permissions reset after an update | Release builds change signature between versions; re-grant Accessibility / Screen Recording once after updating |
 | Build fails with codesign error | Ensure a signing identity exists (`OPENTASKBAR_SIGN_IDENTITY`), or let `Scripts/build.sh` fall back to ad-hoc signing (`--sign -`) |
+
+### Restore the Dock after a crash
+
+OpenTaskbar saves the Dock's state before hiding it and normally restores it on a clean quit or an expected crash (signal or uncaught exception). If the app crashes hard or is force-killed and the Dock stays hidden, restore it manually. Open Terminal and run:
+
+```bash
+defaults write com.apple.dock autohide -bool false && killall Dock
+```
+
+This turns autohide off (so the Dock is always visible) and relaunches it. To restore the exact state OpenTaskbar backed up to `~/.config/opentaskbar/dock-state.plist` instead — for example if you had autohide enabled before — read the saved value and apply it:
+
+```bash
+AUTOHIDE=$(/usr/libexec/PlistBuddy -c "Print :autohide" "$HOME/.config/opentaskbar/dock-state.plist" 2>/dev/null)
+defaults write com.apple.dock autohide -bool "${AUTOHIDE:-false}"
+killall Dock
+```
 
 ## Privacy
 

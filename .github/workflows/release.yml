@@ -44,6 +44,7 @@ jobs:
           echo "version=${VER}" >> "$GITHUB_OUTPUT"
           echo "tag=v${VER}" >> "$GITHUB_OUTPUT"
           echo "zip=build/OpenTaskbar-${VER}.zip" >> "$GITHUB_OUTPUT"
+          echo "alias=build/OpenTaskbar.zip" >> "$GITHUB_OUTPUT"
 
       - name: Verify bundle
         run: |
@@ -57,15 +58,29 @@ jobs:
           tag_name: ${{ steps.artifact.outputs.tag }}
           target_commitish: ${{ github.sha }}
           name: OpenTaskbar ${{ steps.artifact.outputs.version }}
-          files: ${{ steps.artifact.outputs.zip }}
+          files: |
+            ${{ steps.artifact.outputs.zip }}
+            ${{ steps.artifact.outputs.alias }}
+            Scripts/install.sh
           generate_release_notes: true
           fail_on_unmatched_files: true
           body: |
             Ad-hoc signed universal build (no Apple Developer ID).
 
-            **One-time install step:** because this build is not notarized, macOS
-            blocks the first double-click launch. Right-click → **Open** (or run
-            `xattr -dr com.apple.quarantine /Applications/OpenTaskbar.app`).
+            **Easiest install** — uses `curl`, so macOS never applies the quarantine
+            attribute and Gatekeeper does not block the first launch:
+
+            ```bash
+            curl -fsSL https://github.com/${{ github.repository }}/releases/latest/download/install.sh | bash
+            ```
+
+            **Manual download** — after moving `OpenTaskbar.app` to `/Applications`,
+            unblock the first launch once:
+
+            - **macOS 15 (Sequoia) and later:** right-click → **Open** no longer
+              works. Use **System Settings → Privacy & Security → Open Anyway**, or
+              run `xattr -dr com.apple.quarantine /Applications/OpenTaskbar.app`.
+            - **macOS 14 (Sonoma):** right-click `OpenTaskbar.app` → **Open** → **Open**.
 
             > After updating, Accessibility / Screen Recording permissions may
             > need to be re-granted once. Settings in UserDefaults are kept.

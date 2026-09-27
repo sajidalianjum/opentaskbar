@@ -35,6 +35,7 @@ OpenTaskbar/
 │   └── OpenTaskbar.icns            # Full app icon
 ├── Scripts/
 │   ├── build.sh                    # swift build -c release (universal, with native-arch fallback) + codesign + entitlements + zip → build/OpenTaskbar-<version>.zip
+│   ├── install.sh                  # curl-based installer → /Applications (no quarantine); reads latest GitHub release
 │   ├── release.sh                  # build.sh + printable (or automated via gh) GitHub Release publishing
 │   └── run.sh                      # build.sh + open the .app bundle
 ├── myscripts/                      # gitignored — local icon sources, not part of the repo

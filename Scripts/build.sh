@@ -84,12 +84,16 @@ fi
 
 VERSION="$(/usr/libexec/PlistBuddy -c "Print :CFBundleShortVersionString" "${APP_BUNDLE}/Contents/Info.plist" 2>/dev/null || echo "0.1.0")"
 ZIP="${PROJECT_DIR}/build/${APP_NAME}-${VERSION}.zip"
-rm -f "${ZIP}"
+# Version-less alias so installers can use the stable `releases/latest/download` URL.
+ALIAS="${PROJECT_DIR}/build/${APP_NAME}.zip"
+rm -f "${ZIP}" "${ALIAS}"
 ditto -c -k --keepParent "${APP_BUNDLE}" "${ZIP}"
+cp -f "${ZIP}" "${ALIAS}"
 
 echo ""
 echo "Build complete: ${APP_BUNDLE}"
 echo "Release artifact: ${ZIP}"
+echo "Stable alias:     ${ALIAS}"
 echo ""
 echo "To run: open \"${APP_BUNDLE}\""
 echo ""

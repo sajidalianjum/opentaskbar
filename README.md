@@ -52,27 +52,22 @@ To add a translation, create `Resources/<locale>.lproj/` and add:
 
 ### From a release
 
-**One-line install (recommended — no Gatekeeper prompt):**
+**Recommended — one-line install** (no Gatekeeper prompt):
 
 ```bash
 curl -fsSL https://github.com/sajidalianjum/opentaskbar/releases/latest/download/install.sh | bash
 ```
 
-The installer fetches the latest release with `curl`, which — unlike a browser download — never applies the macOS quarantine attribute, so the app is not blocked on first launch even though it is only ad-hoc signed. It installs to `/Applications` (or `~/Applications` if `/Applications` is not writable) and strips the quarantine attribute defensively.
+Installs the latest release into your Applications folder.
 
-Overrides: `OPENTASKBAR_INSTALL_DIR=…`, `OPENTASKBAR_VERSION=0.1.0`, `OPENTASKBAR_SHA256=…`.
+**Or install manually:** download the latest `OpenTaskbar-*.zip` from the [Releases](https://github.com/sajidalianjum/opentaskbar/releases) page, unzip it, and drag `OpenTaskbar.app` into **Applications**. Then allow it once:
 
-**Or install manually:**
+- **macOS 15 (Sequoia) and later:** open **System Settings → Privacy & Security** and click **Open Anyway** next to the OpenTaskbar warning.
+- **macOS 14 (Sonoma):** **right-click** `OpenTaskbar.app` → **Open** → **Open**.
 
-Download the latest `OpenTaskbar-*.zip` from the [Releases](https://github.com/sajidalianjum/opentaskbar/releases) page, unzip it, and drag `OpenTaskbar.app` into your **Applications** folder. Then:
+Grant **Accessibility** permission when prompted (required); **Screen Recording** is optional, for hover thumbnails.
 
-1. **Unblock the first launch** — prebuilt releases are ad-hoc signed (no Apple Developer ID), so Gatekeeper blocks the first double-click. Do one of these **once**:
-   - **macOS 15 (Sequoia) and later:** right-click → **Open** no longer works. Open **System Settings → Privacy & Security**, find the blocked-app notice, and click **Open Anyway**.
-   - **macOS 14 (Sonoma):** **right-click** `OpenTaskbar.app` → **Open** → **Open**.
-   - Either version, in Terminal: `xattr -dr com.apple.quarantine /Applications/OpenTaskbar.app`
-2. Grant **Accessibility** permission when prompted (required), and optionally **Screen Recording** for hover thumbnails.
-
-> **Updating:** because release builds are ad-hoc signed, the app's signature changes between versions, so you may need to re-grant Accessibility / Screen Recording after updating. Your settings are unaffected. Re-running the one-line installer is the smoothest way to update.
+> **Updating:** release builds change signature between versions, so you may need to re-grant Accessibility / Screen Recording once after updating. Your settings are unaffected. See [docs/RELEASE.md](docs/RELEASE.md) for installer options.
 
 ### Build from source
 

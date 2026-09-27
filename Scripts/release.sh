@@ -36,20 +36,15 @@ if [ "${OPENTASKBAR_PUBLISH:-0}" = "1" ]; then
 
 Ad-hoc signed (no Apple Developer ID) universal build.
 
-**Easiest install** — this uses \`curl\`, so macOS never applies the quarantine
-attribute and Gatekeeper does not block the first launch:
+**Recommended install** (no Gatekeeper prompt):
 
 \`\`\`bash
 curl -fsSL https://github.com/${OPENTASKBAR_OWNER:-sajidalianjum}/opentaskbar/releases/latest/download/install.sh | bash
 \`\`\`
 
-**Manual download** — after unzipping and moving \`OpenTaskbar.app\` to
-\`/Applications\`, unblock the first launch once:
-
-- **macOS 15 (Sequoia) and later:** right-click → **Open** no longer works. Use
-  **System Settings → Privacy & Security → Open Anyway**, or
-  \`xattr -dr com.apple.quarantine /Applications/OpenTaskbar.app\`.
-- **macOS 14 (Sonoma):** right-click \`OpenTaskbar.app\` → **Open** → **Open**.
+Or download the zip, move \`OpenTaskbar.app\` to \`/Applications\`, and allow it
+once — **System Settings → Privacy & Security → Open Anyway** on macOS 15+, or
+**right-click → Open** on macOS 14.
 
 > Note: because this build is not notarized with a Developer ID, updating the app may require re-granting Accessibility / Screen Recording permissions.
 EOF

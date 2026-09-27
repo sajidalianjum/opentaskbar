@@ -8,9 +8,9 @@ A lightweight, macOS menubar utility that replaces the Dock with a customizable,
 [![Release](https://img.shields.io/github/v/release/sajidalianjum/opentaskbar)](https://github.com/sajidalianjum/opentaskbar/releases)
 [![License: AGPL-3.0](https://img.shields.io/badge/License-AGPL--3.0-blue.svg)](LICENSE)
 
-## Screenshots
+## Demo
 
-Screenshots are coming soon. They will live in [`docs/screenshots/`](docs/screenshots/) — contributions of real taskbar captures (taskbar, hover thumbnails, context menu, settings window) are welcome. See [`docs/screenshots/README.md`](docs/screenshots/README.md) for the exact captures needed.
+[![OpenTaskbar demo](https://img.youtube.com/vi/mGSwh38_Lhs/maxresdefault.jpg)](https://www.youtube.com/watch?v=mGSwh38_Lhs)
 
 ## Features
 

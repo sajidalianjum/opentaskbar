@@ -87,6 +87,7 @@
 "settings.launchAtLogin" = "لاگ اِن پر شروع کریں";
 "settings.enableAnimations" = "اینیمیشنز فعال کریں";
 "settings.showWindowThumbnails" = "ہوور کرنے پر ونڈو کے تھمب نیلز دکھائیں";
+"settings.minimizeOnActiveAppClick" = "ÙØ¹Ø§Ù Ø§ÛÙ¾ Ù¾Ø± Ú©ÙÚ© Ú©Ø±ÙÛ Ù¾Ø± ÙÙÚÙØ² Ú©Ù ÚÚ¾ÙÙ¹Ø§ Ú©Ø±ÛÚº";
 "settings.showAppNames" = "ایپ کے نام دکھائیں";
 "settings.showSpotlightButton" = "Spotlight بٹن دکھائیں";
 "settings.hideOnFullscreen" = "فل اسکرین پر ٹاسک بار چھپائیں";

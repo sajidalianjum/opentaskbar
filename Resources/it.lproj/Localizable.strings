@@ -85,6 +85,7 @@
 "settings.launchAtLogin" = "Avvia al login";
 "settings.enableAnimations" = "Abilita animazioni";
 "settings.showWindowThumbnails" = "Mostra miniature delle finestre al passaggio del mouse";
+"settings.minimizeOnActiveAppClick" = "Riduci le finestre facendo clic sull'app attiva";
 "settings.showAppNames" = "Mostra nomi delle app";
 "settings.showSpotlightButton" = "Mostra pulsante Spotlight";
 "settings.hideOnFullscreen" = "Nascondi la barra delle applicazioni a schermo intero";

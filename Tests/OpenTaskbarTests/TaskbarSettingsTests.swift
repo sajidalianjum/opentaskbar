@@ -152,6 +152,21 @@ final class TaskbarSettingsTests: XCTestCase {
         XCTAssertEqual(UserDefaults.standard.double(forKey: "iconSize"), 42)
     }
 
+    func testMinimizeOnActiveAppClickPersistsToUserDefaults() {
+        let settings = TaskbarSettings.shared
+        let original = settings.minimizeOnActiveAppClick
+
+        settings.minimizeOnActiveAppClick = false
+        XCTAssertFalse(settings.minimizeOnActiveAppClick)
+        XCTAssertEqual(UserDefaults.standard.object(forKey: "minimizeOnActiveAppClick") as? Bool, false)
+
+        settings.minimizeOnActiveAppClick = true
+        XCTAssertTrue(settings.minimizeOnActiveAppClick)
+        XCTAssertEqual(UserDefaults.standard.object(forKey: "minimizeOnActiveAppClick") as? Bool, true)
+
+        settings.minimizeOnActiveAppClick = original
+    }
+
     func testLanguageChangePersistsToUserDefaults() {
         let settings = TaskbarSettings.shared
         let original = settings.language

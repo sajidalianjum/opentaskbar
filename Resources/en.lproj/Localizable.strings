@@ -88,6 +88,7 @@
 "settings.launchAtLogin" = "Launch at Login";
 "settings.enableAnimations" = "Enable Animations";
 "settings.showWindowThumbnails" = "Show Window Thumbnails on Hover";
+"settings.minimizeOnActiveAppClick" = "Minimize Windows When Clicking Active App";
 "settings.showAppNames" = "Show App Names";
 "settings.showSpotlightButton" = "Show Spotlight Button";
 "settings.hideOnFullscreen" = "Hide Taskbar on Fullscreen";

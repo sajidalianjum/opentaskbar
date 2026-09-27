@@ -94,6 +94,7 @@ enum L10n {
         case settingsLaunchAtLogin = "settings.launchAtLogin"
         case settingsEnableAnimations = "settings.enableAnimations"
         case settingsShowWindowThumbnails = "settings.showWindowThumbnails"
+        case settingsMinimizeOnActiveAppClick = "settings.minimizeOnActiveAppClick"
         case settingsShowAppNames = "settings.showAppNames"
         case settingsShowSpotlightButton = "settings.showSpotlightButton"
         case settingsHideOnFullscreen = "settings.hideOnFullscreen"
@@ -472,6 +473,10 @@ enum L10n {
 
     static var showWindowThumbnails: String {
         text(.settingsShowWindowThumbnails, fallback: "Show Window Thumbnails on Hover")
+    }
+
+    static var minimizeOnActiveAppClick: String {
+        text(.settingsMinimizeOnActiveAppClick, fallback: "Minimize Windows When Clicking Active App")
     }
 
     static var showAppNames: String {

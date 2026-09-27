@@ -680,7 +680,7 @@ final class TaskbarContentView: NSView {
         springLoadTimer?.invalidate()
         springLoadTimer = Timer.scheduledTimer(withTimeInterval: 0.8, repeats: false) { [weak self] _ in
             guard let self, index < self.appButtons.count else { return }
-            self.windowManager.activateApp(at: index)
+            self.windowManager.activateApp(at: index, allowMinimize: false)
         }
     }
 

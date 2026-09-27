@@ -289,6 +289,7 @@ final class SettingsWindowController {
         checkbox(L10n.launchAtLogin, action: #selector(launchAtLoginChanged(_:)), state: settings.launchAtLogin ? .on : .off)
         checkbox(L10n.enableAnimations, action: #selector(animationsChanged(_:)), state: settings.animationsEnabled ? .on : .off)
         checkbox(L10n.showWindowThumbnails, action: #selector(thumbnailsChanged(_:)), state: settings.showThumbnails ? .on : .off)
+        checkbox(L10n.minimizeOnActiveAppClick, action: #selector(minimizeOnActiveAppClickChanged(_:)), state: settings.minimizeOnActiveAppClick ? .on : .off)
         checkbox(L10n.showAppNames, action: #selector(namesChanged(_:)), state: settings.showAppNames ? .on : .off)
         checkbox(L10n.showSpotlightButton, action: #selector(startButtonChanged(_:)), state: settings.showStartButton ? .on : .off)
         checkbox(L10n.hideOnFullscreen, action: #selector(hideOnFullscreenChanged(_:)), state: settings.hideOnFullscreen ? .on : .off)
@@ -348,6 +349,10 @@ final class SettingsWindowController {
 
     @objc private func namesChanged(_ sender: NSButton) {
         settings.showAppNames = sender.state == .on
+    }
+
+    @objc private func minimizeOnActiveAppClickChanged(_ sender: NSButton) {
+        settings.minimizeOnActiveAppClick = sender.state == .on
     }
 
     @objc private func startButtonChanged(_ sender: NSButton) {
@@ -417,6 +422,7 @@ final class SettingsWindowController {
     @objc private func resetDefaults() {
         settings.beginBatchUpdates()
         settings.showThumbnails = false
+        settings.minimizeOnActiveAppClick = true
         settings.showAppNames = false
         settings.showStartButton = true
         settings.showOnAllScreens = true

@@ -133,6 +133,7 @@ final class AccessibilityService {
     }
 
     func raiseWindow(_ element: AXUIElement, app: NSRunningApplication) {
+        app.unhide()
         app.activate()
 
         let appElement = AXUIElementCreateApplication(app.processIdentifier)
@@ -210,5 +211,22 @@ final class AccessibilityService {
             }
         }
         return nil
+    }
+
+    func windowElements(for pid: pid_t) -> [CGWindowID: AXUIElement] {
+        let appElement = AXUIElementCreateApplication(pid)
+        var value: CFTypeRef?
+        guard AXUIElementCopyAttributeValue(appElement, kAXWindowsAttribute as CFString, &value) == .success,
+              let axWindows = value as? [AXUIElement] else {
+            return [:]
+        }
+
+        var result: [CGWindowID: AXUIElement] = [:]
+        for window in axWindows {
+            if let id = cgWindowID(from: window) {
+                result[id] = window
+            }
+        }
+        return result
     }
 }

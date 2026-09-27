@@ -470,6 +470,11 @@ final class WindowManager {
             let appWindows = cgWindows.filter { $0.pid == pid }
             let axWindows = axMap[pid] ?? []
             var mergedWindows = WindowGroupingEngine.mergeWindows(axWindows: axWindows, cgWindows: appWindows)
+            // A hidden app (Cmd+H or taskbar toggle) keeps its AX windows but they are
+            // off-screen, so surface them as minimized to keep taskbar state consistent.
+            if app.isHidden {
+                for i in mergedWindows.indices { mergedWindows[i].isMinimized = true }
+            }
             if !pendingRemovedWindowIDs.isEmpty {
                 mergedWindows.removeAll { pendingRemovedWindowIDs.contains($0.windowID) }
             }
@@ -981,7 +986,7 @@ final class WindowManager {
         lastFocusedWindow[bundleIdentifier] = windowID
     }
 
-    func activateApp(at index: Int) {
+    func activateApp(at index: Int, allowMinimize: Bool = true) {
         guard index < appGroups.count else { return }
         let group = appGroups[index]
 
@@ -1037,6 +1042,22 @@ final class WindowManager {
 
         let visibleWindows = group.windows.filter { !$0.isMinimized }
 
+        // Windows-style taskbar behavior: clicking the button of the already-active
+        // app toggles minimization of all of its windows instead of re-activating it.
+        // Hiding the app removes every window in one quick fade, avoiding the
+        // native per-window (genie) minimize cascade.
+        if allowMinimize, TaskbarSettings.shared.minimizeOnActiveAppClick, isFrontmost {
+            if !visibleWindows.isEmpty {
+                if !app.hide() {
+                    minimizeAllWindows(of: group, elements: accessibilityService.windowElements(for: app.processIdentifier))
+                }
+            } else {
+                restoreAllWindows(of: group, app: app, elements: accessibilityService.windowElements(for: app.processIdentifier))
+            }
+            refreshAppGroups()
+            return
+        }
+
         let preferredWindow: WindowInfo?
         if let lastID = lastFocusedWindow[group.bundleIdentifier] {
             preferredWindow = visibleWindows.first { $0.windowID == lastID }
@@ -1051,7 +1072,7 @@ final class WindowManager {
                     let element = accessibilityService.windowElement(for: window.windowID, pid: app.processIdentifier)
                     if let element {
                         accessibilityService.unminimizeWindow(element)
-                        app.activate()
+                        accessibilityService.raiseWindow(element, app: app)
                     }
                 }
                 refreshAppGroups()
@@ -1078,6 +1099,29 @@ final class WindowManager {
             }
             recordWindowFocus(bundleIdentifier: group.bundleIdentifier, windowID: window.windowID)
             refreshAppGroups()
+        } else {
+            app.activate()
+        }
+    }
+
+    private func minimizeAllWindows(of group: AppGroup, elements: [CGWindowID: AXUIElement]) {
+        for window in group.windows where !window.isMinimized {
+            guard let element = elements[window.windowID] else { continue }
+            accessibilityService.minimizeWindow(element)
+        }
+    }
+
+    private func restoreAllWindows(of group: AppGroup, app: NSRunningApplication, elements: [CGWindowID: AXUIElement]) {
+        for window in group.windows where window.isMinimized {
+            guard let element = elements[window.windowID] else { continue }
+            accessibilityService.unminimizeWindow(element)
+        }
+
+        let preferredID = lastFocusedWindow[group.bundleIdentifier]
+        let target = group.windows.first { $0.windowID == preferredID } ?? group.windows.first
+        if let target, let element = elements[target.windowID] {
+            accessibilityService.raiseWindow(element, app: app)
+            recordWindowFocus(bundleIdentifier: group.bundleIdentifier, windowID: target.windowID)
         } else {
             app.activate()
         }

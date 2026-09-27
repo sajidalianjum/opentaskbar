@@ -87,6 +87,7 @@
 "settings.launchAtLogin" = "登录时启动";
 "settings.enableAnimations" = "启用动画";
 "settings.showWindowThumbnails" = "悬停时显示窗口缩略图";
+"settings.minimizeOnActiveAppClick" = "ç¹å»æ´»å¨åºç¨æ¶æå°åçªå£";
 "settings.showAppNames" = "显示应用名称";
 "settings.showSpotlightButton" = "显示聚焦按钮";
 "settings.hideOnFullscreen" = "全屏时隐藏任务栏";

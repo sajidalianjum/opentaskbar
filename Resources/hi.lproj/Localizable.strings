@@ -87,6 +87,7 @@
 "settings.launchAtLogin" = "लॉगिन पर लॉन्च करें";
 "settings.enableAnimations" = "एनिमेशन सक्षम करें";
 "settings.showWindowThumbnails" = "होवर करने पर विंडो थंबनेल दिखाएँ";
+"settings.minimizeOnActiveAppClick" = "à¤¸à¤à¥à¤°à¤¿à¤¯ à¤à¤ª à¤ªà¤° à¤à¥à¤²à¤¿à¤ à¤à¤°à¤¨à¥ à¤ªà¤° à¤µà¤¿à¤à¤¡à¥ à¤®à¤¿à¤¨à¤¿à¤®à¤¾à¤à¤à¤¼ à¤à¤°à¥à¤";
 "settings.showAppNames" = "ऐप के नाम दिखाएँ";
 "settings.showSpotlightButton" = "Spotlight बटन दिखाएँ";
 "settings.hideOnFullscreen" = "फ़ुलस्क्रीन पर टास्कबार छिपाएँ";

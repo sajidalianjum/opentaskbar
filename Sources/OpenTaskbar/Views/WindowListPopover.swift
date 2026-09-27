@@ -193,7 +193,7 @@ final class WindowListPopover: NSWindow {
             if window.isMinimized {
                 if let element = accessibilityService.windowElement(for: window.windowID, pid: pid) {
                     accessibilityService.unminimizeWindow(element)
-                    app.activate()
+                    accessibilityService.raiseWindow(element, app: app)
                 }
             } else {
                 if let element = accessibilityService.windowElement(for: window.windowID, pid: pid) {
@@ -218,7 +218,7 @@ final class WindowListPopover: NSWindow {
             if window.isMinimized {
                 if let element = accessibilityService.windowElement(for: window.windowID, pid: pid) {
                     accessibilityService.unminimizeWindow(element)
-                    app.activate()
+                    accessibilityService.raiseWindow(element, app: app)
                 }
             } else {
                 if let element = accessibilityService.windowElement(for: window.windowID, pid: pid) {

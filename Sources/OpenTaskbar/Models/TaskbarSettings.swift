@@ -27,6 +27,10 @@ final class TaskbarSettings {
         didSet { UserDefaults.standard.set(showThumbnails, forKey: "showThumbnails"); postChange() }
     }
 
+    @Published var minimizeOnActiveAppClick: Bool {
+        didSet { UserDefaults.standard.set(minimizeOnActiveAppClick, forKey: "minimizeOnActiveAppClick"); postChange() }
+    }
+
     @Published var showAppNames: Bool {
         didSet { UserDefaults.standard.set(showAppNames, forKey: "showAppNames"); postChange() }
     }
@@ -190,6 +194,7 @@ final class TaskbarSettings {
     private init() {
         let defaults = UserDefaults.standard
         self.showThumbnails = defaults.object(forKey: "showThumbnails") as? Bool ?? false
+        self.minimizeOnActiveAppClick = defaults.object(forKey: "minimizeOnActiveAppClick") as? Bool ?? true
         self.showStartButton = defaults.object(forKey: "showStartButton") as? Bool ?? true
         self.showAppNames = defaults.object(forKey: "showAppNames") as? Bool ?? false
         self.showOnAllScreens = defaults.object(forKey: "showOnAllScreens") as? Bool ?? true

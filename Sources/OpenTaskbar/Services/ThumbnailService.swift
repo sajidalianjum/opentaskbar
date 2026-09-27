@@ -1,6 +1,14 @@
 import AppKit
 import CoreGraphics
+import Darwin
 import ScreenCaptureKit
+
+private typealias CGWindowListCreateImageFn = @convention(c) (CGRect, CGWindowListOption, CGWindowID, CGWindowImageOption) -> Unmanaged<CGImage>?
+
+private let cgWindowListCreateImage: CGWindowListCreateImageFn? = {
+    guard let symbol = dlsym(UnsafeMutableRawPointer(bitPattern: -2), "CGWindowListCreateImage") else { return nil }
+    return unsafeBitCast(symbol, to: CGWindowListCreateImageFn.self)
+}()
 
 final class ThumbnailService {
     static let shared = ThumbnailService()
@@ -91,12 +99,14 @@ final class ThumbnailService {
     }
 
     private func captureWithCGWindowList(windowID: CGWindowID) -> NSImage? {
-        let cgImage = CGWindowListCreateImage(
+        guard let createImage = cgWindowListCreateImage else { return nil }
+
+        let cgImage = createImage(
             .null,
             .optionIncludingWindow,
             windowID,
             [.bestResolution, .boundsIgnoreFraming]
-        )
+        )?.takeRetainedValue()
 
         guard let cgImage else { return nil }
 

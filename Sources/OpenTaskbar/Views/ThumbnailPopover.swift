@@ -148,7 +148,12 @@ final class ThumbnailPopover: NSWindow {
         cancelHideTimer()
         guard !isDragging else { return }
         let item = DispatchWorkItem { [weak self] in
-            guard let self, !self.isHovering, !self.isDragging else { return }
+            guard let self, !self.isDragging else { return }
+            // `isHovering` can go stale: mouseExited is not delivered during an
+            // external drag session, so it stays true after the pointer drags
+            // out and drops elsewhere. Ask the window server where the pointer
+            // actually is (both in screen coordinates) instead.
+            guard !self.frame.contains(NSEvent.mouseLocation) else { return }
             self.hide()
         }
         hideWorkItem = item

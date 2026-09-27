@@ -85,7 +85,7 @@
 "settings.launchAtLogin" = "Beim Anmelden starten";
 "settings.enableAnimations" = "Animationen aktivieren";
 "settings.showWindowThumbnails" = "Fensterminiaturen beim Überfahren anzeigen";
-"settings.minimizeOnActiveAppClick" = "Fenster beim Klick auf aktive App minimieren";
+"settings.minimizeOnActiveAppClick" = "Fenster beim Klick auf aktive App minimieren oder durchwechseln";
 "settings.showAppNames" = "App-Namen anzeigen";
 "settings.showSpotlightButton" = "Spotlight-Taste anzeigen";
 "settings.hideOnFullscreen" = "Taskleiste im Vollbildmodus ausblenden";

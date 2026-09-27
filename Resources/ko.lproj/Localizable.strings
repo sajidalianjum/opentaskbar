@@ -87,7 +87,7 @@
 "settings.launchAtLogin" = "로그인 시 실행";
 "settings.enableAnimations" = "애니메이션 활성화";
 "settings.showWindowThumbnails" = "마우스를 올리면 윈도우 축소판 표시";
-"settings.minimizeOnActiveAppClick" = "íì± ì± í´ë¦­ ì ìëì° ìµìí";
+"settings.minimizeOnActiveAppClick" = "활성 앱 클릭 시 창 최소화 또는 순환";
 "settings.showAppNames" = "앱 이름 표시";
 "settings.showSpotlightButton" = "Spotlight 버튼 표시";
 "settings.hideOnFullscreen" = "전체 화면에서 작업 표시줄 숨기기";

@@ -85,7 +85,7 @@
 "settings.launchAtLogin" = "Iniciar al iniciar sesión";
 "settings.enableAnimations" = "Activar animaciones";
 "settings.showWindowThumbnails" = "Mostrar miniaturas de ventanas al pasar el cursor";
-"settings.minimizeOnActiveAppClick" = "Minimizar ventanas al hacer clic en la app activa";
+"settings.minimizeOnActiveAppClick" = "Minimizar o alternar ventanas al hacer clic en la app activa";
 "settings.showAppNames" = "Mostrar nombres de apps";
 "settings.showSpotlightButton" = "Mostrar botón de Spotlight";
 "settings.hideOnFullscreen" = "Ocultar la barra de tareas en pantalla completa";

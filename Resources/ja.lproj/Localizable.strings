@@ -87,7 +87,7 @@
 "settings.launchAtLogin" = "ログイン時に起動";
 "settings.enableAnimations" = "アニメーションを有効にする";
 "settings.showWindowThumbnails" = "ホバー時にウインドウのサムネールを表示";
-"settings.minimizeOnActiveAppClick" = "ã¢ã¯ãã£ããªã¢ããªã®ã¯ãªãã¯ã§ã¦ã¤ã³ãã¦ãæå°å";
+"settings.minimizeOnActiveAppClick" = "アクティブなアプリのクリックでウィンドウを最小化または切り替え";
 "settings.showAppNames" = "アプリ名を表示";
 "settings.showSpotlightButton" = "Spotlightボタンを表示";
 "settings.hideOnFullscreen" = "フルスクリーン時にタスクバーを隠す";

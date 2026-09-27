@@ -85,7 +85,7 @@
 "settings.launchAtLogin" = "Lancer à l’ouverture de session";
 "settings.enableAnimations" = "Activer les animations";
 "settings.showWindowThumbnails" = "Afficher les vignettes des fenêtres au survol";
-"settings.minimizeOnActiveAppClick" = "RÃ©duire les fenÃªtres en cliquant sur l'app active";
+"settings.minimizeOnActiveAppClick" = "Réduire ou faire défiler les fenêtres en cliquant sur l'app active";
 "settings.showAppNames" = "Afficher les noms des apps";
 "settings.showSpotlightButton" = "Afficher le bouton Spotlight";
 "settings.hideOnFullscreen" = "Masquer la barre des tâches en plein écran";

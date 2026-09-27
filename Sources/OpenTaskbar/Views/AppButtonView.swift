@@ -24,6 +24,11 @@ final class AppButtonView: NSView {
     private static let sharedWindowListPopover = WindowListPopover()
     private static let sharedThumbnailPopover = ThumbnailPopover()
 
+    static func dismissHoverPopovers() {
+        sharedWindowListPopover.hide()
+        sharedThumbnailPopover.hide()
+    }
+
     var target: AnyObject?
     var action: Selector?
     var rightAction: ((Int) -> Void)?

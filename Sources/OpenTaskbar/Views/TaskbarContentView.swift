@@ -34,6 +34,9 @@ final class TaskbarContentView: NSView {
     init(windowManager: WindowManager) {
         self.windowManager = windowManager
         super.init(frame: .zero)
+        windowManager.onActiveAppMinimizedByClick = {
+            AppButtonView.dismissHoverPopovers()
+        }
         setupViews()
         observeSettings()
     }

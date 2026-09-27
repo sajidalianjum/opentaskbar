@@ -33,6 +33,7 @@ final class WindowManager {
 
     var onAppGroupsChanged: (() -> Void)?
     var onFullscreenScreensChanged: (([NSScreen]) -> Void)?
+    var onActiveAppMinimizedByClick: (() -> Void)?
 
     private var lastFullscreenScreenIDs: Set<CGDirectDisplayID> = []
     private var cancellables = Set<AnyCancellable>()
@@ -1043,14 +1044,20 @@ final class WindowManager {
         let visibleWindows = group.windows.filter { !$0.isMinimized }
 
         // Windows-style taskbar behavior: clicking the button of the already-active
-        // app toggles minimization of all of its windows instead of re-activating it.
-        // Hiding the app removes every window in one quick fade, avoiding the
-        // native per-window (genie) minimize cascade.
+        // app with multiple windows cycles through them; with a single window it
+        // toggles minimization instead of re-activating. Hiding the app removes
+        // the window in one quick fade, avoiding the native (genie) minimize cascade.
         if allowMinimize, TaskbarSettings.shared.minimizeOnActiveAppClick, isFrontmost {
+            if group.hasMultipleWindows {
+                cycleWindows(forAppAt: index)
+                refreshAppGroups()
+                return
+            }
             if !visibleWindows.isEmpty {
                 if !app.hide() {
                     minimizeAllWindows(of: group, elements: accessibilityService.windowElements(for: app.processIdentifier))
                 }
+                onActiveAppMinimizedByClick?()
             } else {
                 restoreAllWindows(of: group, app: app, elements: accessibilityService.windowElements(for: app.processIdentifier))
             }
@@ -1136,16 +1143,30 @@ final class WindowManager {
             return
         }
 
-        let visibleWindows = group.windows.filter { !$0.isMinimized }
-        guard !visibleWindows.isEmpty else {
-            activateApp(at: index)
-            return
-        }
+        cycleToNextWindow(of: group, app: app)
+    }
 
-        let currentFront = visibleWindows.first
-        if let front = currentFront,
-           let element = accessibilityService.windowElement(for: front.windowID, pid: app.processIdentifier) {
+    private func cycleToNextWindow(of group: AppGroup, app: NSRunningApplication) {
+        let windows = group.windows
+        guard windows.count > 1 else { return }
+
+        // Prefer the window the window server currently shows in front for this
+        // app, then fall back to the last window we focused through the taskbar.
+        let frontID = CGWindowExtensions.eligibleWindows()
+            .first { $0.pid == app.processIdentifier }?.windowID
+            ?? lastFocusedWindow[group.bundleIdentifier]
+
+        let currentIndex = windows.firstIndex { $0.windowID == frontID } ?? -1
+        let next = windows[(currentIndex + 1) % windows.count]
+
+        if let element = accessibilityService.windowElement(for: next.windowID, pid: app.processIdentifier) {
+            if next.isMinimized {
+                accessibilityService.unminimizeWindow(element)
+            }
             accessibilityService.raiseWindow(element, app: app)
+            recordWindowFocus(bundleIdentifier: group.bundleIdentifier, windowID: next.windowID)
+        } else {
+            app.activate()
         }
     }
 

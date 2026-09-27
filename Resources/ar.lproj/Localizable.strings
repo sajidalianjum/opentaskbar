@@ -87,7 +87,7 @@
 "settings.launchAtLogin" = "التشغيل عند تسجيل الدخول";
 "settings.enableAnimations" = "تفعيل الحركات";
 "settings.showWindowThumbnails" = "إظهار صور النوافذ المصغرة عند التمرير فوقها";
-"settings.minimizeOnActiveAppClick" = "ØªØµØºÙØ± Ø§ÙÙÙØ§ÙØ° Ø¹ÙØ¯ Ø§ÙÙÙØ± Ø¹ÙÙ Ø§ÙØªØ·Ø¨ÙÙ Ø§ÙÙØ´Ø·";
+"settings.minimizeOnActiveAppClick" = "تصغير النوافذ أو التبديل بينها عند النقر على التطبيق النشط";
 "settings.showAppNames" = "إظهار أسماء التطبيقات";
 "settings.showSpotlightButton" = "إظهار زر Spotlight";
 "settings.hideOnFullscreen" = "إخفاء شريط المهام في وضع ملء الشاشة";

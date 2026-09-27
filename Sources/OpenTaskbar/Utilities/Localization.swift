@@ -476,7 +476,7 @@ enum L10n {
     }
 
     static var minimizeOnActiveAppClick: String {
-        text(.settingsMinimizeOnActiveAppClick, fallback: "Minimize Windows When Clicking Active App")
+        text(.settingsMinimizeOnActiveAppClick, fallback: "Minimize or Cycle Windows on Active App Click")
     }
 
     static var showAppNames: String {

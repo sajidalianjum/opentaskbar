@@ -10,7 +10,7 @@ A lightweight, macOS menubar utility that replaces the Dock with a customizable,
 
 ## Demo
 
-[![OpenTaskbar demo](https://img.youtube.com/vi/mGSwh38_Lhs/maxresdefault.jpg)](https://www.youtube.com/watch?v=mGSwh38_Lhs)
+[![OpenTaskbar demo](media/opentaskbar-thumbnail.png)](https://www.youtube.com/watch?v=mGSwh38_Lhs)
 
 ## Features
 

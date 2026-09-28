@@ -7,6 +7,7 @@
 "menu.about" = "OpenTaskbar के बारे में";
 "menu.preferences" = "प्राथमिकताएँ…";
 "menu.restoreDockQuit" = "Dock पुनर्स्थापित करें और बाहर निकलें";
+"permission.accessibilityRequired" = "एक्सेसिबिलिटी अनुमति आवश्यक है";
 
 "common.cancel" = "रद्द करें";
 "common.close" = "बंद करें";

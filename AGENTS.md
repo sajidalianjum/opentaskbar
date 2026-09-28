@@ -35,7 +35,8 @@ OpenTaskbar/
 │   └── OpenTaskbar.icns            # Full app icon
 ├── Scripts/
 │   ├── build.sh                    # swift build -c release (universal, with native-arch fallback) + codesign + entitlements + zip → build/OpenTaskbar-<version>.zip
-│   ├── install.sh                  # curl-based installer → /Applications (no quarantine); reads latest GitHub release
+│   ├── install.sh                  # curl-based installer → /Applications (no quarantine); reads latest GitHub release; clears stale Accessibility (TCC) grant when an ad-hoc build changes
+│   ├── setup-signing.sh            # optional: one-time creation of a stable self-signed code-signing identity so local rebuilds keep the Accessibility (TCC) grant
 │   ├── release.sh                  # build.sh + printable (or automated via gh) GitHub Release publishing
 │   └── run.sh                      # build.sh + open the .app bundle
 ├── myscripts/                      # gitignored — local icon sources, not part of the repo
@@ -224,7 +225,7 @@ swift test
 
 ## Important APIs & Gotchas
 
-- **Accessibility permission required.** `AppDelegate` polls every 2s until granted. Will not function without it.
+- **Accessibility permission required.** `AppDelegate` polls every 2s until granted. Until then it shows a menu-bar status item ("Accessibility Permission Required" + Open System Settings + Restore Dock & Quit) and logs to `/tmp/opentaskbar.log`, so a missing grant is never a silent hang. **Ad-hoc signing caveat:** release builds are ad-hoc signed by default, so macOS keys the grant to the binary's cdhash — every update invalidates a previous grant and can leave a stale TCC entry (`tccd: Failed to match existing code requirement`). `Scripts/install.sh` detects a changed ad-hoc cdhash and runs `tccutil reset Accessibility com.opentaskbar.app` so the user gets a clean prompt. `Scripts/build.sh` signs with a stable identity automatically when one is available (`Developer ID Application` → `Apple Development` → self-signed `OpenTaskbarDev`, created via `Scripts/setup-signing.sh`), which keeps the grant across local rebuilds; `Scripts/install.sh` only resets ad-hoc builds. For releases, set the `OPENTASKBAR_SIGNING_P12` / `OPENTASKBAR_SIGNING_PASSWORD` repository secrets and `.github/workflows/release.yml` imports the identity and signs with it (see `docs/RELEASE.md`); without those secrets the workflow stays secretless and ad-hoc. A `OPENTASKBAR_SIGN_IDENTITY` override exists for CI but is not needed for normal development.
 - **Screen Recording permission** required for thumbnails (macOS 14+ `CGRequestScreenCaptureAccess()`).
 - **`LSUIElement=true`** in Info.plist — app runs as menu bar app (no Dock icon, no menu bar).
 - **`NSApplication.activationPolicy = .accessory`** set in `main.swift`.

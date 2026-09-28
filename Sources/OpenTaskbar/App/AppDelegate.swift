@@ -14,7 +14,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     func applicationDidFinishLaunching(_ notification: Notification) {
+        Logger.shared.log("Launching OpenTaskbar (pid \(ProcessInfo.processInfo.processIdentifier), bundle \(Bundle.main.bundleIdentifier ?? "unknown"))")
+
         guard SingleInstanceLock.acquire() else {
+            Logger.shared.log("Another OpenTaskbar instance already holds the lock; terminating this launch")
             NSApp.terminate(nil)
             return
         }
@@ -23,7 +26,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
         let permissions = PermissionsManager.shared
         if !permissions.isAccessibilityGranted {
+            Logger.shared.log("Accessibility permission not granted; prompting and polling every 2s. If you already granted it, the grant may be stale after an update — run: tccutil reset Accessibility com.opentaskbar.app")
             permissions.requestAccessibility()
+            setupPermissionPendingStatusItem()
             startPermissionsPolling()
         } else {
             setupApp()
@@ -31,11 +36,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     func applicationWillTerminate(_ notification: Notification) {
+        Logger.shared.log("OpenTaskbar terminating")
         CrashGuard.markCleanExit()
         SingleInstanceLock.release()
     }
 
     private func setupApp() {
+        Logger.shared.log("Accessibility granted; setting up taskbar panels and status item")
         let crashed = !CrashGuard.isCleanExit() && dockManager.hasSavedState()
 
         if crashed {
@@ -145,14 +152,34 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         return image
     }
 
-    private func setupStatusItem() {
-        if statusItem == nil {
-            let item = NSStatusBar.system.statusItem(withLength: NSStatusItem.squareLength)
-            if let button = item.button {
-                button.image = loadStatusBarIcon()
-            }
-            statusItem = item
+    private func setupPermissionPendingStatusItem() {
+        createStatusItemIfNeeded()
+        rebuildPermissionPendingMenu()
+    }
+
+    private func createStatusItemIfNeeded() {
+        guard statusItem == nil else { return }
+        let item = NSStatusBar.system.statusItem(withLength: NSStatusItem.squareLength)
+        if let button = item.button {
+            button.image = loadStatusBarIcon()
+            button.toolTip = L10n.accessibilityPermissionRequired
         }
+        statusItem = item
+    }
+
+    private func rebuildPermissionPendingMenu() {
+        let menu = NSMenu()
+        let pendingItem = NSMenuItem(title: L10n.accessibilityPermissionRequired, action: nil, keyEquivalent: "")
+        pendingItem.isEnabled = false
+        menu.addItem(pendingItem)
+        menu.addItem(NSMenuItem(title: L10n.openSystemSettings, action: #selector(openAccessibilitySettings), keyEquivalent: ""))
+        menu.addItem(NSMenuItem.separator())
+        menu.addItem(NSMenuItem(title: L10n.restoreDockAndQuit, action: #selector(restoreAndQuit), keyEquivalent: "q"))
+        statusItem?.menu = menu
+    }
+
+    private func setupStatusItem() {
+        createStatusItemIfNeeded()
         rebuildStatusMenu()
     }
 
@@ -176,14 +203,20 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     @objc private func restoreAndQuit() {
+        Logger.shared.log("Restore Dock & Quit requested")
         dockManager.restoreDock()
         NSApp.terminate(nil)
+    }
+
+    @objc private func openAccessibilitySettings() {
+        PermissionsManager.shared.requestAccessibility()
     }
 
     private func startPermissionsPolling() {
         permissionsCheckTimer = Timer.scheduledTimer(withTimeInterval: 2.0, repeats: true) { [weak self] _ in
             guard let self else { return }
             if PermissionsManager.shared.isAccessibilityGranted {
+                Logger.shared.log("Accessibility permission detected; continuing startup")
                 self.permissionsCheckTimer?.invalidate()
                 self.permissionsCheckTimer = nil
                 self.setupApp()

@@ -125,8 +125,38 @@ ditto "${APP_SRC}" "${DEST}" || die "failed to install to ${DEST}"
 # curl never sets quarantine, but be explicit so the first launch is never blocked.
 xattr -dr com.apple.quarantine "${DEST}" 2>/dev/null || true
 
+# --- Reconcile the Accessibility (TCC) grant ---------------------------------
+# Release builds are ad-hoc signed (unless the release was signed with a stable
+# at build time). macOS keys an Accessibility grant to the binary's code
+# requirement; for an ad-hoc build that is the cdhash, which changes on every
+# update. A stale grant makes the app launch but sit forever waiting for a
+# permission macOS will never hand it. When the ad-hoc binary changed, clear
+# the stale entry so the user gets a clean prompt on the next launch.
+SIGNATURE_KIND="$(codesign -dv "${DEST}" 2>&1 | awk -F'=' '/^Signature/{print $2}')"
+CDHASH="$(codesign -dv --verbose=4 "${DEST}" 2>&1 | awk -F'=' '/^CDHash/{print $2}' | head -1)"
+STATE_FILE="${HOME}/.config/opentaskbar/installed-cdhash"
+PREVIOUS_CDHASH="$(cat "${STATE_FILE}" 2>/dev/null || true)"
+TCC_RESET=false
+
+if [ "${SIGNATURE_KIND}" = "adhoc" ] && [ -n "${PREVIOUS_CDHASH}" ] && [ "${PREVIOUS_CDHASH}" != "${CDHASH}" ]; then
+    if tccutil reset Accessibility com.opentaskbar.app >/dev/null 2>&1; then
+        TCC_RESET=true
+    fi
+fi
+
+if [ -n "${CDHASH}" ]; then
+    mkdir -p "$(dirname "${STATE_FILE}")" 2>/dev/null || true
+    printf '%s' "${CDHASH}" > "${STATE_FILE}" 2>/dev/null || true
+fi
+
 log ""
 log "Installed ${APP_NAME} to ${DEST}"
+if [ "${TCC_RESET}" = true ]; then
+    log ""
+    log "This is an updated ad-hoc build, so the previous Accessibility grant was"
+    log "cleared — it could not apply to the new binary and would have left the app"
+    log "waiting for a permission macOS would never grant."
+fi
 log ""
 log "Next steps:"
 log "  1. Open ${APP_NAME} (Spotlight, Launchpad, or: open \"${DEST}\")."

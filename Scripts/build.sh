@@ -63,14 +63,51 @@ for localization in "${PROJECT_DIR}"/Resources/*.lproj; do
 done
 
 echo "Code signing..."
-SIGN_IDENTITY="${OPENTASKBAR_SIGN_IDENTITY:-OpenTaskbarDev}"
+# Prefer a stable signing identity automatically. macOS keys the Accessibility
+# (TCC) grant to the app's code requirement; ad-hoc signing changes that on
+# every rebuild, so the user would have to re-grant permission after each
+# update. Nothing needs configuring — the first available identity wins:
+#   OPENTASKBAR_SIGN_IDENTITY (optional override) > Developer ID Application >
+#   Apple Development > OpenTaskbarDev (see Scripts/setup-signing.sh) > ad-hoc
+# `find-identity -v` lists only *trusted* identities; a self-signed identity
+# imported in CI is still usable by codesign, so we also consult the unfiltered
+# list as a fallback.
+IDENTITIES_VALID="$(security find-identity -v -p codesigning 2>/dev/null || true)"
+IDENTITIES_ALL="$(security find-identity -p codesigning 2>/dev/null || true)"
+pick_identity() {
+    local source found
+    for source in "${IDENTITIES_VALID}" "${IDENTITIES_ALL}"; do
+        found="$(printf '%s\n' "${source}" | grep -o '"[^"]*"' | tr -d '"' | grep -m1 "$1" || true)"
+        if [ -n "${found}" ]; then
+            printf '%s' "${found}"
+            return
+        fi
+    done
+    printf '%s' ""
+}
+resolve_sign_identity() {
+    if [ -n "${OPENTASKBAR_SIGN_IDENTITY:-}" ]; then
+        printf '%s' "${OPENTASKBAR_SIGN_IDENTITY}"
+        return
+    fi
+    local pattern found
+    for pattern in "Developer ID Application" "Apple Development" "OpenTaskbarDev"; do
+        found="$(pick_identity "${pattern}")"
+        if [ -n "${found}" ]; then
+            printf '%s' "${found}"
+            return
+        fi
+    done
+    printf '%s' ""
+}
 try_sign() {
     codesign --force --sign "$1" \
         --entitlements "${ENTITLEMENTS}" \
         --options runtime \
         "${APP_BUNDLE}"
 }
-if security find-identity -v -p codesigning | grep -qF "${SIGN_IDENTITY}"; then
+SIGN_IDENTITY="$(resolve_sign_identity)"
+if [ -n "${SIGN_IDENTITY}" ]; then
     if try_sign "${SIGN_IDENTITY}" 2>/tmp/opentaskbar-codesign.log; then
         echo "  signed with '${SIGN_IDENTITY}'"
     else
@@ -78,8 +115,16 @@ if security find-identity -v -p codesigning | grep -qF "${SIGN_IDENTITY}"; then
         try_sign -
     fi
 else
-    echo "  (identity '${SIGN_IDENTITY}' not found — using ad-hoc signing)"
+    echo "  using ad-hoc signing (no stable identity found)"
     try_sign -
+fi
+
+SIGNATURE_KIND="$(codesign -dv "${APP_BUNDLE}" 2>&1 | awk -F'=' '/^Signature/{print $2}')"
+if [ "${SIGNATURE_KIND}" = "adhoc" ]; then
+    echo "  note: ad-hoc builds change identity on every rebuild, so macOS invalidates a"
+    echo "        previously granted Accessibility permission. Run Scripts/setup-signing.sh"
+    echo "        once for a stable local identity. Releases built in CI stay ad-hoc and"
+    echo "        rely on Scripts/install.sh clearing the stale grant on update."
 fi
 
 VERSION="$(/usr/libexec/PlistBuddy -c "Print :CFBundleShortVersionString" "${APP_BUNDLE}/Contents/Info.plist" 2>/dev/null || echo "0.1.0")"

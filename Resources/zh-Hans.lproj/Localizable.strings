@@ -7,6 +7,7 @@
 "menu.about" = "关于 OpenTaskbar";
 "menu.preferences" = "偏好设置…";
 "menu.restoreDockQuit" = "恢复 Dock 并退出";
+"permission.accessibilityRequired" = "需要辅助功能权限";
 
 "common.cancel" = "取消";
 "common.close" = "关闭";

@@ -1,8 +1,13 @@
 name: Release
 
-# Camp B: open-source, ad-hoc signed, no secrets. Builds the distributable
-# OpenTaskbar.app + .zip on a clean macOS runner and attaches it to a GitHub
-# Release using the auto-generated GITHUB_TOKEN.
+# Open-source build. No secrets are required: by default the distributable
+# OpenTaskbar.app + .zip is built on a clean macOS runner and attached to a
+# GitHub Release using the auto-generated GITHUB_TOKEN.
+#
+# Optional: set the OPENTASKBAR_SIGNING_P12 secret (base64 of a .p12 exported
+# from Keychain Access) plus OPENTASKBAR_SIGNING_PASSWORD to sign releases with a
+# stable identity. That keeps the macOS Accessibility grant valid across updates
+# so users do not have to re-grant it. See docs/RELEASE.md.
 #
 # Uniquely triggerable by the BUTTON in the Actions tab
 # (repo > Actions > "Release" > "Run workflow") — no tag is required.
@@ -27,11 +32,40 @@ jobs:
   build-and-release:
     runs-on: macos-26   # GitHub-hosted; Xcode + swift preinstalled
     timeout-minutes: 30
+    env:
+      # Empty when the secret is unset, which keeps the default path secretless.
+      OPENTASKBAR_SIGNING_P12: ${{ secrets.OPENTASKBAR_SIGNING_P12 }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
         with:
           ref: ${{ inputs.ref || github.sha }}
+
+      - name: Import signing identity (optional)
+        if: ${{ env.OPENTASKBAR_SIGNING_P12 != '' }}
+        env:
+          OPENTASKBAR_SIGNING_PASSWORD: ${{ secrets.OPENTASKBAR_SIGNING_PASSWORD }}
+        run: |
+          set -euo pipefail
+          KEYCHAIN="$RUNNER_TEMP/opentaskbar-signing.keychain-db"
+          KEYCHAIN_PASSWORD="$(openssl rand -hex 16)"
+          security create-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN"
+          security set-keychain-settings -lut 21600 "$KEYCHAIN"
+          security unlock-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN"
+          printf '%s' "$OPENTASKBAR_SIGNING_P12" | base64 --decode > "$RUNNER_TEMP/identity.p12"
+          security import "$RUNNER_TEMP/identity.p12" \
+            -k "$KEYCHAIN" -P "${OPENTASKBAR_SIGNING_PASSWORD:-}" \
+            -T /usr/bin/codesign -T /usr/bin/security
+          security set-key-partition-list -S apple-tool:,apple:,codesign: -s \
+            -k "$KEYCHAIN_PASSWORD" "$KEYCHAIN" >/dev/null
+          security list-keychains -d user -s "$KEYCHAIN" $(security list-keychains -d user | tr -d '"')
+          IDENTITY="$(security find-identity -p codesigning "$KEYCHAIN" | grep -o '"[^"]*"' | head -1 | tr -d '"')"
+          if [ -z "$IDENTITY" ]; then
+            echo "error: no code-signing identity found in the imported keychain" >&2
+            exit 1
+          fi
+          echo "OPENTASKBAR_SIGN_IDENTITY=$IDENTITY" >> "$GITHUB_ENV"
+          echo "Signing releases with identity: $IDENTITY"
 
       - name: Build release bundle (.app + zip)
         run: ./Scripts/build.sh
@@ -65,7 +99,7 @@ jobs:
           generate_release_notes: true
           fail_on_unmatched_files: true
           body: |
-            Ad-hoc signed universal build (no Apple Developer ID).
+            Universal macOS build. Not notarized with an Apple Developer ID.
 
             **Recommended install** (no Gatekeeper prompt):
 

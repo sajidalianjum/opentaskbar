@@ -7,10 +7,11 @@ set -euo pipefail
 #   ./Scripts/release.sh                  # build + print publish instructions
 #   OPENTASKBAR_PUBLISH=1 ./Scripts/release.sh   # build + publish via `gh` if available
 #
-# Requires: Xcode Command Line Tools (swift), codesign. No Apple Developer ID needed:
-# the artifact is ad-hoc signed. Prefer the `curl` installer (Scripts/install.sh),
-# which avoids the macOS quarantine attribute entirely; users who download the zip
-# through a browser must unblock the first launch manually (see README).
+# Requires: Xcode Command Line Tools (swift), codesign. No Apple Developer ID needed.
+# build.sh signs with a stable identity when one is available and otherwise falls
+# back to ad-hoc. Prefer the `curl` installer (Scripts/install.sh), which avoids
+# the macOS quarantine attribute entirely; users who download the zip through a
+# browser must unblock the first launch manually (see README).
 
 PROJECT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 
@@ -34,7 +35,7 @@ if [ "${OPENTASKBAR_PUBLISH:-0}" = "1" ]; then
         cat > "${NOTES_FILE}" <<EOF
 ## OpenTaskbar ${VERSION}
 
-Ad-hoc signed (no Apple Developer ID) universal build.
+Ad-hoc signed on CI (no Apple Developer ID) universal build.
 
 **Recommended install** (no Gatekeeper prompt):
 
@@ -46,7 +47,7 @@ Or download the zip, move \`OpenTaskbar.app\` to \`/Applications\`, and allow it
 once — **System Settings → Privacy & Security → Open Anyway** on macOS 15+, or
 **right-click → Open** on macOS 14.
 
-> Note: because this build is not notarized with a Developer ID, updating the app may require re-granting Accessibility / Screen Recording permissions.
+> Note: if the released build is ad-hoc signed, updating the app may require re-granting Accessibility / Screen Recording permissions. Signing releases with a stable identity (see docs/RELEASE.md) avoids this.
 EOF
         echo "Publishing v${VERSION} via gh..."
         gh release create "v${VERSION}" "${ZIP}" "${ALIAS}" "${PROJECT_DIR}/Scripts/install.sh" \

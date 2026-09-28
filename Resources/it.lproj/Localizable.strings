@@ -5,6 +5,7 @@
 "menu.about" = "Informazioni su OpenTaskbar";
 "menu.preferences" = "Preferenze…";
 "menu.restoreDockQuit" = "Ripristina il Dock ed esci";
+"permission.accessibilityRequired" = "Permesso Accessibilità richiesto";
 
 "common.cancel" = "Annulla";
 "common.close" = "Chiudi";

@@ -8,6 +8,8 @@ enum L10n {
         case crashDockRestoredMessage = "crash.dockRestored.message"
         case crashLaunchButton = "crash.launch.button"
 
+        case permissionAccessibilityRequired = "permission.accessibilityRequired"
+
         case menuAbout = "menu.about"
         case menuPreferences = "menu.preferences"
         case menuRestoreDockQuit = "menu.restoreDockQuit"
@@ -144,6 +146,10 @@ enum L10n {
 
     static var launchOpenTaskbar: String {
         text(.crashLaunchButton, fallback: "Launch OpenTaskbar")
+    }
+
+    static var accessibilityPermissionRequired: String {
+        text(.permissionAccessibilityRequired, fallback: "Accessibility Permission Required")
     }
 
     static var aboutOpenTaskbar: String {

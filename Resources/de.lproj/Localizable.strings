@@ -5,6 +5,7 @@
 "menu.about" = "Über OpenTaskbar";
 "menu.preferences" = "Einstellungen…";
 "menu.restoreDockQuit" = "Dock wiederherstellen und beenden";
+"permission.accessibilityRequired" = "Bedienungshilfen-Berechtigung erforderlich";
 
 "common.cancel" = "Abbrechen";
 "common.close" = "Schließen";

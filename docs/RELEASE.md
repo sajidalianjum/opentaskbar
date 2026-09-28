@@ -24,8 +24,8 @@ This builds a **universal** (Intel + Apple Silicon) release binary, assembles `b
 
 Signing:
 
-- If `OPENTASKBAR_SIGN_IDENTITY` names an installed identity (or a local `OpenTaskbarDev` identity exists), the bundle is signed with it.
-- Otherwise it falls back to **ad-hoc signing** (`codesign --sign - --options runtime`).
+- `Scripts/build.sh` automatically uses the first stable identity it finds: `Developer ID Application`, then `Apple Development`, then a self-signed `OpenTaskbarDev` identity (create one once with `Scripts/setup-signing.sh`). An explicit `OPENTASKBAR_SIGN_IDENTITY` overrides the automatic choice.
+- If no identity exists it falls back to **ad-hoc signing** (`codesign --sign - --options runtime`). This is what the GitHub release workflow produces, since CI runners carry no identity.
 
 ### 3. Verify the artifact
 
@@ -59,6 +59,68 @@ Or set `OPENTASKBAR_PUBLISH=1 ./Scripts/release.sh` to have the script build and
 
 > Keep the release notes honest about signing: ad-hoc signed, and re-granting Accessibility/Screen Recording after updates. `Scripts/release.sh` generates a starter notes file.
 
+## Optional: sign releases with a stable identity
+
+By default the CI release is **ad-hoc signed** on a clean runner, so macOS
+invalidates the Accessibility grant on every update and users must re-grant it.
+`Scripts/install.sh` clears the stale grant so this is a clean prompt rather
+than a silent failure, but you can remove the chore entirely by signing every
+release with the **same** certificate.
+
+macOS stores the Accessibility grant against the app's *designated
+requirement*. For an ad-hoc build that requirement is the binary's `cdhash`,
+which changes on every build. For a certificate-signed build it is
+`identifier + certificate leaf`, which is stable as long as the certificate is:
+
+```text
+ad-hoc   designated => cdhash H"…"                                # new every build → grant lost
+signed   designated => identifier "com.opentaskbar.app" and certificate leaf = H"…"   # stable
+```
+
+You can use any long-lived certificate (a paid **Developer ID Application** is
+best). The steps below use a free self-signed one, which is enough for TCC. The
+certificate must be the *same* one every release — recreating it regenerates the
+leaf hash and breaks the grant.
+
+### 1. Create the certificate (once)
+
+```bash
+./Scripts/setup-signing.sh
+```
+
+This creates an `OpenTaskbarDev` code-signing identity in your login keychain.
+It is deliberately not marked trusted (codesign does not need it) and the script
+never uploads anything.
+
+### 2. Export it as a .p12
+
+Keychain Access → **login** → **My Certificates** → right-click
+`OpenTaskbarDev` → **Export…** → save as `OpenTaskbarDev.p12`, set a password.
+
+### 3. Add two repository secrets
+
+Settings → Secrets and variables → Actions → **New repository secret**:
+
+| Secret | Value |
+|---|---|
+| `OPENTASKBAR_SIGNING_P12` | `base64 -i OpenTaskbarDev.p12` (paste the result) |
+| `OPENTASKBAR_SIGNING_PASSWORD` | the password you set in step 2 |
+
+That is the only GitHub configuration required. Without these secrets the
+workflow stays secretless and produces an ad-hoc build exactly as before.
+
+### 4. Release as usual
+
+The **Release** workflow detects the secret, imports the identity into a
+throwaway keychain on the runner, and `Scripts/build.sh` signs with it. The
+grant then survives updates and `Scripts/install.sh` no longer resets it
+(it only resets ad-hoc builds).
+
+> Security: the `.p12` is a private key. Anyone who has it can sign a binary that
+> TCC will treat as OpenTaskbar on machines that already granted it. Keep it out
+> of the repository, rotate it if leaked — and remember that rotating it
+> invalidates existing grants anyway.
+
 ## The installer
 
 `Scripts/install.sh` is attached to every release and is what the README one-liner
@@ -87,13 +149,13 @@ Environment overrides:
 
 - **Recommended:** `curl … | bash` installs with no Gatekeeper prompt.
 - **Manual browser download:** the launch is blocked once — allow it in **System Settings → Privacy & Security → Open Anyway** (macOS 15+), **right-click → Open** (macOS 14), or `xattr -dr com.apple.quarantine /Applications/OpenTaskbar.app`.
-- **Permissions re-grant on update** — release signatures change between versions, so TCC (Accessibility/Screen Recording) grants may need to be re-applied once. Settings in `UserDefaults` are unaffected.
+- **Permissions re-grant on update** — for **ad-hoc** release builds, signatures change between versions, so TCC (Accessibility/Screen Recording) grants may need to be re-applied once. Signing releases with a stable identity (see above) removes this. Settings in `UserDefaults` are unaffected.
 
 ## Future: Developer ID + notarization
 
 Once a paid Apple Developer Program membership and a **Developer ID Application** certificate exist, the same artifact can be notarized so users get a clean double-click install:
 
-1. Sign with the Developer ID identity (already supported via `OPENTASKBAR_SIGN_IDENTITY`).
+1. Sign with the Developer ID identity (build.sh picks it up automatically; `OPENTASKBAR_SIGN_IDENTITY` is only needed to force a specific one).
 2. `xcrun notarytool submit build/OpenTaskbar-<version>.zip --keychain-profile "opentaskbar-notary" --wait`
 3. `xcrun stapler staple build/OpenTaskbar.app`
 4. Re-zip and publish.

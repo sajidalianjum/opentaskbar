@@ -7,6 +7,7 @@
 "menu.about" = "OpenTaskbarについて";
 "menu.preferences" = "環境設定…";
 "menu.restoreDockQuit" = "Dockを復元して終了";
+"permission.accessibilityRequired" = "アクセシビリティの許可が必要です";
 
 "common.cancel" = "キャンセル";
 "common.close" = "閉じる";

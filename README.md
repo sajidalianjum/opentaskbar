@@ -159,7 +159,7 @@ Open **Preferences…** from the menu bar (⌘,). Changes apply immediately.
 - **Hiding the Dock** — the Dock's autohide state is saved to `~/.config/opentaskbar/dock-state.plist` before hiding and restored on quit or crash.
 - **Translucency** — the bar is translucent (vibrancy) automatically; enabling **Reduce Transparency** in System Settings forces an opaque bar.
 - **Spotlight button** — simulates `Cmd+Space` via `CGEvent` to open Spotlight. This depends on the standard Spotlight shortcut not being remapped.
-- **Permissions** — Accessibility is polled every 2 seconds until granted, then the app starts.
+- **Permissions** — Accessibility is polled every 2 seconds until granted; until then a menu-bar item explains what to do, then the app starts.
 
 ## Troubleshooting
 
@@ -172,8 +172,8 @@ Open **Preferences…** from the menu bar (⌘,). Changes apply immediately.
 | Taskbar hidden | A fullscreen window is active (disable "Hide Taskbar on Fullscreen"), or check "Show on All Screens" |
 | Dock is gone after an OpenTaskbar crash | If OpenTaskbar crashed and the Dock wasn't restored, bring it back with `defaults write com.apple.dock autohide -bool false && killall Dock` (see [Restore the Dock after a crash](#restore-the-dock-after-a-crash)) |
 | Gatekeeper blocks the app ("Apple cannot check it…" / "unidentified developer") | Expected for ad-hoc-signed browser downloads. On **macOS 15+**, right-click → Open no longer works — use **System Settings → Privacy & Security → Open Anyway**, or run `xattr -dr com.apple.quarantine /Applications/OpenTaskbar.app`. The [one-line `curl` installer](#from-a-release) avoids this entirely |
-| Access granted but permissions reset after an update | Release builds change signature between versions; re-grant Accessibility / Screen Recording once after updating |
-| Build fails with codesign error | Ensure a signing identity exists (`OPENTASKBAR_SIGN_IDENTITY`), or let `Scripts/build.sh` fall back to ad-hoc signing (`--sign -`) |
+| Access granted but permissions reset after an update | Ad-hoc release builds change signature between versions; re-grant Accessibility / Screen Recording once after updating. Releases signed with a stable identity do not have this issue |
+| Build fails with codesign error | `Scripts/build.sh` signs with the first stable identity it finds and otherwise falls back to ad-hoc signing (`--sign -`), so this is unlikely. If you want the Accessibility grant to survive local rebuilds, run `Scripts/setup-signing.sh` once |
 
 ### Restore the Dock after a crash
 
@@ -196,7 +196,7 @@ killall Dock
 - **No telemetry, no analytics, no network calls.** OpenTaskbar never contacts a server.
 - **Local logs only** — a debug log is written to `/tmp/opentaskbar.log`; crash state to `/tmp/opentaskbar.crash`. Nothing leaves your machine.
 - **Permissions are scoped** — Accessibility is used solely to control windows; Screen Recording is used solely to render your own thumbnails on hover.
-- **Private API** — window identification uses the private `_AXUIElementGetWindow` symbol, loaded at runtime via `dlsym`. This is why OpenTaskbar cannot be distributed through the Mac App Store. The prebuilt release is ad-hoc signed — verify the build from source if you'd prefer.
+- **Private API** — window identification uses the private `_AXUIElementGetWindow` symbol, loaded at runtime via `dlsym`. This is why OpenTaskbar cannot be distributed through the Mac App Store. The prebuilt release is not notarized with an Apple Developer ID — verify the build from source if you'd prefer.
 
 ## FAQ
 

@@ -85,6 +85,14 @@ jobs:
           file build/OpenTaskbar.app/Contents/MacOS/OpenTaskbar
           codesign --verify --deep --strict build/OpenTaskbar.app
           codesign -d --entitlements - build/OpenTaskbar.app || true
+          SIG="$(codesign -dv build/OpenTaskbar.app 2>&1 | awk -F'=' '/^Signature/{print $2}')"
+          AUTHORITY="$(codesign -dv build/OpenTaskbar.app 2>&1 | awk -F'=' '/^Authority/{print $2}')"
+          echo "Signature type: ${SIG:-none}"
+          echo "Authority: ${AUTHORITY:-none}"
+          if [ "${OPENTASKBAR_SIGNING_P12:-}" != "" ] && [ "${SIG}" = "adhoc" ]; then
+            echo "error: signing secrets are set but the build is ad-hoc signed" >&2
+            exit 1
+          fi
 
       - name: Publish GitHub Release
         uses: softprops/action-gh-release@v2

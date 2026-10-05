@@ -230,6 +230,7 @@ swift test
 - **`LSUIElement=true`** in Info.plist — app runs as menu bar app (no Dock icon, no menu bar).
 - **`NSApplication.activationPolicy = .accessory`** set in `main.swift`.
 - **ClickThroughView** allows mouse events to pass through the panel to windows except on interactive subviews.
+- **Bottom hot zone (Windows behaviour):** the taskbar panel is `iconSize + 12 + ScreenGeometry.edgeHotZoneSlop` tall and sits `edgeHotZoneSlop` (8pt) *below* the screen edge, so the visible bar looks unchanged while clicks at the very bottom of the display still land on the buttons. `ClickThroughView.hitTest` asks `TaskbarContentView.forgivingHitTarget(at:)` **before** the normal hit test; `ScreenGeometry.forgivingHitIndex` (gap-filled horizontally, 10pt tolerance below, 2pt above) maps those clicks to the nearest button. `AppButtonView`/`StartMenuButton`/`OverflowChevronButton` tracking areas use `ScreenGeometry.hoverTrackingRect(for:)` (button bounds extended down by the same 10pt) and must **not** pass `.inVisibleRect`, which would override the rect. Keep the slop off when another display is stacked directly below (`TaskbarPanel.hotZoneSlop(for:)`), and keep `backgroundView`/`contentStackView` pinned to `topAnchor + taskbarHeight` so the bar/pill does not grow by the slop.
 - **`_AXUIElementGetWindow`** is a private API — loaded via `dlsym` with `RTLD_DEFAULT`.
 - **`killall Dock`** is used to apply Dock autohide changes — brief visual disruption.
 - **Per-screen panels:** `AppDelegate` creates a `TaskbarPanel` per `NSScreen`, updates on screen changes.

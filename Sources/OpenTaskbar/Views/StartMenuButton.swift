@@ -62,8 +62,8 @@ final class StartMenuButton: NSView {
             removeTrackingArea(existing)
         }
         let newArea = NSTrackingArea(
-            rect: bounds,
-            options: [.mouseEnteredAndExited, .activeAlways, .inVisibleRect],
+            rect: ScreenGeometry.hoverTrackingRect(for: bounds),
+            options: [.mouseEnteredAndExited, .activeAlways],
             owner: self,
             userInfo: nil
         )
@@ -85,6 +85,10 @@ final class StartMenuButton: NSView {
 
     override func mouseDown(with event: NSEvent) {
         layer?.backgroundColor = NSColor.controlAccentColor.withAlphaComponent(0.12).cgColor
+    }
+
+    override func acceptsFirstMouse(for event: NSEvent?) -> Bool {
+        return true
     }
 
     override func mouseUp(with event: NSEvent) {

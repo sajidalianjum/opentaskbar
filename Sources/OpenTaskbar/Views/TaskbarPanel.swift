@@ -1,7 +1,23 @@
 import AppKit
 
+protocol ForgivingHitTarget: NSView {
+    func forgivingHitTarget(at point: NSPoint) -> NSView?
+}
+
 final class ClickThroughView: NSView {
+    weak var forgivingHitTarget: (any ForgivingHitTarget)?
+
     override func hitTest(_ point: NSPoint) -> NSView? {
+        // Buttons win first: the strip between the icon and the bottom edge of
+        // the screen, the 2pt padding and the gaps between buttons are all
+        // clickable in Windows, but they are not subviews here.
+        if let target = forgivingHitTarget {
+            let hit = target.forgivingHitTarget(at: target.convert(point, from: self))
+            if let hit {
+                return hit
+            }
+        }
+
         let view = super.hitTest(point)
         return view !== self ? view : nil
     }
@@ -25,7 +41,7 @@ final class TaskbarPanel: NSPanel {
     init(screen: NSScreen, windowManager: WindowManager) {
         self.windowManager = windowManager
         let height = ScreenGeometry.taskbarHeight(forIconSize: CGFloat(TaskbarSettings.shared.iconSize))
-        let rect = ScreenGeometry.taskbarRect(for: screen, height: height, isDockStyle: TaskbarSettings.shared.style == .dock)
+        let rect = ScreenGeometry.taskbarRect(for: screen, height: height, isDockStyle: TaskbarSettings.shared.style == .dock, hotZoneSlop: Self.hotZoneSlop(for: screen))
 
         super.init(
             contentRect: rect,
@@ -60,6 +76,7 @@ final class TaskbarPanel: NSPanel {
         let taskbarView = TaskbarContentView(windowManager: windowManager)
         self.contentView_ = taskbarView
         clickThroughView.addSubview(taskbarView)
+        clickThroughView.forgivingHitTarget = taskbarView
 
         taskbarView.translatesAutoresizingMaskIntoConstraints = false
         NSLayoutConstraint.activate([
@@ -84,7 +101,7 @@ final class TaskbarPanel: NSPanel {
 
     func updateFrame(for screen: NSScreen) {
         let height = ScreenGeometry.taskbarHeight(forIconSize: CGFloat(settings.iconSize))
-        let rect = ScreenGeometry.taskbarRect(for: screen, height: height, isDockStyle: settings.style == .dock)
+        let rect = ScreenGeometry.taskbarRect(for: screen, height: height, isDockStyle: settings.style == .dock, hotZoneSlop: Self.hotZoneSlop(for: screen))
         setFrame(rect, display: true, animate: true)
     }
 
@@ -106,17 +123,38 @@ final class TaskbarPanel: NSPanel {
         super.orderFront(sender)
     }
 
+    private var expectedPanelHeight: CGFloat {
+        let barHeight = ScreenGeometry.taskbarHeight(forIconSize: CGFloat(settings.iconSize))
+        return ScreenGeometry.panelHeight(barHeight: barHeight, hotZoneSlop: currentHotZoneSlop())
+    }
+
+    private static func hotZoneSlop(for screen: NSScreen) -> CGFloat {
+        let probe = NSRect(
+            x: screen.frame.minX,
+            y: screen.frame.minY - ScreenGeometry.edgeHotZoneSlop,
+            width: screen.frame.width,
+            height: ScreenGeometry.edgeHotZoneSlop
+        )
+        let overlapsAnotherScreen = NSScreen.screens.contains { $0 != screen && $0.frame.intersects(probe) }
+        return overlapsAnotherScreen ? 0 : ScreenGeometry.edgeHotZoneSlop
+    }
+
+    private func currentHotZoneSlop() -> CGFloat {
+        guard let screen = NSScreen.screens.first(where: { NSIntersectsRect($0.frame, frame) }) else {
+            return ScreenGeometry.edgeHotZoneSlop
+        }
+        return Self.hotZoneSlop(for: screen)
+    }
+
     override func setFrame(_ frameRect: NSRect, display flag: Bool) {
-        let expectedHeight = ScreenGeometry.taskbarHeight(forIconSize: CGFloat(settings.iconSize))
         var rect = frameRect
-        rect.size.height = expectedHeight
+        rect.size.height = expectedPanelHeight
         super.setFrame(rect, display: flag && !hiddenForFullscreen)
     }
 
     override func setFrame(_ frameRect: NSRect, display displayFlag: Bool, animate animateFlag: Bool) {
-        let expectedHeight = ScreenGeometry.taskbarHeight(forIconSize: CGFloat(settings.iconSize))
         var rect = frameRect
-        rect.size.height = expectedHeight
+        rect.size.height = expectedPanelHeight
         super.setFrame(rect, display: displayFlag && !hiddenForFullscreen, animate: animateFlag)
     }
 
@@ -125,7 +163,7 @@ final class TaskbarPanel: NSPanel {
         guard let targetScreen = screen ?? NSScreen.main else {
             return frameRect
         }
-        return ScreenGeometry.taskbarRect(for: targetScreen, height: height, isDockStyle: settings.style == .dock)
+        return ScreenGeometry.taskbarRect(for: targetScreen, height: height, isDockStyle: settings.style == .dock, hotZoneSlop: Self.hotZoneSlop(for: targetScreen))
     }
 
     override var canBecomeKey: Bool { false }

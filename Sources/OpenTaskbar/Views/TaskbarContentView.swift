@@ -1,6 +1,6 @@
 import AppKit
 
-final class TaskbarContentView: NSView {
+final class TaskbarContentView: NSView, ForgivingHitTarget {
     private let windowManager: WindowManager
     private let settings = TaskbarSettings.shared
 
@@ -122,9 +122,9 @@ final class TaskbarContentView: NSView {
                 backgroundView.leadingAnchor.constraint(equalTo: contentStackView.leadingAnchor, constant: -padding),
                 backgroundView.trailingAnchor.constraint(equalTo: contentStackView.trailingAnchor, constant: padding),
                 backgroundView.topAnchor.constraint(equalTo: topAnchor),
-                backgroundView.bottomAnchor.constraint(equalTo: bottomAnchor),
+                backgroundView.heightAnchor.constraint(equalToConstant: taskbarHeight),
 
-                contentStackView.centerYAnchor.constraint(equalTo: centerYAnchor),
+                contentStackView.centerYAnchor.constraint(equalTo: topAnchor, constant: -taskbarHeight / 2),
 
                 startSeparator.widthAnchor.constraint(equalToConstant: 1),
                 startSeparator.heightAnchor.constraint(lessThanOrEqualTo: contentStackView.heightAnchor, multiplier: 0.5),
@@ -185,10 +185,10 @@ final class TaskbarContentView: NSView {
                 backgroundView.leadingAnchor.constraint(equalTo: leadingAnchor),
                 backgroundView.trailingAnchor.constraint(equalTo: trailingAnchor),
                 backgroundView.topAnchor.constraint(equalTo: topAnchor),
-                backgroundView.bottomAnchor.constraint(equalTo: bottomAnchor),
+                backgroundView.heightAnchor.constraint(equalToConstant: taskbarHeight),
 
                 contentStackView.topAnchor.constraint(equalTo: topAnchor),
-                contentStackView.bottomAnchor.constraint(equalTo: bottomAnchor),
+                contentStackView.heightAnchor.constraint(equalToConstant: taskbarHeight),
 
                 startSeparator.widthAnchor.constraint(equalToConstant: 1),
                 startSeparator.heightAnchor.constraint(lessThanOrEqualTo: contentStackView.heightAnchor, multiplier: 0.5),
@@ -209,6 +209,26 @@ final class TaskbarContentView: NSView {
         NSLayoutConstraint.activate(activeConstraints)
         applyTheme()
         reloadData()
+    }
+
+    // ─── Forgiving Hit Testing ─────────────────────────────────────
+
+    func forgivingHitTarget(at point: NSPoint) -> NSView? {
+        var candidates: [NSView] = appButtons
+        if let start = startMenuButton, !start.isHidden {
+            candidates.append(start)
+        }
+        if let chevron = overflowChevronButton, !chevron.isHidden {
+            candidates.append(chevron)
+        }
+        guard !candidates.isEmpty else { return nil }
+
+        let sorted = candidates
+            .map { (view: $0, rect: $0.convert($0.bounds, to: self)) }
+            .sorted { $0.rect.minX < $1.rect.minX }
+
+        guard let index = ScreenGeometry.forgivingHitIndex(in: sorted.map(\.rect), point: point) else { return nil }
+        return sorted[index].view
     }
 
     private func applyTheme() {

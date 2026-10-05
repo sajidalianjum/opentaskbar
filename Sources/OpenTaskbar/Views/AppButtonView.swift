@@ -231,6 +231,10 @@ final class AppButtonView: NSView {
         layer?.backgroundColor = NSColor.controlAccentColor.withAlphaComponent(0.12).cgColor
     }
 
+    override func acceptsFirstMouse(for event: NSEvent?) -> Bool {
+        return true
+    }
+
     override func mouseUp(with event: NSEvent) {
         mouseDownLocation = nil
 
@@ -529,8 +533,8 @@ final class AppButtonView: NSView {
             removeTrackingArea(existing)
         }
         let newArea = NSTrackingArea(
-            rect: bounds,
-            options: [.mouseEnteredAndExited, .activeAlways, .inVisibleRect, .enabledDuringMouseDrag],
+            rect: ScreenGeometry.hoverTrackingRect(for: bounds),
+            options: [.mouseEnteredAndExited, .activeAlways, .enabledDuringMouseDrag],
             owner: self,
             userInfo: nil
         )

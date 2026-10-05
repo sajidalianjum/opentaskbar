@@ -3,18 +3,21 @@ import AppKit
 // Presents the updater to the user: the "new version is available" alert with
 // Install / Release Notes / Skip / Later, plus any failure. Kept apart from
 // UpdateManager so the state machine stays free of UI policy.
-final class UpdatePresenter {
+final class UpdatePresenter: NSObject, NSAlertDelegate {
     static let shared = UpdatePresenter()
 
     private var observer: NSObjectProtocol?
     private var isPresenting = false
     private var presentedVersion: String?
     private var isUserInitiatedCheck = false
+    private var pendingAlertRelease: UpdateRelease?
 
     private let settings = TaskbarSettings.shared
     private let manager = UpdateManager.shared
 
-    private init() {}
+    private override init() {
+        super.init()
+    }
 
     func start() {
         stop()
@@ -85,30 +88,56 @@ final class UpdatePresenter {
             guard presentedVersion != release.tagName else { return }
         }
         presentedVersion = release.tagName
+        pendingAlertRelease = release
         isPresenting = true
-        defer { isPresenting = false }
+        defer {
+            isPresenting = false
+            pendingAlertRelease = nil
+        }
 
         NSApp.activate(ignoringOtherApps: true)
 
         let alert = NSAlert()
         alert.alertStyle = .informational
         alert.messageText = L10n.updateAvailableTitle(release.tagName)
-        alert.addButton(withTitle: L10n.updateInstallAndRelaunch)
-        alert.addButton(withTitle: L10n.updateShowReleaseNotes)
-        alert.addButton(withTitle: L10n.updateSkipVersion)
-        alert.addButton(withTitle: L10n.updateRemindLater)
+        alert.delegate = self
+        alert.showsHelp = true
+
+        // 3 standard macOS buttons: Primary (Default), Cancel (Esc), Alternative (Skip).
+        alert.addButton(withTitle: L10n.updateInstallAndRelaunch) // .alertFirstButtonReturn
+        alert.addButton(withTitle: L10n.updateRemindLater)        // .alertSecondButtonReturn
+        alert.addButton(withTitle: L10n.updateSkipVersion)        // .alertThirdButtonReturn
+
+        let notesButton = NSButton(title: "\(L10n.updateShowReleaseNotes)…", target: self, action: #selector(openReleaseNotesFromAlert))
+        notesButton.bezelStyle = .inline
+        notesButton.isBordered = false
+        notesButton.contentTintColor = .linkColor
+        notesButton.font = NSFont.systemFont(ofSize: 12)
+        notesButton.sizeToFit()
+        alert.accessoryView = notesButton
 
         switch alert.runModal() {
         case .alertFirstButtonReturn:
             manager.install(release)
         case .alertSecondButtonReturn:
-            manager.openReleasePage(release)
+            // "Remind Me Later" - clear presentedVersion so future checks can prompt again.
+            presentedVersion = nil
         case .alertThirdButtonReturn:
             manager.skip(release)
         default:
-            // "Remind Me Later" - clear presentedVersion so future checks can prompt again.
             presentedVersion = nil
         }
+    }
+
+    @objc private func openReleaseNotesFromAlert() {
+        if let release = pendingAlertRelease {
+            manager.openReleasePage(release)
+        }
+    }
+
+    func alertShowHelp(_ alert: NSAlert) -> Bool {
+        openReleaseNotesFromAlert()
+        return true
     }
 
     private func presentFailure(_ error: UpdateError) {

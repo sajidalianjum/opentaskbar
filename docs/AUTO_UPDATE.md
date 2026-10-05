@@ -49,7 +49,7 @@ UpdateManager.evaluate(release, against: currentVersion)
       │  newer? not skipped? has a .zip asset? prerelease allowed?
       ▼
 Status.updateAvailable ──▶ UpdatePresenter ──▶ NSAlert (one line: "An update to
-      │                    %@ is available." + Install / Release Notes / Skip / Later)
+      │                    %@ is available." + Install / Later / Skip + Release Notes)
       ▼
 UpdateInstaller.download   (progress 0.0–0.7)
       ▼

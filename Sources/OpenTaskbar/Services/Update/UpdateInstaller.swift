@@ -118,8 +118,6 @@ final class UpdateInstaller: NSObject {
         return digest.map { String(format: "%02x", $0) }.joined()
     }
 
-    // Checksums come from two places: the GitHub asset `digest` field, or the
-    // `<asset>.sha256` sidecar that `Scripts/build.sh` uploads next to the zip.
     static func expectedChecksum(from asset: ReleaseAsset, session: URLSession = .shared) -> String? {
         if let sha256 = asset.sha256 {
             return sha256
@@ -132,15 +130,21 @@ final class UpdateInstaller: NSObject {
         request.timeoutInterval = 10
         var text: String?
         let semaphore = DispatchSemaphore(value: 0)
-        let task = session.dataTask(with: request) { data, _, _ in
-            if let data { text = String(data: data, encoding: .utf8) }
+        let task = session.dataTask(with: request) { data, response, _ in
+            if let http = response as? HTTPURLResponse, http.statusCode == 200, let data {
+                text = String(data: data, encoding: .utf8)
+            }
             semaphore.signal()
         }
         task.resume()
         _ = semaphore.wait(timeout: .now() + 12)
-        return text?.split(whereSeparator: { $0 == " " || $0 == "\n" }).first.map(String.init)?
+
+        guard let candidate = text?.split(whereSeparator: { $0 == " " || $0 == "\n" }).first.map(String.init)?
             .trimmingCharacters(in: .whitespacesAndNewlines)
-            .lowercased()
+            .lowercased() else { return nil }
+
+        guard candidate.count == 64, candidate.allSatisfy({ $0.isHexDigit }) else { return nil }
+        return candidate
     }
 
     // MARK: - Unpack & validate
@@ -355,6 +359,10 @@ final class UpdateInstaller: NSObject {
             sleep 0.1
             i=$((i + 1))
         done
+
+        if kill -0 "$PID" 2>/dev/null; then
+            fail "process $PID did not exit in time"
+        fi
 
         [ -d "$STAGED" ] || fail "staged bundle missing at $STAGED"
 

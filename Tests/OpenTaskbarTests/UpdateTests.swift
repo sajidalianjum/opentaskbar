@@ -583,4 +583,88 @@ final class UpdateInstallerTests: XCTestCase {
     func testSelfUpdateProbeFailsForAMissingBundle() {
         XCTAssertFalse(UpdateInstaller.canSelfUpdate(at: URL(fileURLWithPath: "/does/not/exist/OpenTaskbar.app")))
     }
+
+    func testHelperScriptAbortsIfProcessDoesNotExitInTime() {
+        let script = UpdateInstaller.helperScript(
+            pid: 4242,
+            stagedBundle: URL(fileURLWithPath: "/tmp/staged/OpenTaskbar.app"),
+            currentBundle: URL(fileURLWithPath: "/Applications/OpenTaskbar.app"),
+            logURL: URL(fileURLWithPath: "/tmp/apply.log")
+        )
+        XCTAssertTrue(script.contains("did not exit in time"))
+    }
+
+    func testExpectedChecksumFromSidecarValidatesHTTPStatusAndHexFormat() {
+        let config = URLSessionConfiguration.ephemeral
+        config.protocolClasses = [MockURLProtocol.self]
+        let session = URLSession(configuration: config)
+
+        let asset = ReleaseAsset(
+            name: "OpenTaskbar.zip",
+            size: 10,
+            downloadURL: URL(string: "https://example.com/OpenTaskbar.zip")!,
+            digest: nil
+        )
+
+        // 404 response with error payload must not be treated as a valid checksum
+        MockURLProtocol.requestHandler = { request in
+            let response = HTTPURLResponse(
+                url: request.url!,
+                statusCode: 404,
+                httpVersion: nil,
+                headerFields: nil
+            )!
+            return (response, Data("{\"message\":\"Not Found\"}".utf8))
+        }
+        XCTAssertNil(UpdateInstaller.expectedChecksum(from: asset, session: session))
+
+        // 200 response with HTML/malformed content must return nil
+        MockURLProtocol.requestHandler = { request in
+            let response = HTTPURLResponse(
+                url: request.url!,
+                statusCode: 200,
+                httpVersion: nil,
+                headerFields: nil
+            )!
+            return (response, Data("<html>Error</html>".utf8))
+        }
+        XCTAssertNil(UpdateInstaller.expectedChecksum(from: asset, session: session))
+
+        // 200 response with valid 64-hex hash parses successfully
+        let validHash = "64822e9bc9aacb890576dde29dc74fa06814b6ff44860db8131f08b326cae1d8"
+        MockURLProtocol.requestHandler = { request in
+            let response = HTTPURLResponse(
+                url: request.url!,
+                statusCode: 200,
+                httpVersion: nil,
+                headerFields: nil
+            )!
+            return (response, Data("\(validHash)  OpenTaskbar.zip\n".utf8))
+        }
+        XCTAssertEqual(UpdateInstaller.expectedChecksum(from: asset, session: session), validHash)
+    }
+}
+
+final class MockURLProtocol: URLProtocol {
+    static var requestHandler: ((URLRequest) throws -> (HTTPURLResponse, Data))?
+
+    override class func canInit(with request: URLRequest) -> Bool { true }
+    override class func canonicalRequest(for request: URLRequest) -> URLRequest { request }
+
+    override func startLoading() {
+        guard let handler = MockURLProtocol.requestHandler else {
+            client?.urlProtocol(self, didFailWithError: URLError(.badURL))
+            return
+        }
+        do {
+            let (response, data) = try handler(request)
+            client?.urlProtocol(self, didReceive: response, cacheStoragePolicy: .notAllowed)
+            client?.urlProtocol(self, didLoad: data)
+            client?.urlProtocolDidFinishLoading(self)
+        } catch {
+            client?.urlProtocol(self, didFailWithError: error)
+        }
+    }
+
+    override func stopLoading() {}
 }

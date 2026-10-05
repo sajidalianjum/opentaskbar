@@ -332,6 +332,29 @@ final class WindowGroupingEngineTests: XCTestCase {
         XCTAssertEqual(result.nextOrder, 3)
     }
 
+    func testReorderMovesGroupToEndSlot() {
+        let groups = makeOrderedGroups(["com.a", "com.b", "com.c"])
+        let result = WindowGroupingEngine.reorderGroups(groups, from: 0, to: 3, pinnedIDs: [])
+        XCTAssertEqual(result.groups.map(\.bundleIdentifier), ["com.b", "com.c", "com.a"])
+        XCTAssertEqual(result.groups.map(\.insertionOrder), [0, 1, 2])
+        XCTAssertEqual(result.nextOrder, 3)
+        XCTAssertTrue(result.didReorder)
+    }
+
+    func testReorderMovesGroupToEndSlotUpdatingPinOrder() {
+        let groups = makeOrderedGroups(["com.a", "com.b", "com.c"])
+        let result = WindowGroupingEngine.reorderGroups(groups, from: 0, to: 3, pinnedIDs: ["com.a", "com.b", "com.c"])
+        XCTAssertEqual(result.groups.map(\.bundleIdentifier), ["com.b", "com.c", "com.a"])
+        XCTAssertEqual(result.pinnedBundleIDs, ["com.b", "com.c", "com.a"])
+    }
+
+    func testReorderMovesSecondLastToEndSlot() {
+        let groups = makeOrderedGroups(["com.a", "com.b", "com.c"])
+        let result = WindowGroupingEngine.reorderGroups(groups, from: 1, to: 3, pinnedIDs: [])
+        XCTAssertEqual(result.groups.map(\.bundleIdentifier), ["com.a", "com.c", "com.b"])
+        XCTAssertTrue(result.didReorder)
+    }
+
     func testReorderOutOfBoundsDestinationIsNoOp() {
         let groups = makeOrderedGroups(["com.a", "com.b", "com.c"])
         let result = WindowGroupingEngine.reorderGroups(groups, from: 0, to: 99, pinnedIDs: [])

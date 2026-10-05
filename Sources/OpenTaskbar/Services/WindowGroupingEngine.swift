@@ -152,7 +152,7 @@ enum WindowGroupingEngine {
         to destinationIndex: Int,
         pinnedIDs: [String]
     ) -> ReorderResult {
-        guard sourceIndex < groups.count, destinationIndex < groups.count, sourceIndex != destinationIndex else {
+        guard sourceIndex < groups.count, destinationIndex <= groups.count, sourceIndex != destinationIndex else {
             return ReorderResult(groups: groups, nextOrder: nil, pinnedBundleIDs: nil)
         }
 
@@ -164,7 +164,7 @@ enum WindowGroupingEngine {
         var updatedPinnedIDs: [String]? = nil
         if pinnedIDs.contains(group.bundleIdentifier) {
             let pinnedCount = pinnedIDs.count
-            if destinationIndex < pinnedCount {
+            if destinationIndex <= pinnedCount {
                 var updated = pinnedIDs
                 updated.removeAll { $0 == group.bundleIdentifier }
                 let clampedIndex = min(destinationIndex, updated.count)

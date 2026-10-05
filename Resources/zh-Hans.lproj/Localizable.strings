@@ -98,3 +98,44 @@
 "settings.resetDefaults" = "恢复默认设置";
 "settings.language" = "语言";
 "settings.languageSystem" = "系统默认";
+
+/* Auto update */
+
+"update.section" = "更新";
+"update.automaticChecks" = "自动检查更新";
+"update.installAutomatically" = "自动下载并安装更新";
+"update.includePrereleases" = "包含预发布版本";
+"update.checkNow" = "检查更新…";
+"update.installNow" = "安装更新并重新启动";
+"update.status.idle" = "每天检查一次。";
+"update.status.checking" = "正在检查更新…";
+"update.status.upToDate" = "OpenTaskbar %@ 已是最新版本。";
+"update.status.available" = "版本 %@ 已发布。";
+"update.status.downloading" = "正在下载… %d%%";
+"update.status.installing" = "正在安装…";
+"update.status.failed" = "更新失败：%@";
+"update.lastChecked" = "上次检查：%@";
+"update.lastCheckedNever" = "从未检查过更新。";
+"update.menu.check" = "检查更新…";
+"update.menu.checkWhileChecking" = "正在检查更新…";
+"update.menu.install" = "更新到 %@ 并重新启动…";
+"update.available.title" = "版本 %@ 的更新已发布。";
+"update.installAndRelaunch" = "安装并重新启动";
+"update.showReleaseNotes" = "发行说明";
+"update.skipVersion" = "跳过此版本";
+"update.remindLater" = "稍后提醒";
+"update.failed.title" = "无法检查更新";
+"update.failed.message" = "OpenTaskbar 无法连接更新服务器。";
+"update.error.offline" = "无法连接更新服务器";
+"update.error.notModified" = "没有更新的版本。";
+"update.error.rateLimited" = "更新服务器限制了请求频率，请稍后再试。";
+"update.error.httpStatus" = "更新服务器返回 HTTP %d。";
+"update.error.invalidResponse" = "更新服务器返回了意外的响应。";
+"update.error.noAsset" = "此发行版不包含 macOS 应用下载。";
+"update.error.checksum" = "下载内容与其公布的校验和不匹配，已被丢弃。";
+"update.error.downloadFailed" = "下载失败";
+"update.error.unpackFailed" = "无法解压更新归档";
+"update.error.validationFailed" = "下载的应用未通过验证";
+"update.error.notWritable" = "OpenTaskbar 安装在无法替换的位置（%@）。请重新运行安装脚本以更新。";
+"update.error.selfUpdateBlocked" = "macOS 不允许 OpenTaskbar 在 %@ 替换自身。macOS 会保护“文稿”“桌面”和“下载”等文件夹不被应用修改。要使用应用内更新，请将 OpenTaskbar 重新安装到 /Applications。";
+"update.error.installFailed" = "无法安装更新";

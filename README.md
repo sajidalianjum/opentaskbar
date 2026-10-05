@@ -28,6 +28,7 @@ A lightweight, macOS menubar utility that replaces the Dock with a customizable,
 - **Zoomed-window handling** — optionally keep zoomed (green-button) windows above the taskbar
 - **Launch animation** — apps animate in when they launch; minimize/restore bounce animations
 - **Crash safety** — the Dock is saved before it's hidden and restored on unexpected exits
+- **Built-in updates** — checks GitHub releases daily and installs + relaunches in place (checksum- and signature-verified, no re-downloading)
 - **Zero dependencies** — pure AppKit + Apple SDKs, Swift Package Manager only
 
 ## Requirements
@@ -67,7 +68,7 @@ Installs the latest release into your Applications folder.
 
 Grant **Accessibility** permission when prompted (required); **Screen Recording** is optional, for hover thumbnails.
 
-> **Updating:** release builds change signature between versions, so you may need to re-grant Accessibility / Screen Recording once after updating. Your settings are unaffected. See [docs/RELEASE.md](docs/RELEASE.md) for installer options.
+> **Updating:** installed copies update themselves — see [Updating](#updating). Release builds change signature between versions, so you may need to re-grant Accessibility / Screen Recording once after updating; your settings are unaffected.
 
 ### Build from source
 
@@ -126,7 +127,19 @@ Right-click any app button for:
 
 ### Menu bar icon
 
-The menubar icon gives you **About OpenTaskbar**, **Preferences…** (⌘,), and **Restore Dock & Quit** (⌘Q) — the reliable way to get your Dock back.
+The menubar icon gives you **Check for Updates…**, **About OpenTaskbar**, **Preferences…** (⌘,), and **Restore Dock & Quit** (⌘Q) — the reliable way to get your Dock back. When a newer release exists, the menu grows an **Update to &lt;version&gt; and Relaunch…** item at the top.
+
+### Updating
+
+OpenTaskbar updates itself. It checks the GitHub release feed once a day, and when a new version is published it asks before installing — the download is verified against its published SHA-256 and the app's code signature, then swapped in place and relaunched. Nothing is installed without your say-so unless you turn on *Download and Install Updates Automatically*.
+
+If an update arrives while you have OpenTaskbar open, you can also run the installer again:
+
+```bash
+curl -fsSL https://github.com/sajidalianjum/opentaskbar/releases/latest/download/install.sh | bash
+```
+
+**Permissions after an update:** because release builds are ad-hoc signed, macOS treats each update as a new binary and the Accessibility grant has to be re-approved once — the app clears the stale entry for you so you get a clean prompt. Signing releases with a stable identity removes this (see [docs/RELEASE.md](docs/RELEASE.md)).
 
 ## Settings
 
@@ -149,6 +162,9 @@ Open **Preferences…** from the menu bar (⌘,). Changes apply immediately.
 | Display Options | Hide Taskbar on Fullscreen | On | Auto-hide when a fullscreen window is active |
 | Display Options | Quit Apps When All Windows Close | Off | Quit an app when its last window closes |
 | Display Options | Keep Zoomed Windows Above Taskbar | Off | Prevent zoomed windows from overlapping the bar |
+| Updates | Automatically Check for Updates | On | Check the release feed once a day |
+| Updates | Download and Install Updates Automatically | Off | Install without asking |
+| Updates | Include Pre-release Versions | Off | Also consider GitHub pre-releases |
 | — | Reset to Defaults | — | Restore all defaults |
 
 ## How it works
@@ -160,6 +176,7 @@ Open **Preferences…** from the menu bar (⌘,). Changes apply immediately.
 - **Translucency** — the bar is translucent (vibrancy) automatically; enabling **Reduce Transparency** in System Settings forces an opaque bar.
 - **Spotlight button** — simulates `Cmd+Space` via `CGEvent` to open Spotlight. This depends on the standard Spotlight shortcut not being remapped.
 - **Permissions** — Accessibility is polled every 2 seconds until granted; until then a menu-bar item explains what to do, then the app starts.
+- **Updates** — a daily check of the GitHub release feed (ETag-cached, so routine checks cost no API quota). Installing verifies the download's SHA-256 and code signature, swaps the bundle in place via a short-lived helper, reconciles the Accessibility grant, and relaunches. See [docs/AUTO_UPDATE.md](docs/AUTO_UPDATE.md).
 
 ## Troubleshooting
 

@@ -110,6 +110,18 @@ final class TaskbarSettings {
         didSet { UserDefaults.standard.set(hoverDelay, forKey: "hoverDelay"); postChange() }
     }
 
+    @Published var autoCheckForUpdates: Bool {
+        didSet { UserDefaults.standard.set(autoCheckForUpdates, forKey: "autoCheckForUpdates"); postChange() }
+    }
+
+    @Published var installUpdatesAutomatically: Bool {
+        didSet { UserDefaults.standard.set(installUpdatesAutomatically, forKey: "installUpdatesAutomatically"); postChange() }
+    }
+
+    @Published var includePrereleaseUpdates: Bool {
+        didSet { UserDefaults.standard.set(includePrereleaseUpdates, forKey: "includePrereleaseUpdates"); postChange() }
+    }
+
     @Published var pinnedBundleIdentifiers: [String] {
         didSet { UserDefaults.standard.set(pinnedBundleIdentifiers, forKey: "pinnedBundleIdentifiers"); postChange() }
     }
@@ -206,6 +218,9 @@ final class TaskbarSettings {
         self.launchAtLogin = defaults.object(forKey: "launchAtLogin") as? Bool ?? true
         self.animationsEnabled = defaults.object(forKey: "animationsEnabled") as? Bool ?? true
         self.hoverDelay = defaults.object(forKey: "hoverDelay") as? Double ?? 0.4
+        self.autoCheckForUpdates = defaults.object(forKey: "autoCheckForUpdates") as? Bool ?? true
+        self.installUpdatesAutomatically = defaults.object(forKey: "installUpdatesAutomatically") as? Bool ?? false
+        self.includePrereleaseUpdates = defaults.object(forKey: "includePrereleaseUpdates") as? Bool ?? false
         self.constrainZoomedWindows = defaults.object(forKey: "constrainZoomedWindows") as? Bool ?? false
         self.hideOnFullscreen = defaults.object(forKey: "hideOnFullscreen") as? Bool ?? true
         self.showRunningAppsWithoutWindows = defaults.object(forKey: "showRunningAppsWithoutWindows") as? Bool ?? false

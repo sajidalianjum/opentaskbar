@@ -96,13 +96,23 @@ log "Downloading ${URL}"
 ZIP="${TMP_DIR}/${APP_NAME}.zip"
 curl -fSL --retry 3 --retry-delay 1 -o "${ZIP}" "${URL}" || die "download failed"
 
-# --- Optional integrity check -------------------------------------------------
-if [ -n "${OPENTASKBAR_SHA256:-}" ]; then
-    actual="$(shasum -a 256 "${ZIP}" | awk '{print $1}')"
-    if [ "${actual}" != "${OPENTASKBAR_SHA256}" ]; then
-        die "checksum mismatch: expected ${OPENTASKBAR_SHA256}, got ${actual}"
+# --- Integrity check -----------------------------------------------------------
+# Prefer an explicit OPENTASKBAR_SHA256, otherwise use the `.sha256` sidecar that
+# Scripts/build.sh publishes next to the archive. This is the same check the
+# in-app updater performs on every download.
+EXPECTED="${OPENTASKBAR_SHA256:-}"
+if [ -z "${EXPECTED}" ] && command -v shasum >/dev/null 2>&1; then
+    EXPECTED="$(curl -fsSL "${URL}.sha256" 2>/dev/null | awk 'NF {print $1; exit}' || true)"
+fi
+
+actual="$(shasum -a 256 "${ZIP}" | awk '{print $1}')"
+if [ -n "${EXPECTED}" ]; then
+    if [ "${actual}" != "${EXPECTED}" ]; then
+        die "checksum mismatch: expected ${EXPECTED}, got ${actual}"
     fi
     log "Checksum verified"
+else
+    log "note: no published checksum available; skipping the integrity check"
 fi
 
 # --- Unpack -------------------------------------------------------------------
@@ -163,5 +173,5 @@ log "  1. Open ${APP_NAME} (Spotlight, Launchpad, or: open \"${DEST}\")."
 log "  2. Grant Accessibility permission when prompted — required."
 log "  3. Optionally grant Screen Recording for hover thumbnails."
 log ""
-log "Updating: re-run this script. Because release builds are ad-hoc signed, you"
-log "may need to re-grant Accessibility / Screen Recording after an update."
+log "Updating: re-run this script, or use the built-in updater"
+log "(menu bar > Check for Updates…, or Preferences > Updates)."

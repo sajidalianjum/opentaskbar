@@ -96,3 +96,44 @@
 "settings.resetDefaults" = "Ripristina impostazioni di default";
 "settings.language" = "Lingua";
 "settings.languageSystem" = "Predefinito di sistema";
+
+/* Auto update */
+
+"update.section" = "Aggiornamenti";
+"update.automaticChecks" = "Controlla automaticamente gli aggiornamenti";
+"update.installAutomatically" = "Scarica e installa automaticamente gli aggiornamenti";
+"update.includePrereleases" = "Includi le versioni preliminari";
+"update.checkNow" = "Controlla gli aggiornamenti…";
+"update.installNow" = "Installa l’aggiornamento e riavvia";
+"update.status.idle" = "Controllato una volta al giorno.";
+"update.status.checking" = "Controllo degli aggiornamenti…";
+"update.status.upToDate" = "OpenTaskbar %@ è aggiornato.";
+"update.status.available" = "La versione %@ è disponibile.";
+"update.status.downloading" = "Download… %d%%";
+"update.status.installing" = "Installazione…";
+"update.status.failed" = "Aggiornamento non riuscito: %@";
+"update.lastChecked" = "Ultimo controllo: %@";
+"update.lastCheckedNever" = "Gli aggiornamenti non sono mai stati controllati.";
+"update.menu.check" = "Controlla gli aggiornamenti…";
+"update.menu.checkWhileChecking" = "Controllo degli aggiornamenti…";
+"update.menu.install" = "Aggiorna a %@ e riavvia…";
+"update.available.title" = "È disponibile un aggiornamento alla versione %@.";
+"update.installAndRelaunch" = "Installa e riavvia";
+"update.showReleaseNotes" = "Note di rilascio";
+"update.skipVersion" = "Salta questa versione";
+"update.remindLater" = "Ricordamelo più tardi";
+"update.failed.title" = "Impossibile controllare gli aggiornamenti";
+"update.failed.message" = "OpenTaskbar non è riuscito a raggiungere il server degli aggiornamenti.";
+"update.error.offline" = "Impossibile raggiungere il server degli aggiornamenti";
+"update.error.notModified" = "Non è disponibile alcuna versione più recente.";
+"update.error.rateLimited" = "Il server degli aggiornamenti sta limitando le richieste. Riprova più tardi.";
+"update.error.httpStatus" = "Il server degli aggiornamenti ha restituito HTTP %d.";
+"update.error.invalidResponse" = "Il server degli aggiornamenti ha restituito una risposta imprevista.";
+"update.error.noAsset" = "Questa versione non include il download per macOS.";
+"update.error.checksum" = "Il download non corrisponde al checksum pubblicato ed è stato scartato.";
+"update.error.downloadFailed" = "Download non riuscito";
+"update.error.unpackFailed" = "Non è stato possibile estrarre l’archivio dell’aggiornamento";
+"update.error.validationFailed" = "L’app scaricata non ha superato la verifica";
+"update.error.notWritable" = "OpenTaskbar è installato in una posizione che non può essere sostituita (%@). Riesegui lo script di installazione per aggiornare.";
+"update.error.selfUpdateBlocked" = "macOS non permette a OpenTaskbar di sostituirsi in %@. macOS protegge cartelle come Documenti, Scrivania e Download dalla modifica da parte delle app. Reinstalla OpenTaskbar in /Applications per abilitare gli aggiornamenti integrati.";
+"update.error.installFailed" = "Non è stato possibile installare l’aggiornamento";

@@ -96,3 +96,44 @@
 "settings.resetDefaults" = "Auf Standardwerte zurücksetzen";
 "settings.language" = "Sprache";
 "settings.languageSystem" = "Systemstandard";
+
+/* Auto update */
+
+"update.section" = "Updates";
+"update.automaticChecks" = "Automatisch nach Updates suchen";
+"update.installAutomatically" = "Updates automatisch herunterladen und installieren";
+"update.includePrereleases" = "Vorabversionen einbeziehen";
+"update.checkNow" = "Nach Updates suchen…";
+"update.installNow" = "Update installieren und neu starten";
+"update.status.idle" = "Täglich geprüft.";
+"update.status.checking" = "Suche nach Updates…";
+"update.status.upToDate" = "OpenTaskbar %@ ist aktuell.";
+"update.status.available" = "Version %@ ist verfügbar.";
+"update.status.downloading" = "Wird heruntergeladen… %d%%";
+"update.status.installing" = "Wird installiert…";
+"update.status.failed" = "Update fehlgeschlagen: %@";
+"update.lastChecked" = "Zuletzt geprüft: %@";
+"update.lastCheckedNever" = "Noch nie nach Updates gesucht.";
+"update.menu.check" = "Nach Updates suchen…";
+"update.menu.checkWhileChecking" = "Suche nach Updates…";
+"update.menu.install" = "Auf %@ aktualisieren und neu starten…";
+"update.available.title" = "Ein Update auf %@ ist verfügbar.";
+"update.installAndRelaunch" = "Installieren und neu starten";
+"update.showReleaseNotes" = "Versionshinweise";
+"update.skipVersion" = "Diese Version überspringen";
+"update.remindLater" = "Später erinnern";
+"update.failed.title" = "Suche nach Updates fehlgeschlagen";
+"update.failed.message" = "OpenTaskbar konnte den Update-Server nicht erreichen.";
+"update.error.offline" = "Der Update-Server ist nicht erreichbar";
+"update.error.notModified" = "Es ist keine neuere Version verfügbar.";
+"update.error.rateLimited" = "Der Update-Server begrenzt die Anzahl der Anfragen. Bitte später erneut versuchen.";
+"update.error.httpStatus" = "Der Update-Server hat HTTP %d zurückgegeben.";
+"update.error.invalidResponse" = "Der Update-Server hat eine unerwartete Antwort geliefert.";
+"update.error.noAsset" = "Dieses Release enthält keinen macOS-App-Download.";
+"update.error.checksum" = "Der Download stimmte nicht mit der veröffentlichten Prüfsumme überein und wurde verworfen.";
+"update.error.downloadFailed" = "Der Download ist fehlgeschlagen";
+"update.error.unpackFailed" = "Das Update-Archiv konnte nicht entpackt werden";
+"update.error.validationFailed" = "Die heruntergeladene App hat die Überprüfung nicht bestanden";
+"update.error.notWritable" = "OpenTaskbar ist an einem Ort installiert, der nicht ersetzt werden kann (%@). Führen Sie das Installationsskript erneut aus, um zu aktualisieren.";
+"update.error.selfUpdateBlocked" = "macOS erlaubt OpenTaskbar nicht, sich unter %@ selbst zu ersetzen. macOS schützt Ordner wie Dokumente, Schreibtisch und Downloads davor, von Apps verändert zu werden. Installieren Sie OpenTaskbar erneut in /Applications, um In-App-Updates zu ermöglichen.";
+"update.error.installFailed" = "Das Update konnte nicht installiert werden";

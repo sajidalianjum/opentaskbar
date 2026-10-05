@@ -54,7 +54,8 @@ OpenTaskbar/
 │   ├── WindowGroupingEngineTests.swift
 │   ├── DockManagerTests.swift
 │   ├── TaskbarSettingsTests.swift
-│   └── ModelAndUtilityTests.swift  # WindowInfo, AppGroup, ScreenGeometry, ThemeManager, SingleInstanceLock, NSImageExtensions, CrashGuard
+│   ├── ModelAndUtilityTests.swift  # WindowInfo, AppGroup, ScreenGeometry, ThemeManager, SingleInstanceLock, NSImageExtensions, CrashGuard
+│   └── UpdateTests.swift          # AppVersion, UpdateRelease, feed response mapping, UpdateHistoryStore, UpdateManager.evaluate, installer helpers
 ├── .github/workflows/ci.yml        # swift build + swift test --enable-code-coverage + llvm-cov threshold on push/PR
 │   ├── Models/
 │   │   ├── WindowInfo.swift        # CGWindowID, pid, title, frame, minimized, fullscreen, layer, alpha, ownerName, isValid (Hashable)
@@ -68,7 +69,15 @@ OpenTaskbar/
 │   │   ├── WorkspaceMonitor.swift  # NSWorkspace notifications (launch/terminate/activate/deactivate/screens)
 │   │   ├── DockManager.swift       # Save/restore Dock autohide/coexist via defaults + killall, ~/.config/opentaskbar/dock-state.plist
 │   │   ├── ThemeManager.swift      # Background theme resolution (system/dark/light/custom; translucent vibrancy)
-│   │   └── ThumbnailService.swift  # Async SCScreenshotManager (macOS 14+) / CGWindowList fallback
+│   │   ├── ThumbnailService.swift  # Async SCScreenshotManager (macOS 14+) / CGWindowList fallback
+│   │   └── Update/                 # Self-update pipeline (see docs/AUTO_UPDATE.md)
+│   │       ├── AppVersion.swift    # SemVer parsing/ordering (pure; 1 == 1.0.0, prerelease < release)
+│   │       ├── UpdateRelease.swift # Codable GitHub release + ReleaseAsset, asset selection
+│   │       ├── UpdateFeedClient.swift # releases/latest fetch, ETag replay, HTTP→UpdateError mapping
+│   │       ├── UpdateHistoryStore.swift # lastCheck / skippedVersion / lastInstalledVersion (injectable UserDefaults)
+│   │       ├── UpdateInstaller.swift # download→sha256→ditto→validate→stage→swap helper script
+│   │       ├── UpdateManager.swift # Status state machine, evaluation rules, orchestration
+│   │       └── UpdateError.swift   # Failure taxonomy with localized messages
 │   ├── Utilities/
 │   │   ├── SingleInstanceLock.swift# PID file at /tmp/com.opentaskbar.lock
 │   │   ├── ScreenGeometry.swift    # Taskbar rect from NSScreen, dynamic height based on icon size
@@ -123,6 +132,18 @@ AXObserver callbacks     → AXObserverManager → WindowManager
                                   ↓
                          AppButtonView hover → ThumbnailPopover.show()
                          (when showThumbnails==true)
+```
+
+**Auto-update (once per day, or on demand):**
+```
+UpdateManager.checkForUpdates → UpdateFeedClient (ETag replay, 24h throttle)
+    → GitHub /releases/latest → UpdateRelease.parse
+    → UpdateManager.evaluate (newer? not skipped? has a .zip asset?)
+    → Status.updateAvailable → UpdatePresenter → NSAlert
+    → UpdateInstaller: download → sha256 → ditto -x -k → validate (bundle id,
+      version, executable, codesign --verify) → stage → detached /bin/sh helper
+    → AppDelegate.onReadyToRelaunch (restore Dock, terminate) → helper swaps
+      the bundle, reconciles the TCC grant, and relaunches
 ```
 
 **Settings propagation:**
@@ -202,9 +223,9 @@ swift test
 2. **SettingsWindowController** uses manual frame layout helpers (`FlippedView`, `labeled()`/`sliderRow()`/`checkbox()` functions), not a proper Auto Layout constraints-based layout
 3. **0.5s poll timer** compares full window sets each cycle; could be optimized to avoid full refresh when nothing changed
 4. **`MenuItemActions`** is a singleton (`shared`) that creates its own `AccessibilityService` instance rather than sharing the one from `WindowManager`; callback wiring is fragile
-5. **Tests cover pure logic only** — `WindowGroupingEngine` (including state transitions), models, `DockManager`, and utilities (`ScreenGeometry`, `ThemeManager`, `SingleInstanceLock`, `NSImageExtensions`) are unit tested; AppKit/AX-driven flows (panels, observers, popovers) have no test coverage
+5. **Tests cover pure logic only** — `WindowGroupingEngine` (including state transitions), models, `DockManager`, utilities (`ScreenGeometry`, `ThemeManager`, `SingleInstanceLock`, `NSImageExtensions`), and the updater (`AppVersion`, `UpdateRelease`, feed response mapping, `UpdateHistoryStore`, `UpdateManager.evaluate`, installer helpers) are unit tested; AppKit/AX-driven flows (panels, observers, popovers) and the live network/download/swap stages have no test coverage
 6. **CI runs `swift build` + `swift test --enable-code-coverage` with an llvm-cov threshold** — no linting, formatting, or release-bundle verification in CI
-7. **Localization translations need native-speaker review** — the `L10n` layer and locale resource packaging are in place, with initial catalogs bundled for 12 locales; add reviewed `<locale>.lproj` catalogs as languages are supported. An in-app **language override** (`TaskbarSettings.language`, set in Settings > General) resolves strings through the matching `<locale>.lproj` sub-bundle via `L10n.applyLanguage(_:)` without touching `AppleLanguages`, so switching languages updates the UI live; choosing "System Default" falls back to `Bundle.main`
+7. **Localization translations need native-speaker review** — the `L10n` layer and locale resource packaging are in place, with initial catalogs bundled for 12 locales; add reviewed `<locale>.lproj` catalogs as languages are supported. New UI strings must be added to **all 12 catalogs** (`L10n` falls back to the English literal if a key is missing, so an untranslated key silently ships English). An in-app **language override** (`TaskbarSettings.language`, set in Settings > General) resolves strings through the matching `<locale>.lproj` sub-bundle via `L10n.applyLanguage(_:)` without touching `AppleLanguages`, so switching languages updates the UI live; choosing "System Default" falls back to `Bundle.main`
 8. **No SwiftUI `@main`** — uses classic `NSApplicationMain` pattern
 9. **`StartMenuButton`** simulates Cmd+Space via `CGEvent` — fragile if Spotlight is remapped or disabled, and requires accessibility permissions
 10. **`WindowListPopover` and `ThumbnailPopover`** are mutually exclusive based on `showThumbnails`; no toggle to show both simultaneously
@@ -220,6 +241,8 @@ swift test
 | Settings | `UserDefaults` (standard) |
 | Dock state backup | `~/.config/opentaskbar/dock-state.plist` |
 | Single-instance lock | `/tmp/com.opentaskbar.lock` |
+| Update bookkeeping | `UserDefaults` (`opentaskbar.update.lastCheck` / `.skippedVersion` / `.lastInstalledVersion` / `.etag`) |
+| Update staging + swap helper | `~/Library/Caches/com.opentaskbar.app/updates/` (`apply/apply-update.log` records each swap) |
 
 ---
 
@@ -243,6 +266,9 @@ swift test
 - **Compact bar mode** renders the taskbar as a floating pill with rounded corners instead of full-width bar.
 - **Settings** propagate via `NotificationCenter` (not Combine) — views observe `TaskbarSettings.settingsDidChange` and fully rebuild on any change.
 - **`MenuItemActions.shared`** is a standalone singleton with its own `AccessibilityService` — not shared with `WindowManager`'s instance.
+- **Self-update** (`docs/AUTO_UPDATE.md`) — an app cannot replace its own bundle, so `UpdateInstaller.scheduleReplacement` writes a shell helper, launches it detached, and the app terminates; the helper waits for the PID, `mv`s the old bundle aside, `ditto`s the new one in (restoring the backup if that fails), strips quarantine, runs `tccutil reset Accessibility` when an ad-hoc `cdhash` changed, and relaunches. Never install without `UpdateInstaller.validate` passing (bundle id, version, executable, `codesign --verify --deep --strict`).
+- **Self-update requires a non-protected folder** — `UpdateInstaller.canSelfUpdate(at:)` probes write+rename in the bundle's folder before downloading anything. An app inside `~/Documents`, `~/Desktop` or `~/Downloads` gets `EPERM` on the swap regardless of Unix permissions (TCC), so `Scripts/run.sh` builds under `~/Documents/GitHub/...` **cannot** self-update; that is expected, and the updater refuses with an explanatory error instead of failing mid-swap. Test the swap end to end from a copied bundle in a neutral folder.
+- **Update rate limits** — the GitHub API allows 60 requests/hour/IP. `UpdateHistoryStore.shouldCheckNow` throttles to 24h and `UserDefaultsETagStore` replays the `ETag` so a `304` costs nothing. Do not add polling loops that bypass the history store.
 - **Animations** use `CABasicAnimation` / `CAKeyframeAnimation` exclusively (GPU render-server, zero main thread cost). No `animator()` proxy, no `NSAnimationContext`. All animations gated behind `TaskbarSettings.animationsEnabled` (default `true`). Three animation types:
   - **Launch entry**: slide-up + fade-in on first appearance in taskbar (`viewDidMoveToWindow`). 300ms ease-out via `transform.translation.y` + `opacity`.
   - **Minimize bounce**: 667ms 3-keyframe elastic (`transform.translation.y` drop→overshoot→settle + `transform.scale.y` squash/stretch).
@@ -264,6 +290,7 @@ swift test
 
 ### When fixing bugs:
 - Check Accessibility permissions first (common root cause)
+- If the app seems stuck "updated but not working", suspect the TCC grant: an ad-hoc `cdhash` change invalidates Accessibility; the updater and `Scripts/install.sh` both call `tccutil reset` in that case
 - Verify AXObserver is registered for the PID in question
 - Ensure main thread dispatch for UI updates
 - Window list polling and AX events can race — handle gracefully

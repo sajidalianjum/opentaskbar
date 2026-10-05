@@ -98,3 +98,44 @@
 "settings.resetDefaults" = "デフォルトに戻す";
 "settings.language" = "言語";
 "settings.languageSystem" = "システムデフォルト";
+
+/* Auto update */
+
+"update.section" = "アップデート";
+"update.automaticChecks" = "アップデートを自動的に確認する";
+"update.installAutomatically" = "アップデートを自動的にダウンロードしてインストールする";
+"update.includePrereleases" = "プレリリース版を含める";
+"update.checkNow" = "アップデートを確認…";
+"update.installNow" = "アップデートをインストールして再起動";
+"update.status.idle" = "1 日 1 回確認します。";
+"update.status.checking" = "アップデートを確認しています…";
+"update.status.upToDate" = "OpenTaskbar %@ は最新です。";
+"update.status.available" = "バージョン %@ が利用できます。";
+"update.status.downloading" = "ダウンロードしています… %d%%";
+"update.status.installing" = "インストールしています…";
+"update.status.failed" = "アップデートに失敗しました: %@";
+"update.lastChecked" = "最終確認: %@";
+"update.lastCheckedNever" = "アップデートを確認したことはありません。";
+"update.menu.check" = "アップデートを確認…";
+"update.menu.checkWhileChecking" = "アップデートを確認しています…";
+"update.menu.install" = "%@ に更新して再起動…";
+"update.available.title" = "バージョン %@ へのアップデートが利用可能です。";
+"update.installAndRelaunch" = "インストールして再起動";
+"update.showReleaseNotes" = "リリースノート";
+"update.skipVersion" = "このバージョンをスキップ";
+"update.remindLater" = "後で通知";
+"update.failed.title" = "アップデートを確認できませんでした";
+"update.failed.message" = "OpenTaskbar はアップデートサーバーに接続できませんでした。";
+"update.error.offline" = "アップデートサーバーに接続できませんでした";
+"update.error.notModified" = "新しいリリースはありません。";
+"update.error.rateLimited" = "アップデートサーバーがリクエスト数を制限しています。しばらくしてから再試行してください。";
+"update.error.httpStatus" = "アップデートサーバーが HTTP %d を返しました。";
+"update.error.invalidResponse" = "アップデートサーバーの応答が予期しない内容でした。";
+"update.error.noAsset" = "このリリースには macOS 版のダウンロードが含まれていません。";
+"update.error.checksum" = "ダウンロードが公開されたチェックサムと一致しないため破棄しました。";
+"update.error.downloadFailed" = "ダウンロードに失敗しました";
+"update.error.unpackFailed" = "アップデートの展開に失敗しました";
+"update.error.validationFailed" = "ダウンロードしたアプリの検証に失敗しました";
+"update.error.notWritable" = "OpenTaskbar は置き換えできない場所 (%@) にインストールされています。インストーラーを再実行して更新してください。";
+"update.error.selfUpdateBlocked" = "macOS は、OpenTaskbar が %@ で自分自身を置き換えることを許可していません。macOS は書類、デスクトップ、ダウンロードなどのフォルダをアプリからの変更から保護しています。アプリ内更新を使うには、OpenTaskbar を /Applications に再インストールしてください。";
+"update.error.installFailed" = "アップデートをインストールできませんでした";

@@ -98,3 +98,44 @@
 "settings.resetDefaults" = "ڈیفالٹس پر ری سیٹ کریں";
 "settings.language" = "زبان";
 "settings.languageSystem" = "سسٹم ڈیفالٹ";
+
+/* Auto update */
+
+"update.section" = "اپ ڈیٹس";
+"update.automaticChecks" = "اپ ڈیٹ کے لیے خودکار طور پر چیک کریں";
+"update.installAutomatically" = "اپ ڈیٹس خودکار طور پر ڈاؤن لوڈ اور انسٹال کریں";
+"update.includePrereleases" = "پری ریلیز ورژن شامل کریں";
+"update.checkNow" = "اپ ڈیٹ چیک کریں…";
+"update.installNow" = "اپ ڈیٹ انسٹال کریں اور دوبارہ شروع کریں";
+"update.status.idle" = "روزانہ ایک بار چیک کیا جاتا ہے۔";
+"update.status.checking" = "اپ ڈیٹ چیک کیا جا رہا ہے…";
+"update.status.upToDate" = "OpenTaskbar %@ تازہ ترین ہے۔";
+"update.status.available" = "ورژن %@ دستیاب ہے۔";
+"update.status.downloading" = "ڈاؤن لوڈ ہو رہا ہے… %d%%";
+"update.status.installing" = "انسٹال ہو رہا ہے…";
+"update.status.failed" = "اپ ڈیٹ ناکام: %@";
+"update.lastChecked" = "آخری چیک: %@";
+"update.lastCheckedNever" = "اپ ڈیٹس کبھی چیک نہیں کیے گئے۔";
+"update.menu.check" = "اپ ڈیٹ چیک کریں…";
+"update.menu.checkWhileChecking" = "اپ ڈیٹ چیک کیا جا رہا ہے…";
+"update.menu.install" = "%@ پر اپ ڈیٹ کریں اور دوبارہ شروع کریں…";
+"update.available.title" = "ورژن %@ کے لیے اپ ڈیٹ دستیاب ہے۔";
+"update.installAndRelaunch" = "انسٹال کریں اور دوبارہ شروع کریں";
+"update.showReleaseNotes" = "ریلیز نوٹس";
+"update.skipVersion" = "اس ورژن کو چھوڑ دیں";
+"update.remindLater" = "مجھے بعد میں یاد دلائیں";
+"update.failed.title" = "اپ ڈیٹس چیک نہیں ہو سکے";
+"update.failed.message" = "OpenTaskbar اپ ڈیٹ سرور تک رسائی حاصل نہ کر سکا۔";
+"update.error.offline" = "اپ ڈیٹ سرور تک رسائی نہیں";
+"update.error.notModified" = "کوئی نیا ورژن دستیاب نہیں۔";
+"update.error.rateLimited" = "اپ ڈیٹ سرور درخواستوں کو محدود کر رہا ہے۔ کچھ دیر بعد دوبارہ کوشش کریں۔";
+"update.error.httpStatus" = "اپ ڈیٹ سرور نے HTTP %d لوٹایا۔";
+"update.error.invalidResponse" = "اپ ڈیٹ سرور سے غیر متوقع جواب موصول ہوا۔";
+"update.error.noAsset" = "اس ریلیز میں macOS ایپ ڈاؤن لوڈ شامل نہیں ہے۔";
+"update.error.checksum" = "ڈاؤن لوڈ اس کے شائع شدہ چیکسوم سے مطابقت نہیں رکھتا اور ضائع کر دیا گیا۔";
+"update.error.downloadFailed" = "ڈاؤن لوڈ ناکام";
+"update.error.unpackFailed" = "اپ ڈیٹ آرکائیو نہیں کھولا جا سکا";
+"update.error.validationFailed" = "ڈاؤن لوڈ کی گئی ایپ کی تصدیق ناکام رہی";
+"update.error.notWritable" = "OpenTaskbar ایسی جگہ نصب ہے جسے بدلا نہیں جا سکتا (%@)۔ اپ ڈیٹ کے لیے انسٹالر دوبارہ چلائیں۔";
+"update.error.selfUpdateBlocked" = "macOS کو اجازت نہیں دیتا کہ OpenTaskbar %@ پر اپنے آپ کو بدل سکے۔ macOS دستاویات، ڈیسک ٹاپ اور ڈاؤن لوڈز جیسے فولڈرز کو ایپس کی تبدیلی سے محفوظ رکھتا ہے۔ ایپ کے اندر اپ ڈیٹ فعال کرنے کے لیے OpenTaskbar کو ‎/Applications میں دوبارہ انسٹال کریں۔";
+"update.error.installFailed" = "اپ ڈیٹ انسٹال نہیں ہو سکا";

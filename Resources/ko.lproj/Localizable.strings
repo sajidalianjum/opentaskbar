@@ -98,3 +98,44 @@
 "settings.resetDefaults" = "기본값으로 재설정";
 "settings.language" = "언어";
 "settings.languageSystem" = "시스템 기본값";
+
+/* Auto update */
+
+"update.section" = "업데이트";
+"update.automaticChecks" = "자동으로 업데이트 확인";
+"update.installAutomatically" = "업데이트 자동 다운로드 및 설치";
+"update.includePrereleases" = "프리릴리스 버전 포함";
+"update.checkNow" = "업데이트 확인…";
+"update.installNow" = "업데이트 설치 후 다시 시작";
+"update.status.idle" = "하루 한 번 확인합니다.";
+"update.status.checking" = "업데이트 확인 중…";
+"update.status.upToDate" = "OpenTaskbar %@(으)로 최신 상태입니다.";
+"update.status.available" = "%@ 버전이 있습니다.";
+"update.status.downloading" = "내려받는 중… %d%%";
+"update.status.installing" = "설치 중…";
+"update.status.failed" = "업데이트 실패: %@";
+"update.lastChecked" = "마지막 확인: %@";
+"update.lastCheckedNever" = "업데이트를 확인한 적이 없습니다.";
+"update.menu.check" = "업데이트 확인…";
+"update.menu.checkWhileChecking" = "업데이트 확인 중…";
+"update.menu.install" = "%@ (으)로 업데이트 후 다시 시작…";
+"update.available.title" = "%@ 버전 업데이트를 사용할 수 있습니다.";
+"update.installAndRelaunch" = "설치 후 다시 시작";
+"update.showReleaseNotes" = "릴리스 노트";
+"update.skipVersion" = "이 버전 건너뛰기";
+"update.remindLater" = "나중에 알림";
+"update.failed.title" = "업데이트를 확인할 수 없습니다";
+"update.failed.message" = "OpenTaskbar가 업데이트 서버에 연결하지 못했습니다.";
+"update.error.offline" = "업데이트 서버에 연결할 수 없습니다";
+"update.error.notModified" = "더 최신 릴리스가 없습니다.";
+"update.error.rateLimited" = "업데이트 서버가 요청을 제한하고 있습니다. 잠시 후 다시 시도하세요.";
+"update.error.httpStatus" = "업데이트 서버가 HTTP %d 을(를) 반환했습니다.";
+"update.error.invalidResponse" = "업데이트 서버에서 예상치 못한 응답이 왔습니다.";
+"update.error.noAsset" = "이 릴리스에는 macOS 앱 다운로드가 포함되어 있지 않습니다.";
+"update.error.checksum" = "다운로드한 파일의 게시된 체크섬과 일치하지 않아 삭제되었습니다.";
+"update.error.downloadFailed" = "다운로드 실패";
+"update.error.unpackFailed" = "업데이트 아카이브를 풀 수 없습니다";
+"update.error.validationFailed" = "다운로드한 앱이 검증에 실패했습니다";
+"update.error.notWritable" = "OpenTaskbar가 교체할 수 없는 위치(%@)에 설치되어 있습니다. 설치 스크립트를 다시 실행하여 업데이트하세요.";
+"update.error.selfUpdateBlocked" = "macOS는 OpenTaskbar가 %@에서 자신을 교체하도록 허용하지 않습니다. macOS는 문서, 데스크탑, 다운로드 같은 폴더를 앱의 변경으로부터 보호합니다. 앱 내 업데이트를 사용하려면 OpenTaskbar를 /Applications에 다시 설치하세요.";
+"update.error.installFailed" = "업데이트를 설치할 수 없습니다";

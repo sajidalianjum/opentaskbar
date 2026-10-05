@@ -106,6 +106,45 @@ enum L10n {
         case settingsResetDefaults = "settings.resetDefaults"
         case settingsLanguage = "settings.language"
         case settingsLanguageSystem = "settings.languageSystem"
+
+        case updateSection = "update.section"
+        case updateAutomaticChecks = "update.automaticChecks"
+        case updateInstallAutomatically = "update.installAutomatically"
+        case updateIncludePrereleases = "update.includePrereleases"
+        case updateCheckNow = "update.checkNow"
+        case updateInstallNow = "update.installNow"
+        case updateStatusIdle = "update.status.idle"
+        case updateStatusChecking = "update.status.checking"
+        case updateStatusUpToDate = "update.status.upToDate"
+        case updateStatusAvailable = "update.status.available"
+        case updateStatusDownloading = "update.status.downloading"
+        case updateStatusInstalling = "update.status.installing"
+        case updateStatusFailed = "update.status.failed"
+        case updateLastChecked = "update.lastChecked"
+        case updateLastCheckedNever = "update.lastCheckedNever"
+        case updateMenuCheck = "update.menu.check"
+        case updateMenuCheckWhileChecking = "update.menu.checkWhileChecking"
+        case updateMenuInstall = "update.menu.install"
+        case updateAvailableTitle = "update.available.title"
+        case updateInstallAndRelaunch = "update.installAndRelaunch"
+        case updateShowReleaseNotes = "update.showReleaseNotes"
+        case updateSkipVersion = "update.skipVersion"
+        case updateRemindLater = "update.remindLater"
+        case updateFailedTitle = "update.failed.title"
+        case updateFailedMessage = "update.failed.message"
+        case updateErrorOffline = "update.error.offline"
+        case updateErrorNotModified = "update.error.notModified"
+        case updateErrorRateLimited = "update.error.rateLimited"
+        case updateErrorHTTPStatus = "update.error.httpStatus"
+        case updateErrorInvalidResponse = "update.error.invalidResponse"
+        case updateErrorNoAsset = "update.error.noAsset"
+        case updateErrorChecksum = "update.error.checksum"
+        case updateErrorDownloadFailed = "update.error.downloadFailed"
+        case updateErrorUnpackFailed = "update.error.unpackFailed"
+        case updateErrorValidationFailed = "update.error.validationFailed"
+        case updateErrorNotWritable = "update.error.notWritable"
+        case updateErrorSelfUpdateBlocked = "update.error.selfUpdateBlocked"
+        case updateErrorInstallFailed = "update.error.installFailed"
     }
 
     private static var languageOverride: String?
@@ -545,5 +584,168 @@ enum L10n {
 
     private static func localizedNumber(_ value: Int) -> String {
         number(value)
+    }
+
+    static var updateSection: String {
+        text(.updateSection, fallback: "Updates")
+    }
+
+    static var updateAutomaticChecks: String {
+        text(.updateAutomaticChecks, fallback: "Automatically Check for Updates")
+    }
+
+    static var updateInstallAutomatically: String {
+        text(.updateInstallAutomatically, fallback: "Download and Install Updates Automatically")
+    }
+
+    static var updateIncludePrereleases: String {
+        text(.updateIncludePrereleases, fallback: "Include Pre-release Versions")
+    }
+
+    static var updateCheckNow: String {
+        text(.updateCheckNow, fallback: "Check for Updates…")
+    }
+
+    static var updateInstallNow: String {
+        text(.updateInstallNow, fallback: "Install Update and Relaunch")
+    }
+
+    static var updateStatusIdle: String {
+        text(.updateStatusIdle, fallback: "Checked once a day.")
+    }
+
+    static var updateStatusChecking: String {
+        text(.updateStatusChecking, fallback: "Checking for updates…")
+    }
+
+    static func updateStatusUpToDate(_ version: String) -> String {
+        format(.updateStatusUpToDate, fallback: "OpenTaskbar %@ is up to date.", version)
+    }
+
+    static func updateStatusAvailable(_ version: String) -> String {
+        format(.updateStatusAvailable, fallback: "Version %@ is available.", version)
+    }
+
+    static func updateStatusDownloading(_ percent: Int) -> String {
+        format(.updateStatusDownloading, fallback: "Downloading… %d%%", percent)
+    }
+
+    static var updateStatusInstalling: String {
+        text(.updateStatusInstalling, fallback: "Installing…")
+    }
+
+    static func updateStatusFailed(_ reason: String) -> String {
+        format(.updateStatusFailed, fallback: "Update failed: %@", reason)
+    }
+
+    static func updateLastChecked(_ date: Date) -> String {
+        let formatter = DateFormatter()
+        formatter.dateStyle = .medium
+        formatter.timeStyle = .short
+        return format(.updateLastChecked, fallback: "Last checked: %@", formatter.string(from: date))
+    }
+
+    static var updateLastCheckedNever: String {
+        text(.updateLastCheckedNever, fallback: "Never checked for updates.")
+    }
+
+    static var updateMenuCheck: String {
+        text(.updateMenuCheck, fallback: "Check for Updates…")
+    }
+
+    static var updateMenuCheckWhileChecking: String {
+        text(.updateMenuCheckWhileChecking, fallback: "Checking for Updates…")
+    }
+
+    static func updateMenuInstall(_ version: String) -> String {
+        format(.updateMenuInstall, fallback: "Update to %@ and Relaunch…", version)
+    }
+
+    static func updateAvailableTitle(_ version: String) -> String {
+        format(.updateAvailableTitle, fallback: "An update to %@ is available.", version)
+    }
+
+    static var updateInstallAndRelaunch: String {
+        text(.updateInstallAndRelaunch, fallback: "Install and Relaunch")
+    }
+
+    static var updateShowReleaseNotes: String {
+        text(.updateShowReleaseNotes, fallback: "Release Notes")
+    }
+
+    static var updateSkipVersion: String {
+        text(.updateSkipVersion, fallback: "Skip This Version")
+    }
+
+    static var updateRemindLater: String {
+        text(.updateRemindLater, fallback: "Remind Me Later")
+    }
+
+    static var updateFailedTitle: String {
+        text(.updateFailedTitle, fallback: "Could Not Check for Updates")
+    }
+
+    static var updateFailedMessage: String {
+        text(.updateFailedMessage, fallback: "OpenTaskbar could not reach the update server.")
+    }
+
+    static var updateErrorOffline: String {
+        text(.updateErrorOffline, fallback: "Could not reach the update server")
+    }
+
+    static var updateErrorNotModified: String {
+        text(.updateErrorNotModified, fallback: "No newer release is available.")
+    }
+
+    static var updateErrorRateLimited: String {
+        text(.updateErrorRateLimited, fallback: "The update server is rate limiting requests. Try again later.")
+    }
+
+    static func updateErrorHTTPStatus(_ code: Int) -> String {
+        format(.updateErrorHTTPStatus, fallback: "The update server returned HTTP %d.", code)
+    }
+
+    static var updateErrorInvalidResponse: String {
+        text(.updateErrorInvalidResponse, fallback: "The update server returned an unexpected response.")
+    }
+
+    static var updateErrorNoAsset: String {
+        text(.updateErrorNoAsset, fallback: "This release does not contain a macOS app download.")
+    }
+
+    static var updateErrorChecksum: String {
+        text(.updateErrorChecksum, fallback: "The download did not match its published checksum and was discarded.")
+    }
+
+    static var updateErrorDownloadFailed: String {
+        text(.updateErrorDownloadFailed, fallback: "The download failed")
+    }
+
+    static var updateErrorUnpackFailed: String {
+        text(.updateErrorUnpackFailed, fallback: "The update archive could not be unpacked")
+    }
+
+    static var updateErrorValidationFailed: String {
+        text(.updateErrorValidationFailed, fallback: "The downloaded app failed verification")
+    }
+
+    static func updateErrorNotWritable(_ path: String) -> String {
+        format(
+            .updateErrorNotWritable,
+            fallback: "OpenTaskbar is installed at a location that cannot be replaced (%@). Re-run Scripts/install.sh or reinstall to update.",
+            path
+        )
+    }
+
+    static func updateErrorSelfUpdateBlocked(_ path: String) -> String {
+        format(
+            .updateErrorSelfUpdateBlocked,
+            fallback: "macOS does not allow OpenTaskbar to replace itself at %@. macOS protects folders like Documents, Desktop and Downloads from being modified by apps. Reinstall OpenTaskbar into /Applications to enable in-app updates.",
+            path
+        )
+    }
+
+    static var updateErrorInstallFailed: String {
+        text(.updateErrorInstallFailed, fallback: "The update could not be installed")
     }
 }

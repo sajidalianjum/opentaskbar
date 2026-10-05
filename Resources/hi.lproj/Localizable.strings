@@ -98,3 +98,44 @@
 "settings.resetDefaults" = "डिफ़ॉल्ट पर रीसेट करें";
 "settings.language" = "भाषा";
 "settings.languageSystem" = "सिस्टम डिफ़ॉल्ट";
+
+/* Auto update */
+
+"update.section" = "अपडेट";
+"update.automaticChecks" = "अपडेट के लिए स्वतः जाँच करें";
+"update.installAutomatically" = "अपडेट स्वतः डाउनलोड और इंस्टॉल करें";
+"update.includePrereleases" = "प्री-रिलीज़ संस्करण शामिल करें";
+"update.checkNow" = "अपडेट की जाँच करें…";
+"update.installNow" = "अपडेट इंस्टॉल करें और पुनः आरंभ करें";
+"update.status.idle" = "दिन में एक बार जाँचा जाता है।";
+"update.status.checking" = "अपडेट की जाँच हो रही है…";
+"update.status.upToDate" = "OpenTaskbar %@ अद्यतित है।";
+"update.status.available" = "संस्करण %@ उपलब्ध है।";
+"update.status.downloading" = "डाउनलोड हो रहा है… %d%%";
+"update.status.installing" = "इंस्टॉल हो रहा है…";
+"update.status.failed" = "अपडेट विफल: %@";
+"update.lastChecked" = "अंतिम जाँच: %@";
+"update.lastCheckedNever" = "अपडेट की जाँच कभी नहीं की गई।";
+"update.menu.check" = "अपडेट की जाँच करें…";
+"update.menu.checkWhileChecking" = "अपडेट की जाँच हो रही है…";
+"update.menu.install" = "%@ पर अपडेट करें और पुनः आरंभ करें…";
+"update.available.title" = "संस्करण %@ के लिए अपडेट उपलब्ध है।";
+"update.installAndRelaunch" = "इंस्टॉल करें और पुनः आरंभ करें";
+"update.showReleaseNotes" = "रिलीज़ नोट्स";
+"update.skipVersion" = "इस संस्करण को छोड़ें";
+"update.remindLater" = "मुझे बाद में याद दिलाएँ";
+"update.failed.title" = "अपडेट की जाँच नहीं हो सकी";
+"update.failed.message" = "OpenTaskbar अपडेट सर्वर तक नहीं पहुँच सका।";
+"update.error.offline" = "अपडेट सर्वर तक नहीं पहुँचा जा सका";
+"update.error.notModified" = "कोई नया संस्करण उपलब्ध नहीं है।";
+"update.error.rateLimited" = "अपडेट सर्वर अनुरोधों को सीमित कर रहा है। बाद में पुनः प्रयास करें।";
+"update.error.httpStatus" = "अपडेट सर्वर ने HTTP %d लौटाया।";
+"update.error.invalidResponse" = "अपडेट सर्वर से अप्रत्याशित प्रतिक्रिया मिली।";
+"update.error.noAsset" = "इस रिलीज़ में macOS ऐप डाउनलोड शामिल नहीं है।";
+"update.error.checksum" = "डाउनलोड उसके प्रकाशित चेकसम से मेल नहीं खाता और उसे छोड़ दिया गया।";
+"update.error.downloadFailed" = "डाउनलोड विफल";
+"update.error.unpackFailed" = "अपडेट संग्रह को निकाला नहीं जा सका";
+"update.error.validationFailed" = "डाउनलोड की गई ऐप सत्यापन में विफल रही";
+"update.error.notWritable" = "OpenTaskbar ऐसी जगह स्थापित है जिसे बदला नहीं जा सकता (%@)। अपडेट करने के लिए इंस्टॉलर फिर चलाएँ।";
+"update.error.selfUpdateBlocked" = "macOS OpenTaskbar को %@ पर खुद को बदलने की अनुमति नहीं देता। macOS दस्तावेज़ों, डेस्कटॉप और डाउनलोड्स जैसे फ़ोल्डर को ऐप्स द्वारा बदलने से सुरक्षित रखता है। ऐप में अपडेट चालू करने के लिए OpenTaskbar को /Applications में पुनः इंस्टॉल करें।";
+"update.error.installFailed" = "अपडेट इंस्टॉल नहीं हो सका";

@@ -98,3 +98,44 @@
 "settings.resetDefaults" = "إعادة التعيين إلى الإعدادات الافتراضية";
 "settings.language" = "اللغة";
 "settings.languageSystem" = "افتراضي النظام";
+
+/* Auto update */
+
+"update.section" = "التحديثات";
+"update.automaticChecks" = "البحث عن التحديثات تلقائيًا";
+"update.installAutomatically" = "تنزيل التحديثات وتثبيتها تلقائيًا";
+"update.includePrereleases" = "تضمين الإصدارات الأولية";
+"update.checkNow" = "البحث عن تحديثات…";
+"update.installNow" = "تثبيت التحديث وإعادة التشغيل";
+"update.status.idle" = "تُفحص مرة واحدة يوميًا.";
+"update.status.checking" = "جارٍ البحث عن تحديثات…";
+"update.status.upToDate" = "‏OpenTaskbar %@ محدَّث بالفعل.";
+"update.status.available" = "الإصدار %@ متاح.";
+"update.status.downloading" = "جارٍ التنزيل… %d%%";
+"update.status.installing" = "جارٍ التثبيت…";
+"update.status.failed" = "فشل التحديث: %@";
+"update.lastChecked" = "آخر بحث: %@";
+"update.lastCheckedNever" = "لم يتم البحث عن تحديثات من قبل.";
+"update.menu.check" = "البحث عن تحديثات…";
+"update.menu.checkWhileChecking" = "جارٍ البحث عن تحديثات…";
+"update.menu.install" = "التحديث إلى %@ وإعادة التشغيل…";
+"update.available.title" = "يتوفر تحديث إلى الإصدار %@.";
+"update.installAndRelaunch" = "تثبيت وإعادة التشغيل";
+"update.showReleaseNotes" = "ملاحظات الإصدار";
+"update.skipVersion" = "تخطّي هذا الإصدار";
+"update.remindLater" = "تذكيري لاحقًا";
+"update.failed.title" = "تعذّر البحث عن التحديثات";
+"update.failed.message" = "لم يستطع OpenTaskbar الوصول إلى خادم التحديثات.";
+"update.error.offline" = "تعذّر الوصول إلى خادم التحديثات";
+"update.error.notModified" = "لا يوجد إصدار أحدث متاح.";
+"update.error.rateLimited" = "يحدّ خادم التحديثات من عدد الطلبات. حاول مرة أخرى لاحقًا.";
+"update.error.httpStatus" = "أعاد خادم التحديثات HTTP %d.";
+"update.error.invalidResponse" = "أعاد خادم التحديثات استجابة غير متوقعة.";
+"update.error.noAsset" = "لا يتضمن هذا الإصدار تنزيل تطبيق macOS.";
+"update.error.checksum" = "لم يطابق الملف المُنزَّل مجموع التحقق المنشور وتم التخلص منه.";
+"update.error.downloadFailed" = "فشل التنزيل";
+"update.error.unpackFailed" = "تعذّر فك ضغط أرشيف التحديث";
+"update.error.validationFailed" = "فشل التطبيق المُنزَّل في التحقق";
+"update.error.notWritable" = "‏OpenTaskbar مثبَّت في موقع لا يمكن استبداله (%@). أعد تشغيل برنامج التثبيت للتحديث.";
+"update.error.selfUpdateBlocked" = "لا يسمح لـ macOS بتطبيق OpenTaskbar باستبدال نفسه في %@. يحمي macOS مجلدات مثل المستندات وسطح المكتب والتنزيلات من تعديل التطبيقات. أعد تثبيت OpenTaskbar في ‎/Applications لتفعيل التحديثات داخل التطبيق.";
+"update.error.installFailed" = "تعذّر تثبيت التحديث";

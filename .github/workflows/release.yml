@@ -79,6 +79,7 @@ jobs:
           echo "tag=v${VER}" >> "$GITHUB_OUTPUT"
           echo "zip=build/OpenTaskbar-${VER}.zip" >> "$GITHUB_OUTPUT"
           echo "alias=build/OpenTaskbar.zip" >> "$GITHUB_OUTPUT"
+          echo "checksum=build/OpenTaskbar-${VER}.zip.sha256" >> "$GITHUB_OUTPUT"
 
       - name: Verify bundle
         run: |
@@ -103,6 +104,7 @@ jobs:
           files: |
             ${{ steps.artifact.outputs.zip }}
             ${{ steps.artifact.outputs.alias }}
+            ${{ steps.artifact.outputs.checksum }}
             Scripts/install.sh
           generate_release_notes: true
           fail_on_unmatched_files: true
@@ -121,3 +123,7 @@ jobs:
 
             > After updating, Accessibility / Screen Recording permissions may
             > need to be re-granted once. Settings in UserDefaults are kept.
+            >
+            > Installed copies also update themselves: OpenTaskbar checks the
+            > release feed once a day and offers to install and relaunch.
+            > (Preferences > Updates, or the menu bar > Check for Updates…)

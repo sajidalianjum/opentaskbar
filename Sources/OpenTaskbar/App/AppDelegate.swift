@@ -14,7 +14,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     func applicationDidFinishLaunching(_ notification: Notification) {
-        Logger.shared.log("Launching OpenTaskbar (pid \(ProcessInfo.processInfo.processIdentifier), bundle \(Bundle.main.bundleIdentifier ?? "unknown"))")
+        Logger.shared.log("Launching OpenTaskbar (pid \(ProcessInfo.processInfo.processIdentifier), bundle \(Bundle.main.bundleIdentifier ?? "unknown"), path \(Bundle.main.bundleURL.path), version \(Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "unknown"))")
 
         guard SingleInstanceLock.acquire() else {
             Logger.shared.log("Another OpenTaskbar instance already holds the lock; terminating this launch")
@@ -70,6 +70,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         createTaskbarPanels()
         windowManager.start()
         setupStatusItem()
+        setupAutoUpdate()
 
         NotificationCenter.default.addObserver(
             forName: TaskbarSettings.settingsDidChange,
@@ -78,6 +79,38 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         ) { [weak self] _ in
             self?.rebuildStatusMenu()
         }
+    }
+
+    private var lastAutoCheckSetting: Bool?
+
+    private func setupAutoUpdate() {
+        lastAutoCheckSetting = settings.autoCheckForUpdates
+
+        UpdateManager.shared.onStatusChange = { [weak self] _ in
+            self?.rebuildStatusMenu()
+        }
+        // Enabling or disabling automatic checks has to reschedule the launch
+        // check, which lives in the updater.
+        NotificationCenter.default.addObserver(
+            forName: TaskbarSettings.settingsDidChange,
+            object: nil,
+            queue: .main
+        ) { [weak self] _ in
+            guard let self, self.lastAutoCheckSetting != self.settings.autoCheckForUpdates else { return }
+            self.lastAutoCheckSetting = self.settings.autoCheckForUpdates
+            UpdateManager.shared.start()
+            self.rebuildStatusMenu()
+        }
+        // Restoring the Dock before exiting keeps the new instance's hide/show
+        // cycle intact: it re-saves state and hides the Dock again on launch.
+        UpdateManager.shared.onReadyToRelaunch = { [weak self] in
+            guard let self else { return }
+            Logger.shared.log("Update staged; restoring the Dock and terminating for relaunch")
+            self.dockManager.restoreDock()
+            NSApp.terminate(nil)
+        }
+        UpdatePresenter.shared.start()
+        UpdateManager.shared.start()
     }
 
     private func createTaskbarPanels() {
@@ -185,12 +218,49 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     private func rebuildStatusMenu() {
         let menu = NSMenu()
+
+        let updater = UpdateManager.shared
+        if let release = updater.pendingRelease {
+            let item = NSMenuItem(
+                title: L10n.updateMenuInstall(release.tagName),
+                action: #selector(installUpdateFromMenu),
+                keyEquivalent: ""
+            )
+            menu.addItem(item)
+        }
+
+        let checkItem = NSMenuItem(
+            title: updater.status.isBusy ? L10n.updateMenuCheckWhileChecking : L10n.updateMenuCheck,
+            action: #selector(checkForUpdatesFromMenu),
+            keyEquivalent: ""
+        )
+        checkItem.isEnabled = !updater.status.isBusy
+        menu.addItem(checkItem)
+
+        menu.addItem(NSMenuItem.separator())
         menu.addItem(NSMenuItem(title: L10n.aboutOpenTaskbar, action: #selector(showAbout), keyEquivalent: ""))
         menu.addItem(NSMenuItem.separator())
         menu.addItem(NSMenuItem(title: L10n.preferences, action: #selector(showPreferences), keyEquivalent: ","))
         menu.addItem(NSMenuItem.separator())
         menu.addItem(NSMenuItem(title: L10n.restoreDockAndQuit, action: #selector(restoreAndQuit), keyEquivalent: "q"))
+
+        let hasUpdate = updater.pendingRelease != nil
+        if let button = statusItem?.button {
+            button.toolTip = hasUpdate
+                ? L10n.updateAvailableTitle(updater.pendingRelease?.tagName ?? "")
+                : L10n.aboutOpenTaskbar
+        }
         statusItem?.menu = menu
+    }
+
+    @objc private func checkForUpdatesFromMenu() {
+        UpdatePresenter.shared.checkForUpdates()
+        rebuildStatusMenu()
+    }
+
+    @objc private func installUpdateFromMenu() {
+        UpdatePresenter.shared.installPendingUpdate()
+        rebuildStatusMenu()
     }
 
     @objc private func showAbout() {

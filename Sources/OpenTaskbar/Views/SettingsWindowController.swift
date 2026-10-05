@@ -14,6 +14,9 @@ final class SettingsWindowController {
     private var colorRowHeight: NSLayoutConstraint?
     private weak var spacingValueLabel: NSTextField?
     private weak var iconSizeValueLabel: NSTextField?
+    private weak var updateStatusLabel: NSTextField?
+    private weak var updateButton: NSButton?
+    private var updateObserver: NSObjectProtocol?
 
     private init() {}
 
@@ -57,8 +60,74 @@ final class SettingsWindowController {
         setupControls(in: contentView)
 
         self.window = window
+        observeUpdateState()
         window.makeKeyAndOrderFront(nil)
         NSApp.activate(ignoringOtherApps: true)
+    }
+
+    private func observeUpdateState() {
+        if let updateObserver {
+            NotificationCenter.default.removeObserver(updateObserver)
+        }
+        updateObserver = NotificationCenter.default.addObserver(
+            forName: UpdateManager.statusDidChange,
+            object: nil,
+            queue: .main
+        ) { [weak self] _ in
+            self?.refreshUpdateControls()
+        }
+        refreshUpdateControls()
+    }
+
+    private func refreshUpdateControls() {
+        let manager = UpdateManager.shared
+        let status = manager.status
+
+        updateStatusLabel?.stringValue = updateStatusText(for: status)
+        updateStatusLabel?.textColor = {
+            if case .failed = status { return NSColor.secondaryLabelColor }
+            return NSColor.tertiaryLabelColor
+        }()
+
+        if case .updateAvailable(let release) = status {
+            updateButton?.title = L10n.updateInstallNow
+            updateButton?.isEnabled = true
+            updateButton?.isHidden = false
+            updateButton?.tag = 1
+            updateButton?.toolTip = L10n.updateAvailableTitle(release.tagName)
+        } else {
+            updateButton?.title = L10n.updateCheckNow
+            updateButton?.toolTip = nil
+            updateButton?.tag = 0
+            updateButton?.isHidden = false
+            updateButton?.isEnabled = !status.isBusy
+        }
+    }
+
+    private func updateStatusText(for status: UpdateManager.Status) -> String {
+        switch status {
+        case .idle:
+            return managerLastCheckedText()
+        case .checking:
+            return L10n.updateStatusChecking
+        case .upToDate:
+            return L10n.updateStatusUpToDate(UpdateManager.shared.currentVersionDescription)
+        case .updateAvailable(let release):
+            return L10n.updateStatusAvailable(release.tagName)
+        case .downloading(_, let fraction):
+            return L10n.updateStatusDownloading(Int((fraction * 100).rounded()))
+        case .installing:
+            return L10n.updateStatusInstalling
+        case .failed(let error):
+            return L10n.updateStatusFailed(error.errorDescription ?? L10n.updateFailedMessage)
+        }
+    }
+
+    private func managerLastCheckedText() -> String {
+        guard let last = UpdateManager.shared.lastCheckDate else {
+            return L10n.updateLastCheckedNever
+        }
+        return L10n.updateLastChecked(last)
     }
 
     private func setupControls(in view: NSView) {
@@ -299,6 +368,42 @@ final class SettingsWindowController {
 
         separator()
 
+        // ─── Updates ───
+        section(L10n.updateSection)
+
+        checkbox(L10n.updateAutomaticChecks, action: #selector(autoUpdateCheckChanged(_:)), state: settings.autoCheckForUpdates ? .on : .off)
+        checkbox(L10n.updateInstallAutomatically, action: #selector(autoInstallUpdatesChanged(_:)), state: settings.installUpdatesAutomatically ? .on : .off)
+        checkbox(L10n.updateIncludePrereleases, action: #selector(prereleaseUpdatesChanged(_:)), state: settings.includePrereleaseUpdates ? .on : .off)
+
+        let updateBtn = NSButton(title: L10n.updateCheckNow, target: self, action: #selector(updateButtonPressed(_:)))
+        updateBtn.bezelStyle = .rounded
+        updateBtn.tag = 0
+        updateBtn.translatesAutoresizingMaskIntoConstraints = false
+        view.addSubview(updateBtn)
+        NSLayoutConstraint.activate([
+            updateBtn.topAnchor.constraint(equalTo: prev?.bottomAnchor ?? view.topAnchor, constant: rowGap),
+            updateBtn.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: hPad),
+            updateBtn.widthAnchor.constraint(equalToConstant: 200),
+            updateBtn.heightAnchor.constraint(equalToConstant: 28),
+        ])
+        prev = updateBtn
+        updateButton = updateBtn
+
+        let statusLabel = NSTextField(wrappingLabelWithString: "")
+        statusLabel.font = NSFont.systemFont(ofSize: 11)
+        statusLabel.textColor = NSColor.tertiaryLabelColor
+        statusLabel.translatesAutoresizingMaskIntoConstraints = false
+        view.addSubview(statusLabel)
+        NSLayoutConstraint.activate([
+            statusLabel.topAnchor.constraint(equalTo: prev?.bottomAnchor ?? view.topAnchor, constant: 6),
+            statusLabel.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: hPad),
+            statusLabel.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -hPad),
+        ])
+        prev = statusLabel
+        updateStatusLabel = statusLabel
+
+        separator()
+
         let resetBtn = NSButton(title: L10n.resetDefaults, target: self, action: #selector(resetDefaults))
         resetBtn.bezelStyle = .rounded
         resetBtn.translatesAutoresizingMaskIntoConstraints = false
@@ -419,6 +524,27 @@ final class SettingsWindowController {
         settings.customBackgroundColor = sender.color
     }
 
+    @objc private func autoUpdateCheckChanged(_ sender: NSButton) {
+        settings.autoCheckForUpdates = sender.state == .on
+    }
+
+    @objc private func autoInstallUpdatesChanged(_ sender: NSButton) {
+        settings.installUpdatesAutomatically = sender.state == .on
+    }
+
+    @objc private func prereleaseUpdatesChanged(_ sender: NSButton) {
+        settings.includePrereleaseUpdates = sender.state == .on
+    }
+
+    @objc private func updateButtonPressed(_ sender: NSButton) {
+        if sender.tag == 1 {
+            UpdatePresenter.shared.installPendingUpdate()
+        } else {
+            UpdatePresenter.shared.checkForUpdates()
+        }
+        refreshUpdateControls()
+    }
+
     @objc private func resetDefaults() {
         settings.beginBatchUpdates()
         settings.showThumbnails = false
@@ -436,6 +562,9 @@ final class SettingsWindowController {
         settings.animationsEnabled = true
         settings.constrainZoomedWindows = false
         settings.showRunningAppsWithoutWindows = false
+        settings.autoCheckForUpdates = true
+        settings.installUpdatesAutomatically = false
+        settings.includePrereleaseUpdates = false
         settings.backgroundTheme = .system
         settings.customBackgroundColor = NSColor(calibratedRed: 0.15, green: 0.15, blue: 0.2, alpha: 1.0)
         settings.language = ""

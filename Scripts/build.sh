@@ -131,14 +131,20 @@ VERSION="$(/usr/libexec/PlistBuddy -c "Print :CFBundleShortVersionString" "${APP
 ZIP="${PROJECT_DIR}/build/${APP_NAME}-${VERSION}.zip"
 # Version-less alias so installers can use the stable `releases/latest/download` URL.
 ALIAS="${PROJECT_DIR}/build/${APP_NAME}.zip"
-rm -f "${ZIP}" "${ALIAS}"
+# Checksum sidecar: the in-app updater verifies the download against this when
+# GitHub's asset `digest` field is unavailable. `shasum` prints
+# "<hex>  <file>"; only the hash is published on its own line.
+CHECKSUM="${ZIP}.sha256"
+rm -f "${ZIP}" "${ALIAS}" "${CHECKSUM}"
 ditto -c -k --keepParent "${APP_BUNDLE}" "${ZIP}"
 cp -f "${ZIP}" "${ALIAS}"
+shasum -a 256 "${ZIP}" | awk '{print $1}' > "${CHECKSUM}"
 
 echo ""
 echo "Build complete: ${APP_BUNDLE}"
 echo "Release artifact: ${ZIP}"
 echo "Stable alias:     ${ALIAS}"
+echo "Checksum:         ${CHECKSUM}"
 echo ""
 echo "To run: open \"${APP_BUNDLE}\""
 echo ""

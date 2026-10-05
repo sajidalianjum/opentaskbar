@@ -36,5 +36,9 @@
     <true/>
     <key>CFBundleIconFile</key>
     <string>OpenTaskbar</string>
+    <key>OpenTaskbarReleaseAPIBase</key>
+    <string>https://api.github.com/repos/sajidalianjum/opentaskbar/releases/latest</string>
+    <key>OpenTaskbarReleasesPageURL</key>
+    <string>https://github.com/sajidalianjum/opentaskbar/releases/latest</string>
 </dict>
 </plist>

@@ -99,3 +99,44 @@
 "settings.resetDefaults" = "Reset to Defaults";
 "settings.language" = "Language";
 "settings.languageSystem" = "System Default";
+
+/* Auto update */
+
+"update.section" = "Updates";
+"update.automaticChecks" = "Automatically Check for Updates";
+"update.installAutomatically" = "Download and Install Updates Automatically";
+"update.includePrereleases" = "Include Pre-release Versions";
+"update.checkNow" = "Check for Updates…";
+"update.installNow" = "Install Update and Relaunch";
+"update.status.idle" = "Checked once a day.";
+"update.status.checking" = "Checking for updates…";
+"update.status.upToDate" = "OpenTaskbar %@ is up to date.";
+"update.status.available" = "Version %@ is available.";
+"update.status.downloading" = "Downloading… %d%%";
+"update.status.installing" = "Installing…";
+"update.status.failed" = "Update failed: %@";
+"update.lastChecked" = "Last checked: %@";
+"update.lastCheckedNever" = "Never checked for updates.";
+"update.menu.check" = "Check for Updates…";
+"update.menu.checkWhileChecking" = "Checking for Updates…";
+"update.menu.install" = "Update to %@ and Relaunch…";
+"update.available.title" = "An update to %@ is available.";
+"update.installAndRelaunch" = "Install and Relaunch";
+"update.showReleaseNotes" = "Release Notes";
+"update.skipVersion" = "Skip This Version";
+"update.remindLater" = "Remind Me Later";
+"update.failed.title" = "Could Not Check for Updates";
+"update.failed.message" = "OpenTaskbar could not reach the update server.";
+"update.error.offline" = "Could not reach the update server";
+"update.error.notModified" = "No newer release is available.";
+"update.error.rateLimited" = "The update server is rate limiting requests. Try again later.";
+"update.error.httpStatus" = "The update server returned HTTP %d.";
+"update.error.invalidResponse" = "The update server returned an unexpected response.";
+"update.error.noAsset" = "This release does not include a macOS app download.";
+"update.error.checksum" = "The download did not match its published checksum and was discarded.";
+"update.error.downloadFailed" = "The download failed";
+"update.error.unpackFailed" = "The update archive could not be unpacked";
+"update.error.validationFailed" = "The downloaded app failed verification";
+"update.error.notWritable" = "OpenTaskbar is installed in a location that cannot be replaced (%@). Re-run the installer to update.";
+"update.error.selfUpdateBlocked" = "macOS does not allow OpenTaskbar to replace itself at %@. macOS protects folders like Documents, Desktop and Downloads from being modified by apps. Reinstall OpenTaskbar into /Applications to enable in-app updates.";
+"update.error.installFailed" = "The update could not be installed";

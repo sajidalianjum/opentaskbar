@@ -2,43 +2,43 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
-    <key>CFBundleName</key>
-    <string>OpenTaskbar</string>
-    <key>CFBundleDisplayName</key>
-    <string>OpenTaskbar</string>
-    <key>CFBundleDevelopmentRegion</key>
-    <string>en</string>
-    <key>CFBundleIdentifier</key>
-    <string>com.opentaskbar.app</string>
-    <key>CFBundleVersion</key>
-    <string>0.1.1</string>
-    <key>CFBundleShortVersionString</key>
-    <string>0.1.1</string>
-    <key>NSHumanReadableCopyright</key>
-    <string>Copyright © 2026 Sajid Ali Anjum</string>
-    <key>CFBundlePackageType</key>
-    <string>APPL</string>
-    <key>CFBundleExecutable</key>
-    <string>OpenTaskbar</string>
-    <key>LSUIElement</key>
-    <true/>
-    <key>NSSupportsSuddenTermination</key>
-    <true/>
-    <key>NSAccessibilityUsageDescription</key>
-    <string>OpenTaskbar needs Accessibility to switch between windows and manage them.</string>
-    <key>NSScreenCaptureUsageDescription</key>
-    <string>OpenTaskbar needs Screen Recording to show window thumbnails on hover.</string>
-    <key>NSAppleEventsUsageDescription</key>
-    <string>OpenTaskbar needs to control Finder to empty the Trash and open folders.</string>
-    <key>LSMinimumSystemVersion</key>
-    <string>14.0</string>
-    <key>NSHighResolutionCapable</key>
-    <true/>
-    <key>CFBundleIconFile</key>
-    <string>OpenTaskbar</string>
-    <key>OpenTaskbarReleaseAPIBase</key>
-    <string>https://api.github.com/repos/sajidalianjum/opentaskbar/releases/latest</string>
-    <key>OpenTaskbarReleasesPageURL</key>
-    <string>https://github.com/sajidalianjum/opentaskbar/releases/latest</string>
+	<key>CFBundleDevelopmentRegion</key>
+	<string>en</string>
+	<key>CFBundleDisplayName</key>
+	<string>OpenTaskbar</string>
+	<key>CFBundleExecutable</key>
+	<string>OpenTaskbar</string>
+	<key>CFBundleIconFile</key>
+	<string>OpenTaskbar</string>
+	<key>CFBundleIdentifier</key>
+	<string>com.opentaskbar.app</string>
+	<key>CFBundleName</key>
+	<string>OpenTaskbar</string>
+	<key>CFBundlePackageType</key>
+	<string>APPL</string>
+	<key>CFBundleShortVersionString</key>
+	<string>0.2.0</string>
+	<key>CFBundleVersion</key>
+	<string>0.2.0</string>
+	<key>LSMinimumSystemVersion</key>
+	<string>14.0</string>
+	<key>LSUIElement</key>
+	<true/>
+	<key>NSAccessibilityUsageDescription</key>
+	<string>OpenTaskbar needs Accessibility to switch between windows and manage them.</string>
+	<key>NSAppleEventsUsageDescription</key>
+	<string>OpenTaskbar needs to control Finder to empty the Trash and open folders.</string>
+	<key>NSHighResolutionCapable</key>
+	<true/>
+	<key>NSHumanReadableCopyright</key>
+	<string>Copyright © 2026 Sajid Ali Anjum</string>
+	<key>NSScreenCaptureUsageDescription</key>
+	<string>OpenTaskbar needs Screen Recording to show window thumbnails on hover.</string>
+	<key>NSSupportsSuddenTermination</key>
+	<true/>
+	<key>OpenTaskbarReleaseAPIBase</key>
+	<string>https://api.github.com/repos/sajidalianjum/opentaskbar/releases/latest</string>
+	<key>OpenTaskbarReleasesPageURL</key>
+	<string>https://github.com/sajidalianjum/opentaskbar/releases/latest</string>
 </dict>
 </plist>

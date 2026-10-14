@@ -57,6 +57,20 @@ README one-liner and the installer's download URL depend on them.
 
 Or set `OPENTASKBAR_PUBLISH=1 ./Scripts/release.sh` to have the script build and publish (including all three assets) in one go.
 
+### Release notes
+
+`Scripts/release-notes.sh <version>` generates the notes from **commits**, not pull
+requests: it diffs the newest reachable `v*` tag against `HEAD`, groups subjects
+into Features / Fixes / Other Changes, links every commit, and appends a compare
+link. The release workflow runs it and passes the result as the release body; the
+same script is used by `OPENTASKBAR_PUBLISH=1`.
+
+GitHub's built-in `generate_release_notes` is deliberately **off**: it only lists
+merged pull requests (plus a "Full Changelog" link), so a repo that pushes
+straight to the default branch — as this one does — would get an essentially
+empty changelog. If you later adopt PRs and want GitHub's own categorization,
+add a `.github/release.yml` and flip `generate_release_notes` back on.
+
 > Keep the release notes honest about signing: ad-hoc signed, and re-granting Accessibility/Screen Recording after updates. `Scripts/release.sh` generates a starter notes file.
 
 ## Optional: sign releases with a stable identity

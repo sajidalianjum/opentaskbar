@@ -32,23 +32,7 @@ echo ""
 if [ "${OPENTASKBAR_PUBLISH:-0}" = "1" ]; then
     if command -v gh >/dev/null 2>&1 && gh auth status >/dev/null 2>&1; then
         NOTES_FILE="${PROJECT_DIR}/build/release-notes-${VERSION}.md"
-        cat > "${NOTES_FILE}" <<EOF
-## OpenTaskbar ${VERSION}
-
-Ad-hoc signed on CI (no Apple Developer ID) universal build.
-
-**Recommended install** (no Gatekeeper prompt):
-
-\`\`\`bash
-curl -fsSL https://github.com/${OPENTASKBAR_OWNER:-sajidalianjum}/opentaskbar/releases/latest/download/install.sh | bash
-\`\`\`
-
-Or download the zip, move \`OpenTaskbar.app\` to \`/Applications\`, and allow it
-once — **System Settings → Privacy & Security → Open Anyway** on macOS 15+, or
-**right-click → Open** on macOS 14.
-
-> Note: if the released build is ad-hoc signed, updating the app may require re-granting Accessibility / Screen Recording permissions. Signing releases with a stable identity (see docs/RELEASE.md) avoids this.
-EOF
+        "${PROJECT_DIR}/Scripts/release-notes.sh" "${VERSION}" > "${NOTES_FILE}"
         echo "Publishing v${VERSION} via gh..."
         gh release create "v${VERSION}" "${ZIP}" "${ALIAS}" "${PROJECT_DIR}/Scripts/install.sh" \
             --title "OpenTaskbar ${VERSION}" \
@@ -61,10 +45,13 @@ EOF
         exit 1
     fi
 else
+    NOTES_FILE="${PROJECT_DIR}/build/release-notes-${VERSION}.md"
+    "${PROJECT_DIR}/Scripts/release-notes.sh" "${VERSION}" > "${NOTES_FILE}"
+    echo "Release notes written to ${NOTES_FILE} (generated from commits since the previous tag)."
     echo "Publish it manually with:"
     echo "  gh release create v${VERSION} \"${ZIP}\" \"${ALIAS}\" Scripts/install.sh \\
   --title \"OpenTaskbar ${VERSION}\" \\
-  --notes-file <notes>"
+  --notes-file \"${NOTES_FILE}\""
     echo ""
     echo "(Or upload ${ZIP} at https://github.com/sajidalianjum/opentaskbar/releases/new)"
     echo "=============================================================="

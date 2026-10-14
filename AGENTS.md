@@ -38,6 +38,7 @@ OpenTaskbar/
 │   ├── install.sh                  # curl-based installer → /Applications (no quarantine); reads latest GitHub release; clears stale Accessibility (TCC) grant when an ad-hoc build changes
 │   ├── setup-signing.sh            # optional: one-time creation of a stable self-signed code-signing identity so local rebuilds keep the Accessibility (TCC) grant
 │   ├── release.sh                  # build.sh + printable (or automated via gh) GitHub Release publishing
+│   ├── release-notes.sh            # commit-based Markdown release notes (Features/Fixes/Other + compare link)
 │   └── run.sh                      # build.sh + open the .app bundle
 ├── myscripts/                      # gitignored — local icon sources, not part of the repo
 │   ├── opentaskbar.svg             # Full app icon SVG source

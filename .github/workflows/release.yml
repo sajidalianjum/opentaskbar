@@ -40,6 +40,8 @@ jobs:
         uses: actions/checkout@v4
         with:
           ref: ${{ inputs.ref || github.sha }}
+          fetch-depth: 0     # full history + tags so release-notes.sh can diff tags
+          fetch-tags: true
 
       - name: Import signing identity (optional)
         if: ${{ env.OPENTASKBAR_SIGNING_P12 != '' }}
@@ -95,6 +97,11 @@ jobs:
             exit 1
           fi
 
+      - name: Generate release notes from commits
+        env:
+          OPENTASKBAR_OWNER: ${{ github.repository_owner }}
+        run: ./Scripts/release-notes.sh "${{ steps.artifact.outputs.version }}" > build/release-notes.md
+
       - name: Publish GitHub Release
         uses: softprops/action-gh-release@v2
         with:
@@ -106,24 +113,6 @@ jobs:
             ${{ steps.artifact.outputs.alias }}
             ${{ steps.artifact.outputs.checksum }}
             Scripts/install.sh
-          generate_release_notes: true
+          generate_release_notes: false   # PR-based; this repo is commit-based. See Scripts/release-notes.sh
+          body_path: build/release-notes.md
           fail_on_unmatched_files: true
-          body: |
-            Universal macOS build. Not notarized with an Apple Developer ID.
-
-            **Recommended install** (no Gatekeeper prompt):
-
-            ```bash
-            curl -fsSL https://github.com/${{ github.repository }}/releases/latest/download/install.sh | bash
-            ```
-
-            Or download the zip, move `OpenTaskbar.app` to `/Applications`, and allow
-            it once — **System Settings → Privacy & Security → Open Anyway** on
-            macOS 15+, or **right-click → Open** on macOS 14.
-
-            > After updating, Accessibility / Screen Recording permissions may
-            > need to be re-granted once. Settings in UserDefaults are kept.
-            >
-            > Installed copies also update themselves: OpenTaskbar checks the
-            > release feed once a day and offers to install and relaunch.
-            > (Preferences > Updates, or the menu bar > Check for Updates…)

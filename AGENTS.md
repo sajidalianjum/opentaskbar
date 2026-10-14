@@ -37,6 +37,7 @@ OpenTaskbar/
 │   ├── build.sh                    # swift build -c release (universal, with native-arch fallback) + codesign + entitlements + zip → build/OpenTaskbar-<version>.zip
 │   ├── install.sh                  # curl-based installer → /Applications (no quarantine); reads latest GitHub release; clears stale Accessibility (TCC) grant when an ad-hoc build changes
 │   ├── setup-signing.sh            # optional: one-time creation of a stable self-signed code-signing identity so local rebuilds keep the Accessibility (TCC) grant
+│   ├── bump-version.sh             # computes the next version from the newest v* tag and writes it into Resources/Info.plist
 │   ├── release.sh                  # build.sh + printable (or automated via gh) GitHub Release publishing
 │   ├── release-notes.sh            # commit-based Markdown release notes (Features/Fixes/Other + compare link)
 │   └── run.sh                      # build.sh + open the .app bundle

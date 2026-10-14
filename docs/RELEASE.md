@@ -10,24 +10,51 @@ How to cut and publish an OpenTaskbar release.
 
 ## Steps
 
-### 1. Bump the version
+There are two paths: the GitHub **Actions → Release → Run workflow** button
+(recommended, handles everything) and a local `Scripts/release.sh` build.
 
-Edit `Resources/Info.plist` — set both `CFBundleShortVersionString` and `CFBundleVersion` to the new version (e.g. `0.1.1`), and update the top entry of `CHANGELOG.md`. Commit the change.
+### Recommended: the Release workflow
 
-### 2. Build the release artifact
+The version is derived from git tags, so there is **no version to edit by hand**.
+Pressing the button asks for:
+
+| Input | Meaning |
+|---|---|
+| `bump` | `patch` (default), `minor`, or `major`, applied to the newest `v*` tag |
+| `version` | optional explicit `x.y.z` that overrides `bump` |
+| `allow_existing` | replace the release if that version is already published (off by default) |
+| `ref` | branch or SHA to build from (blank = default branch HEAD) |
+
+The workflow then:
+
+1. runs `Scripts/bump-version.sh`, which computes the next version (the greater
+   of the newest tag and `CFBundleShortVersionString`), applies the bump, and
+   writes it into `Resources/Info.plist`;
+2. **refuses to run** if `v<version>` already exists, unless `allow_existing` is
+   ticked — a stray run can no longer overwrite a published release;
+3. builds, verifies, generates commit-based notes, commits the `Info.plist` bump
+   back to the default branch (`Release <version> [skip ci]`), and publishes the
+   release with the tag pointing at that commit.
+
+### Local build
 
 ```bash
+./Scripts/bump-version.sh patch   # or write the version into Resources/Info.plist by hand
 ./Scripts/release.sh
 ```
 
-This builds a **universal** (Intel + Apple Silicon) release binary, assembles `build/OpenTaskbar.app`, embeds `Resources/OpenTaskbar.entitlements`, code-signs it, and zips it to `build/OpenTaskbar-<version>.zip`. It also writes a version-less `build/OpenTaskbar.zip` alias used by the installer.
+`release.sh` builds a **universal** (Intel + Apple Silicon) release binary,
+assembles `build/OpenTaskbar.app`, embeds `Resources/OpenTaskbar.entitlements`,
+code-signs it, and zips it to `build/OpenTaskbar-<version>.zip`. It also writes a
+version-less `build/OpenTaskbar.zip` alias used by the installer. Unlike CI it
+does **not** bump the version for you.
 
 Signing:
 
 - `Scripts/build.sh` automatically uses the first stable identity it finds: `Developer ID Application`, then `Apple Development`, then a self-signed `OpenTaskbarDev` identity (create one once with `Scripts/setup-signing.sh`). An explicit `OPENTASKBAR_SIGN_IDENTITY` overrides the automatic choice.
 - If no identity exists it falls back to **ad-hoc signing** (`codesign --sign - --options runtime`). This is what the GitHub release workflow produces, since CI runners carry no identity.
 
-### 3. Verify the artifact
+### Verify the artifact
 
 ```bash
 # Sanity check the signature
@@ -41,7 +68,7 @@ file build/OpenTaskbar.app/Contents/MacOS/OpenTaskbar
 # Look for: "Mach-O universal binary with 2 architectures"
 ```
 
-### 4. Publish
+### Publish
 
 ```bash
 gh release create v<version> \

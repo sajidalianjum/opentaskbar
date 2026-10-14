@@ -11,14 +11,35 @@ name: Release
 #
 # Uniquely triggerable by the BUTTON in the Actions tab
 # (repo > Actions > "Release" > "Run workflow") — no tag is required.
-# The release version and tag are derived automatically from the embedded
-# CFBundleShortVersionString in Resources/Info.plist, so there is no manual
-# version input step. The release lands at:
+# The version is computed from the newest v* tag plus the selected bump, written
+# into Resources/Info.plist, committed back to the branch, and tagged. Re-running
+# with a version that already has a release is refused unless allow_existing is
+# set, so a stray run can no longer overwrite a published release. The release
+# lands at:
 #   https://github.com/OWNER/opentaskbar/releases/tag/v<version>
 
 on:
   workflow_dispatch:   # the "button"
     inputs:
+      bump:
+        description: 'Version bump from the latest tag'
+        required: true
+        default: patch
+        type: choice
+        options:
+          - patch
+          - minor
+          - major
+      version:
+        description: 'Explicit version override (x.y.z); ignores the bump choice.'
+        required: false
+        default: ''
+        type: string
+      allow_existing:
+        description: 'Overwrite the release if this version is already published.'
+        required: false
+        default: false
+        type: boolean
       ref:
         description: 'Branch or SHA to build from (blank = default branch HEAD).'
         required: false
@@ -69,14 +90,42 @@ jobs:
           echo "OPENTASKBAR_SIGN_IDENTITY=$IDENTITY" >> "$GITHUB_ENV"
           echo "Signing releases with identity: $IDENTITY"
 
+      - name: Determine and bump version
+        id: version
+        run: |
+          set -euo pipefail
+          if [ -n "${{ inputs.version }}" ]; then
+            VERSION="$(./Scripts/bump-version.sh "${{ inputs.version }}")"
+          else
+            VERSION="$(./Scripts/bump-version.sh "${{ inputs.bump }}")"
+          fi
+          echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
+          echo "Releasing ${VERSION}"
+
+      - name: Refuse to overwrite an existing release
+        if: ${{ !inputs.allow_existing }}
+        run: |
+          set -euo pipefail
+          TAG="v${{ steps.version.outputs.version }}"
+          if git rev-parse -q --verify "refs/tags/${TAG}" >/dev/null; then
+            echo "error: ${TAG} already exists." >&2
+            echo "Pick a larger bump, or tick 'allow_existing' to deliberately replace it." >&2
+            exit 1
+          fi
+
       - name: Build release bundle (.app + zip)
         run: ./Scripts/build.sh
 
-      - name: Resolve version, tag, and artifact paths from the project
+      - name: Resolve tag and artifact paths
         id: artifact
         run: |
           VER="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' build/OpenTaskbar.app/Contents/Info.plist)"
           VER="${VER#v}"                     # defensive: strip a "v" prefix if present
+          EXPECTED="${{ steps.version.outputs.version }}"
+          if [ "${VER}" != "${EXPECTED}" ]; then
+            echo "error: bundle version ${VER} does not match expected ${EXPECTED}" >&2
+            exit 1
+          fi
           echo "version=${VER}" >> "$GITHUB_OUTPUT"
           echo "tag=v${VER}" >> "$GITHUB_OUTPUT"
           echo "zip=build/OpenTaskbar-${VER}.zip" >> "$GITHUB_OUTPUT"
@@ -102,11 +151,33 @@ jobs:
           OPENTASKBAR_OWNER: ${{ github.repository_owner }}
         run: ./Scripts/release-notes.sh "${{ steps.artifact.outputs.version }}" > build/release-notes.md
 
+      - name: Commit the version bump back to the branch
+        id: bump_commit
+        if: ${{ inputs.ref == '' && github.ref_name == github.event.repository.default_branch }}
+        continue-on-error: true
+        run: |
+          set -euo pipefail
+          BRANCH="${{ github.ref_name }}"
+          if git diff --quiet -- Resources/Info.plist; then
+            echo "Resources/Info.plist already at ${{ steps.artifact.outputs.version }}; nothing to commit."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add Resources/Info.plist
+          git commit -m "Release ${{ steps.artifact.outputs.version }} [skip ci]"
+          git push origin "HEAD:${BRANCH}" || {
+            git fetch origin "${BRANCH}"
+            git rebase "origin/${BRANCH}"
+            git push origin "HEAD:${BRANCH}"
+          }
+          echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+
       - name: Publish GitHub Release
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ steps.artifact.outputs.tag }}
-          target_commitish: ${{ github.sha }}
+          target_commitish: ${{ steps.bump_commit.outputs.sha || github.sha }}
           name: OpenTaskbar ${{ steps.artifact.outputs.version }}
           files: |
             ${{ steps.artifact.outputs.zip }}

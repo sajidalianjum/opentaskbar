@@ -1131,7 +1131,10 @@ final class WindowManager {
             self.windowlessRecoveryPending.remove(bundleID)
 
             guard let running = NSRunningApplication(processIdentifier: pid), !running.isTerminated else { return }
-            guard self.accessibilityService.windowsForPID(pid).isEmpty else { return }
+            // Only recover when AX positively reports zero windows: a failed query
+            // (busy or hung app, display asleep) must not trigger a spurious Cmd+N
+            // in an app that does have windows.
+            guard self.accessibilityService.hasNoWindows(pid) else { return }
 
             Logger.shared.log("presentWindowlessApp: reopen produced no window for \(bundleID); requesting a new window")
             self.requestNewWindow(for: running, bundleID: bundleID)

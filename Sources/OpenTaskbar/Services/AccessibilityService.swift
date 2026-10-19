@@ -19,6 +19,20 @@ final class AccessibilityService {
         }
     }
 
+    // Distinguishes "this app really has no windows" from "AX could not answer"
+    // (busy or hung app, display asleep). Callers that react to an empty window
+    // list must use this, not windowsForPID, which also returns [] on failure.
+    func hasNoWindows(_ pid: pid_t) -> Bool {
+        var value: CFTypeRef?
+        let err = AXUIElementCopyAttributeValue(
+            AXUIElementCreateApplication(pid), kAXWindowsAttribute as CFString, &value)
+        guard err == .success, let axWindows = value as? [AXUIElement] else {
+            log.log("hasNoWindows pid=\(pid) axErr=\(err.rawValue) (unknown)")
+            return false
+        }
+        return axWindows.isEmpty
+    }
+
     func windowsForPID(_ pid: pid_t) -> [WindowInfo] {
         let appElement = AXUIElementCreateApplication(pid)
         var value: CFTypeRef?

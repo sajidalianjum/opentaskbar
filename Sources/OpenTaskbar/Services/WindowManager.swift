@@ -24,6 +24,7 @@ final class WindowManager {
     private var appsSeenWithWindows: Set<String> = []
     private var titleChangeWorkItem: DispatchWorkItem?
     private var launchingBundleIDs: Set<String> = []
+    private var windowlessRecoveryPending: Set<String> = []
     private var launchTimeouts: [String: Date] = [:]
     private let launchTimeoutDuration: TimeInterval = 8.0
     private let backgroundedLaunchGrace: TimeInterval = 1.5
@@ -1027,15 +1028,7 @@ final class WindowManager {
         }
 
         if group.windows.isEmpty {
-            Task {
-                if let appURL = NSWorkspace.shared.urlForApplication(withBundleIdentifier: group.bundleIdentifier) {
-                    let config = NSWorkspace.OpenConfiguration()
-                    config.activates = true
-                    NSWorkspace.shared.open(appURL, configuration: config)
-                } else {
-                    NSWorkspace.shared.runningApplications.first(where: { $0.bundleIdentifier == group.bundleIdentifier })?.activate(options: .activateAllWindows)
-                }
-            }
+            presentWindowlessApp(group: group, app: app)
             return
         }
 
@@ -1109,6 +1102,74 @@ final class WindowManager {
         } else {
             app.activate()
         }
+    }
+
+    // A running app can hold zero windows while its reopen handler does nothing,
+    // so both the Dock click and our reopen event turn into a silent no-op. Safari
+    // reaches this state after some sleep/wake cycles (its old window server
+    // surfaces are orphaned and AX reports no windows). Send the reopen event
+    // first, then fall back to asking the app for a fresh window.
+    private func presentWindowlessApp(group: AppGroup, app: NSRunningApplication) {
+        let bundleID = group.bundleIdentifier
+        let pid = app.processIdentifier
+
+        Logger.shared.log("presentWindowlessApp: bundle=\(bundleID) pid=\(pid)")
+
+        app.unhide()
+        if let appURL = NSWorkspace.shared.urlForApplication(withBundleIdentifier: bundleID) {
+            let config = NSWorkspace.OpenConfiguration()
+            config.activates = true
+            NSWorkspace.shared.open(appURL, configuration: config)
+        }
+        app.activate(options: .activateAllWindows)
+
+        guard !windowlessRecoveryPending.contains(bundleID) else { return }
+        windowlessRecoveryPending.insert(bundleID)
+
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) { [weak self] in
+            guard let self else { return }
+            self.windowlessRecoveryPending.remove(bundleID)
+
+            guard let running = NSRunningApplication(processIdentifier: pid), !running.isTerminated else { return }
+            guard self.accessibilityService.windowsForPID(pid).isEmpty else { return }
+
+            Logger.shared.log("presentWindowlessApp: reopen produced no window for \(bundleID); requesting a new window")
+            self.requestNewWindow(for: running, bundleID: bundleID)
+
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) { [weak self] in
+                self?.refreshAppGroups()
+            }
+        }
+    }
+
+    // Scripting an app asks the user for Automation permission, so only apps known
+    // to need it are scripted (Safari's reopen handler is the stuck one).
+    private static let scriptableNewDocumentBundles: Set<String> = ["com.apple.Safari"]
+
+    private func requestNewWindow(for app: NSRunningApplication, bundleID: String) {
+        app.unhide()
+        app.activate()
+
+        if Self.scriptableNewDocumentBundles.contains(bundleID) {
+            var error: NSDictionary?
+            NSAppleScript(source: "tell application id \"\(bundleID)\" to make new document")?
+                .executeAndReturnError(&error)
+            if error == nil {
+                Logger.shared.log("requestNewWindow: AppleScript opened a document in \(bundleID)")
+                return
+            }
+            Logger.shared.log("requestNewWindow: AppleScript failed for \(bundleID): \(String(describing: error))")
+        }
+
+        // Generic fallback: File > New Window / New Document.
+        guard let source = CGEventSource(stateID: .hidSystemState),
+              let keyDown = CGEvent(keyboardEventSource: source, virtualKey: 0x2D, keyDown: true),
+              let keyUp = CGEvent(keyboardEventSource: source, virtualKey: 0x2D, keyDown: false) else { return }
+        keyDown.flags = .maskCommand
+        keyUp.flags = .maskCommand
+        keyDown.postToPid(app.processIdentifier)
+        keyUp.postToPid(app.processIdentifier)
+        Logger.shared.log("requestNewWindow: sent Cmd+N to \(bundleID)")
     }
 
     private func minimizeAllWindows(of group: AppGroup, elements: [CGWindowID: AXUIElement]) {

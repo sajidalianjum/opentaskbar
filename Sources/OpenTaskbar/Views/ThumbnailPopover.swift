@@ -20,6 +20,11 @@ final class ThumbnailPopover: NSWindow {
 
     var onWindowClosed: ((CGWindowID) -> Void)?
     var onWindowActivated: ((CGWindowID, pid_t) -> Void)?
+    var onAllThumbnailsFailed: (() -> Void)?
+
+    private var captureGeneration = 0
+    private var pendingThumbnailLoads = 0
+    private var thumbnailCaptureFailed = false
 
     init() {
         visualEffect = NSVisualEffectView()
@@ -83,6 +88,10 @@ final class ThumbnailPopover: NSWindow {
     func show(windows: [WindowInfo], appIcon: NSImage, anchorPoint: NSPoint, screen: NSScreen) {
         cancelHideTimer()
         cancelAllLoads()
+        captureGeneration += 1
+        let generation = captureGeneration
+        pendingThumbnailLoads = windows.count
+        thumbnailCaptureFailed = false
 
         self.windows = windows
         cards.removeAll()
@@ -128,16 +137,18 @@ final class ThumbnailPopover: NSWindow {
         invalidateShadow()
 
         for card in cards {
-            let task = card.loadThumbnail()
-            if let task {
-                loadingTasks.insert(task)
+            let task = card.loadThumbnail { [weak self] succeeded in
+                self?.thumbnailLoadCompleted(succeeded, generation: generation)
             }
+            loadingTasks.insert(task)
         }
     }
 
     func hide() {
         cancelHideTimer()
         cancelAllLoads()
+        captureGeneration += 1
+        pendingThumbnailLoads = 0
         windows = []
         cards.removeAll()
         stackView.arrangedSubviews.forEach { $0.removeFromSuperview() }
@@ -184,6 +195,15 @@ final class ThumbnailPopover: NSWindow {
             task.cancel()
         }
         loadingTasks.removeAll()
+    }
+
+    private func thumbnailLoadCompleted(_ succeeded: Bool, generation: Int) {
+        guard generation == captureGeneration else { return }
+        pendingThumbnailLoads -= 1
+        thumbnailCaptureFailed = thumbnailCaptureFailed || !succeeded
+
+        guard pendingThumbnailLoads == 0, thumbnailCaptureFailed else { return }
+        onAllThumbnailsFailed?()
     }
 
     private func applyTheme() {
@@ -376,14 +396,23 @@ extension ThumbnailPopover {
             setupTrackingArea()
         }
 
-        func loadThumbnail() -> Task<Void, Never>? {
+        func loadThumbnail(completion: @escaping (Bool) -> Void) -> Task<Void, Never> {
             let windowID = windowInfo.windowID
             let thumbnailService = ThumbnailService.shared
-            return Task.detached {
-                guard let image = await thumbnailService.thumbnail(for: windowID) else { return }
+            return Task.detached { [weak self] in
+                let image = await thumbnailService.thumbnail(for: windowID)
                 guard !Task.isCancelled else { return }
                 await MainActor.run { [weak self] in
-                    self?.imageView.image = image
+                    guard let self else {
+                        completion(false)
+                        return
+                    }
+                    guard let image else {
+                        completion(false)
+                        return
+                    }
+                    self.imageView.image = image
+                    completion(true)
                 }
             }
         }

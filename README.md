@@ -35,7 +35,7 @@ A lightweight, macOS menubar utility that replaces the Dock with a customizable,
 
 - **macOS 14.0 (Sonoma) or later** — Intel or Apple Silicon
 - **Accessibility permission (required)** — needed to switch, focus, minimize, and close windows. OpenTaskbar cannot function without it.
-- **Screen Recording permission (optional)** — only needed for live hover thumbnails. Without it, hover shows the window list instead.
+- **Screen Recording permission (optional)** — only needed for live hover thumbnails. If capture is unavailable, hover falls back to the window list.
 
 ## Localization
 
@@ -109,7 +109,7 @@ swift build -c release      # release binary
 | Action | Result |
 |---|---|
 | **Click** an app | Activate the app; if it has multiple windows, cycle/raise its windows |
-| **Hover** an app | Live thumbnail previews (if Screen Recording is granted) or a window list |
+| **Hover** an app | Thumbnail previews when enabled and available; otherwise a window list for multiple windows |
 | **Hover** a preview thumbnail | Shows a close button on that window's card; click the card to activate that window |
 | **Right-click** an app | Context menu: per-window actions, pin/unpin, quit options, Finder shortcuts |
 | **Drag** an app | Reorder it on the taskbar |
@@ -171,7 +171,7 @@ Open **Preferences…** from the menu bar (⌘,). Changes apply immediately.
 
 - **Window tracking** — a 0.5-second poll of the window list plus `NSWorkspace` notifications (launch/terminate/activate) and per-app `AXObserver` callbacks (open/close/minimize/focus) keep the taskbar in sync without continuous AX traffic.
 - **Window management** — all focus, minimize, close, and fullscreen operations go through the Accessibility (AX) API.
-- **Thumbnails** — live previews are captured asynchronously with ScreenCaptureKit (`SCScreenshotManager`) on macOS 14+, with a `CGWindowList` fallback.
+- **Thumbnails** — live previews are captured asynchronously with ScreenCaptureKit (`SCScreenshotManager`) on macOS 14+, with a `CGWindowList` capture fallback; if capture still fails, the taskbar shows the window list instead.
 - **Hiding the Dock** — the Dock's autohide state is saved to `~/.config/opentaskbar/dock-state.plist` before hiding and restored on quit or crash.
 - **Translucency** — the bar is translucent (vibrancy) automatically; enabling **Reduce Transparency** in System Settings forces an opaque bar.
 - **Spotlight button** — simulates `Cmd+Space` via `CGEvent` to open Spotlight. This depends on the standard Spotlight shortcut not being remapped.
@@ -183,7 +183,7 @@ Open **Preferences…** from the menu bar (⌘,). Changes apply immediately.
 | Problem | Fix |
 |---|---|
 | Taskbar never appears | Grant **Accessibility** permission; quit and relaunch. The app cannot run without it |
-| Thumbnails don't show; window list shows instead | Grant **Screen Recording** permission in System Settings, then relaunch |
+| Thumbnails don't show; window list appears instead | Grant **Screen Recording** permission in System Settings to enable thumbnails; the window list is the fallback when capture is unavailable |
 | Thumbnails are black/empty | Screen Recording was granted after launch — relaunch OpenTaskbar |
 | Spotlight button does nothing | The shortcut was remapped or Spotlight is disabled; OpenTaskbar simulates `Cmd+Space` |
 | Taskbar hidden | A fullscreen window is active (disable "Hide Taskbar on Fullscreen"), or check "Show on All Screens" |
@@ -210,8 +210,8 @@ killall Dock
 
 ## Privacy
 
-- **No telemetry, no analytics, no network calls.** OpenTaskbar never contacts a server.
-- **Local logs only** — a debug log is written to `/tmp/opentaskbar.log`; crash state to `/tmp/opentaskbar.crash`. Nothing leaves your machine.
+- **No telemetry or analytics.** Automatic update checks are enabled by default and contact the GitHub Releases API over HTTPS once a day to look for a new version. If you install an update, OpenTaskbar also downloads its release archive (and may request its checksum sidecar) from GitHub. The release installer likewise downloads from GitHub when you run it. GitHub receives ordinary request metadata, such as your IP address and request headers; OpenTaskbar does not send your settings, window titles, app usage, or diagnostic logs.
+- **Local logs only** — a debug log is written to `/tmp/opentaskbar.log`; crash state to `/tmp/opentaskbar.crash`. These logs are not uploaded. Disable **Automatically Check for Updates** in Preferences → Updates to stop scheduled update checks.
 - **Permissions are scoped** — Accessibility is used solely to control windows; Screen Recording is used solely to render your own thumbnails on hover.
 - **Private API** — window identification uses the private `_AXUIElementGetWindow` symbol, loaded at runtime via `dlsym`. This is why OpenTaskbar cannot be distributed through the Mac App Store. The prebuilt release is not notarized with an Apple Developer ID — verify the build from source if you'd prefer.
 

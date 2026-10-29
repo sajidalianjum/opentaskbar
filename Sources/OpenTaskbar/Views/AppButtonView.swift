@@ -434,7 +434,17 @@ final class AppButtonView: NSView {
         popover.onWindowActivated = { windowID, _ in
             capturedOnFocusChanged?(windowID, capturedBundleID)
         }
-        popover.show(windows: appGroup.windows, appIcon: appGroup.icon, anchorPoint: screenPoint, screen: screen)
+        let capturedWindows = appGroup.windows
+        let capturedIcon = appGroup.icon
+        popover.onAllThumbnailsFailed = { [weak self] in
+            guard let self, !capturedWindows.isEmpty else { return }
+            let pointerIsOnButton = self.isHovering
+            let pointerIsOnThumbnailPopover = Self.sharedThumbnailPopover.frame.contains(NSEvent.mouseLocation)
+            guard pointerIsOnButton || pointerIsOnThumbnailPopover else { return }
+            Self.sharedThumbnailPopover.hide()
+            self.showWindowListPopover()
+        }
+        popover.show(windows: capturedWindows, appIcon: capturedIcon, anchorPoint: screenPoint, screen: screen)
     }
 
     override func rightMouseDown(with event: NSEvent) {

@@ -13,15 +13,18 @@ final class UpdateFeedClient {
     private let session: URLSession
     private let endpoint: URL
     private let etagStore: ETagStoring
+    private let retryPolicy: UpdateRetryPolicy
 
     init(
         endpoint: URL? = nil,
         session: URLSession = .shared,
-        etagStore: ETagStoring = UserDefaultsETagStore()
+        etagStore: ETagStoring = UserDefaultsETagStore(),
+        retryPolicy: UpdateRetryPolicy = .default
     ) {
         self.endpoint = endpoint ?? UpdateFeedClient.defaultEndpoint()
         self.session = session
         self.etagStore = etagStore
+        self.retryPolicy = retryPolicy
     }
 
     static func defaultEndpoint(bundle: Bundle = .main) -> URL {
@@ -42,6 +45,13 @@ final class UpdateFeedClient {
     }
 
     func fetchLatestRelease(completion: @escaping (Result<UpdateRelease, UpdateError>) -> Void) {
+        attemptFetch(attempt: 1, completion: completion)
+    }
+
+    private func attemptFetch(
+        attempt: Int,
+        completion: @escaping (Result<UpdateRelease, UpdateError>) -> Void
+    ) {
         var request = URLRequest(url: endpoint)
         request.httpMethod = "GET"
         request.timeoutInterval = 20
@@ -53,7 +63,7 @@ final class UpdateFeedClient {
 
         let session = self.session
         let etagStore = self.etagStore
-        session.dataTask(with: request) { data, response, error in
+        session.dataTask(with: request) { [weak self] data, response, error in
             let result: Result<UpdateRelease, UpdateError> = UpdateFeedClient.interpret(
                 data: data,
                 response: response,
@@ -65,6 +75,25 @@ final class UpdateFeedClient {
                     etagStore.etag = etag
                 }
             }
+
+            if case .failure(let failure) = result,
+               let self,
+               self.retryPolicy.shouldRetry(
+                   afterAttempt: attempt,
+                   error: failure,
+                   urlError: error as? URLError
+               ) {
+                let delay = self.retryPolicy.delay(afterAttempt: attempt)
+                Logger.shared.log(
+                    "Update check attempt \(attempt) of \(self.retryPolicy.maxAttempts) failed "
+                        + "(\(failure.errorDescription ?? String(describing: failure))); retrying in \(delay)s"
+                )
+                DispatchQueue.global(qos: .utility).asyncAfter(deadline: .now() + delay) { [weak self] in
+                    self?.attemptFetch(attempt: attempt + 1, completion: completion)
+                }
+                return
+            }
+
             DispatchQueue.main.async { completion(result) }
         }.resume()
     }

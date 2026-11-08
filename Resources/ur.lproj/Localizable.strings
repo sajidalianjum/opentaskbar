@@ -130,6 +130,7 @@
 "update.error.notModified" = "کوئی نیا ورژن دستیاب نہیں۔";
 "update.error.rateLimited" = "اپ ڈیٹ سرور درخواستوں کو محدود کر رہا ہے۔ کچھ دیر بعد دوبارہ کوشش کریں۔";
 "update.error.httpStatus" = "اپ ڈیٹ سرور نے HTTP %d لوٹایا۔";
+"update.error.serverBusy" = "اپ ڈیٹ سرور نے HTTP %d لوٹایا اور وہ مصروف ہے۔ یہ عام طور پر عارضی ہوتا ہے — چند منٹ بعد دوبارہ کوشش کریں۔";
 "update.error.invalidResponse" = "اپ ڈیٹ سرور سے غیر متوقع جواب موصول ہوا۔";
 "update.error.noAsset" = "اس ریلیز میں macOS ایپ ڈاؤن لوڈ شامل نہیں ہے۔";
 "update.error.checksum" = "ڈاؤن لوڈ اس کے شائع شدہ چیکسوم سے مطابقت نہیں رکھتا اور ضائع کر دیا گیا۔";

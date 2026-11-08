@@ -130,6 +130,7 @@
 "update.error.notModified" = "没有更新的版本。";
 "update.error.rateLimited" = "更新服务器限制了请求频率，请稍后再试。";
 "update.error.httpStatus" = "更新服务器返回 HTTP %d。";
+"update.error.serverBusy" = "更新服务器返回 HTTP %d，服务器当前繁忙。这通常是暂时性的，请几分钟后重试。";
 "update.error.invalidResponse" = "更新服务器返回了意外的响应。";
 "update.error.noAsset" = "此发行版不包含 macOS 应用下载。";
 "update.error.checksum" = "下载内容与其公布的校验和不匹配，已被丢弃。";

@@ -128,6 +128,7 @@
 "update.error.notModified" = "Aucune version plus récente n’est disponible.";
 "update.error.rateLimited" = "Le serveur de mise à jour limite le nombre de requêtes. Réessayez plus tard.";
 "update.error.httpStatus" = "Le serveur de mise à jour a renvoyé HTTP %d.";
+"update.error.serverBusy" = "Le serveur de mise à jour a renvoyé HTTP %d et est surchargé. C'est généralement temporaire : réessayez dans quelques minutes.";
 "update.error.invalidResponse" = "Le serveur de mise à jour a renvoyé une réponse inattendue.";
 "update.error.noAsset" = "Cette version ne contient pas de téléchargement pour macOS.";
 "update.error.checksum" = "Le téléchargement ne correspond pas à sa somme de contrôle publiée et a été supprimé.";

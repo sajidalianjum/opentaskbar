@@ -128,6 +128,7 @@
 "update.error.notModified" = "No hay ninguna versión más reciente disponible.";
 "update.error.rateLimited" = "El servidor de actualizaciones está limitando las solicitudes. Inténtalo más tarde.";
 "update.error.httpStatus" = "El servidor de actualizaciones devolvió HTTP %d.";
+"update.error.serverBusy" = "El servidor de actualizaciones devolvió HTTP %d y está saturado. Suele ser temporal: inténtalo de nuevo en unos minutos.";
 "update.error.invalidResponse" = "El servidor de actualizaciones devolvió una respuesta inesperada.";
 "update.error.noAsset" = "Esta versión no incluye la descarga para macOS.";
 "update.error.checksum" = "La descarga no coincide con la suma de verificación publicada y se ha descartado.";

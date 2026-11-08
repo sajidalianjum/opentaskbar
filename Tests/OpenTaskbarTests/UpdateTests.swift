@@ -645,6 +645,265 @@ final class UpdateInstallerTests: XCTestCase {
     }
 }
 
+final class UpdateRetryPolicyTests: XCTestCase {
+    func testServerErrorsAreTransient() {
+        for code in [500, 502, 503, 504, 599] {
+            XCTAssertTrue(UpdateRetryPolicy.isTransient(statusCode: code), "\(code) should be retried")
+        }
+        for code in [200, 206, 301, 304, 403, 404, 429] {
+            XCTAssertFalse(UpdateRetryPolicy.isTransient(statusCode: code), "\(code) must not be retried")
+        }
+    }
+
+    func testTransientTransportErrorsAreRetried() {
+        let policy = UpdateRetryPolicy()
+        XCTAssertTrue(
+            policy.shouldRetry(afterAttempt: 1, error: .offline("timeout"), urlError: URLError(.timedOut))
+        )
+        XCTAssertTrue(
+            policy.shouldRetry(afterAttempt: 1, error: .offline("dropped"), urlError: URLError(.networkConnectionLost))
+        )
+        // Retrying a machine that has no network, or a request the user
+        // cancelled, only wastes the user's time.
+        XCTAssertFalse(
+            policy.shouldRetry(afterAttempt: 1, error: .offline("offline"), urlError: URLError(.notConnectedToInternet))
+        )
+        XCTAssertFalse(
+            policy.shouldRetry(afterAttempt: 1, error: .offline("cancelled"), urlError: URLError(.cancelled))
+        )
+        XCTAssertFalse(policy.shouldRetry(afterAttempt: 1, error: .offline("unknown")))
+    }
+
+    func testNonServerFailuresAreNeverRetried() {
+        let policy = UpdateRetryPolicy()
+        let errors: [UpdateError] = [
+            .invalidResponse,
+            .notModified,
+            .rateLimited(retryAfter: 60),
+            .noAssetAvailable,
+            .checksumMismatch(expected: "a", actual: "b"),
+            .validationFailed("nope"),
+            .httpStatus(404),
+            .httpStatus(403)
+        ]
+        for error in errors {
+            XCTAssertFalse(policy.shouldRetry(afterAttempt: 1, error: error), "\(error) must not be retried")
+        }
+    }
+
+    func testRetriesStopAtMaxAttempts() {
+        let policy = UpdateRetryPolicy(maxAttempts: 3, initialDelay: 1, multiplier: 3)
+        XCTAssertTrue(policy.shouldRetry(afterAttempt: 1, error: .httpStatus(504)))
+        XCTAssertTrue(policy.shouldRetry(afterAttempt: 2, error: .httpStatus(504)))
+        XCTAssertFalse(policy.shouldRetry(afterAttempt: 3, error: .httpStatus(504)))
+        XCTAssertFalse(policy.shouldRetry(afterAttempt: 9, error: .httpStatus(504)))
+    }
+
+    func testBackoffGrowsBetweenAttempts() {
+        let policy = UpdateRetryPolicy(maxAttempts: 4, initialDelay: 1, multiplier: 3)
+        XCTAssertEqual(policy.delay(afterAttempt: 1), 1, accuracy: 0.0001)
+        XCTAssertEqual(policy.delay(afterAttempt: 2), 3, accuracy: 0.0001)
+        XCTAssertEqual(policy.delay(afterAttempt: 3), 9, accuracy: 0.0001)
+    }
+
+    func testPolicyStaysSaneWhenMisconfigured() {
+        let policy = UpdateRetryPolicy(maxAttempts: 0, initialDelay: -5, multiplier: 0)
+        XCTAssertEqual(policy.maxAttempts, 1)
+        XCTAssertEqual(policy.initialDelay, 0)
+        XCTAssertEqual(policy.multiplier, 1)
+        XCTAssertFalse(policy.shouldRetry(afterAttempt: 1, error: .httpStatus(503)))
+    }
+
+    func testBusyServerMessageExplainsThatItIsTemporary() {
+        let busy = UpdateError.httpStatus(504).errorDescription ?? ""
+        XCTAssertTrue(busy.contains("504"))
+        XCTAssertTrue(busy.lowercased().contains("temporary"), "expected a transient hint, got: \(busy)")
+
+        // Other status codes keep the plain message: a 404 is not temporary.
+        let notFound = UpdateError.httpStatus(404).errorDescription ?? ""
+        XCTAssertTrue(notFound.contains("404"))
+        XCTAssertFalse(notFound.lowercased().contains("temporary"))
+    }
+}
+
+final class UpdateRetryBehaviourTests: XCTestCase {
+    private func makeMockSession() -> URLSession {
+        let config = URLSessionConfiguration.ephemeral
+        config.protocolClasses = [MockURLProtocol.self]
+        return URLSession(configuration: config)
+    }
+
+    private func makeTemporaryDirectory() throws -> URL {
+        let url = URL(fileURLWithPath: NSTemporaryDirectory())
+            .appendingPathComponent("OpenTaskbarRetry-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: url, withIntermediateDirectories: true)
+        addTeardownBlock { try? FileManager.default.removeItem(at: url) }
+        return url
+    }
+
+    func testFeedRetriesAServerErrorThenSucceeds() throws {
+        let suiteName = "OpenTaskbarTests.retry.\(UUID().uuidString)"
+        let defaults = try XCTUnwrap(UserDefaults(suiteName: suiteName))
+        addTeardownBlock { defaults.removePersistentDomain(forName: suiteName) }
+
+        var attempts = 0
+        MockURLProtocol.requestHandler = { request in
+            attempts += 1
+            if attempts < 3 {
+                return (
+                    HTTPURLResponse(url: request.url!, statusCode: 504, httpVersion: "HTTP/1.1", headerFields: nil)!,
+                    Data("gateway".utf8)
+                )
+            }
+            let json = """
+            { "tag_name": "v9.9.9", "html_url": "https://example.com", "assets": [] }
+            """
+            return (
+                HTTPURLResponse(url: request.url!, statusCode: 200, httpVersion: "HTTP/1.1", headerFields: nil)!,
+                Data(json.utf8)
+            )
+        }
+
+        let client = UpdateFeedClient(
+            endpoint: URL(string: "https://example.invalid/releases/latest")!,
+            session: makeMockSession(),
+            etagStore: UserDefaultsETagStore(defaults: defaults),
+            retryPolicy: .immediate
+        )
+
+        let finished = expectation(description: "feed result")
+        var result: Result<UpdateRelease, UpdateError>?
+        client.fetchLatestRelease { value in
+            result = value
+            finished.fulfill()
+        }
+        wait(for: [finished], timeout: 10)
+
+        guard case .success(let release) = try XCTUnwrap(result) else {
+            return XCTFail("expected success after retries, got \(String(describing: result))")
+        }
+        XCTAssertEqual(release.tagName, "v9.9.9")
+        XCTAssertEqual(attempts, 3)
+    }
+
+    func testFeedGivesUpAfterTheConfiguredAttempts() throws {
+        let suiteName = "OpenTaskbarTests.retry.\(UUID().uuidString)"
+        let defaults = try XCTUnwrap(UserDefaults(suiteName: suiteName))
+        addTeardownBlock { defaults.removePersistentDomain(forName: suiteName) }
+
+        var attempts = 0
+        MockURLProtocol.requestHandler = { request in
+            attempts += 1
+            return (
+                HTTPURLResponse(url: request.url!, statusCode: 504, httpVersion: "HTTP/1.1", headerFields: nil)!,
+                Data("gateway".utf8)
+            )
+        }
+
+        let client = UpdateFeedClient(
+            endpoint: URL(string: "https://example.invalid/releases/latest")!,
+            session: makeMockSession(),
+            etagStore: UserDefaultsETagStore(defaults: defaults),
+            retryPolicy: UpdateRetryPolicy(maxAttempts: 2, initialDelay: 0, multiplier: 1)
+        )
+
+        let finished = expectation(description: "feed result")
+        var result: Result<UpdateRelease, UpdateError>?
+        client.fetchLatestRelease { value in
+            result = value
+            finished.fulfill()
+        }
+        wait(for: [finished], timeout: 10)
+
+        XCTAssertEqual(result, .failure(.httpStatus(504)))
+        XCTAssertEqual(attempts, 2)
+    }
+
+    func testDownloadRetriesAServerErrorThenSucceeds() throws {
+        let work = try makeTemporaryDirectory()
+        let payload = Data("staged-bundle".utf8)
+
+        var attempts = 0
+        MockURLProtocol.requestHandler = { request in
+            attempts += 1
+            if attempts == 1 {
+                return (
+                    HTTPURLResponse(url: request.url!, statusCode: 504, httpVersion: "HTTP/1.1", headerFields: nil)!,
+                    Data("<html>504</html>".utf8)
+                )
+            }
+            return (
+                HTTPURLResponse(url: request.url!, statusCode: 200, httpVersion: "HTTP/1.1", headerFields: nil)!,
+                payload
+            )
+        }
+
+        let config = URLSessionConfiguration.ephemeral
+        config.protocolClasses = [MockURLProtocol.self]
+        let installer = UpdateInstaller(
+            workDirectory: work,
+            retryPolicy: .immediate,
+            downloadConfiguration: config
+        )
+
+        let asset = ReleaseAsset(
+            name: "OpenTaskbar.zip",
+            size: payload.count,
+            downloadURL: URL(string: "https://example.invalid/OpenTaskbar.zip")!,
+            digest: nil
+        )
+
+        let finished = expectation(description: "download result")
+        var result: Result<URL, UpdateError>?
+        installer.download(asset, progress: { _, _ in }) { value in
+            result = value
+            finished.fulfill()
+        }
+        wait(for: [finished], timeout: 10)
+
+        guard case .success(let url) = try XCTUnwrap(result) else {
+            return XCTFail("expected a retried download, got \(String(describing: result))")
+        }
+        XCTAssertEqual(try Data(contentsOf: url), payload)
+        XCTAssertEqual(attempts, 2)
+    }
+
+    func testDownloadDoesNotRetryA404() throws {
+        let work = try makeTemporaryDirectory()
+
+        var attempts = 0
+        MockURLProtocol.requestHandler = { request in
+            attempts += 1
+            return (
+                HTTPURLResponse(url: request.url!, statusCode: 404, httpVersion: "HTTP/1.1", headerFields: nil)!,
+                Data("missing".utf8)
+            )
+        }
+
+        let config = URLSessionConfiguration.ephemeral
+        config.protocolClasses = [MockURLProtocol.self]
+        let installer = UpdateInstaller(workDirectory: work, retryPolicy: .immediate, downloadConfiguration: config)
+
+        let asset = ReleaseAsset(
+            name: "OpenTaskbar.zip",
+            size: 1,
+            downloadURL: URL(string: "https://example.invalid/OpenTaskbar.zip")!,
+            digest: nil
+        )
+
+        let finished = expectation(description: "download result")
+        var result: Result<URL, UpdateError>?
+        installer.download(asset, progress: { _, _ in }) { value in
+            result = value
+            finished.fulfill()
+        }
+        wait(for: [finished], timeout: 10)
+
+        XCTAssertEqual(result, .failure(.httpStatus(404)))
+        XCTAssertEqual(attempts, 1, "a 404 is a definitive answer, not a glitch")
+    }
+}
+
 final class MockURLProtocol: URLProtocol {
     static var requestHandler: ((URLRequest) throws -> (HTTPURLResponse, Data))?
 

@@ -130,6 +130,7 @@
 "update.error.notModified" = "कोई नया संस्करण उपलब्ध नहीं है।";
 "update.error.rateLimited" = "अपडेट सर्वर अनुरोधों को सीमित कर रहा है। बाद में पुनः प्रयास करें।";
 "update.error.httpStatus" = "अपडेट सर्वर ने HTTP %d लौटाया।";
+"update.error.serverBusy" = "अपडेट सर्वर ने HTTP %d लौटाया और वह व्यस्त है। यह आमतौर पर अस्थायी होता है — कुछ मिनटों में फिर कोशिश करें।";
 "update.error.invalidResponse" = "अपडेट सर्वर से अप्रत्याशित प्रतिक्रिया मिली।";
 "update.error.noAsset" = "इस रिलीज़ में macOS ऐप डाउनलोड शामिल नहीं है।";
 "update.error.checksum" = "डाउनलोड उसके प्रकाशित चेकसम से मेल नहीं खाता और उसे छोड़ दिया गया।";

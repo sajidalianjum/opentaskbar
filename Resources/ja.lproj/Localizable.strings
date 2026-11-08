@@ -130,6 +130,7 @@
 "update.error.notModified" = "新しいリリースはありません。";
 "update.error.rateLimited" = "アップデートサーバーがリクエスト数を制限しています。しばらくしてから再試行してください。";
 "update.error.httpStatus" = "アップデートサーバーが HTTP %d を返しました。";
+"update.error.serverBusy" = "アップデートサーバーが HTTP %d を返しました。サーバーが混雑しています。通常は一時的なものです。数分後にもう一度お試しください。";
 "update.error.invalidResponse" = "アップデートサーバーの応答が予期しない内容でした。";
 "update.error.noAsset" = "このリリースには macOS 版のダウンロードが含まれていません。";
 "update.error.checksum" = "ダウンロードが公開されたチェックサムと一致しないため破棄しました。";

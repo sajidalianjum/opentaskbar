@@ -130,6 +130,7 @@
 "update.error.notModified" = "لا يوجد إصدار أحدث متاح.";
 "update.error.rateLimited" = "يحدّ خادم التحديثات من عدد الطلبات. حاول مرة أخرى لاحقًا.";
 "update.error.httpStatus" = "أعاد خادم التحديثات HTTP %d.";
+"update.error.serverBusy" = "أعاد خادم التحديثات HTTP %d وهو مشغول. هذا عادةً مؤقت — أعد المحاولة بعد بضع دقائق.";
 "update.error.invalidResponse" = "أعاد خادم التحديثات استجابة غير متوقعة.";
 "update.error.noAsset" = "لا يتضمن هذا الإصدار تنزيل تطبيق macOS.";
 "update.error.checksum" = "لم يطابق الملف المُنزَّل مجموع التحقق المنشور وتم التخلص منه.";

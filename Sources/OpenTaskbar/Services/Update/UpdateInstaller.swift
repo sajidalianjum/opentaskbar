@@ -21,10 +21,19 @@ final class UpdateInstaller: NSObject {
     private var destinationTask: URLSessionDownloadTask?
 
     private let workDirectory: URL
+    private let retryPolicy: UpdateRetryPolicy
+    private let downloadConfiguration: URLSessionConfiguration
 
-    init(session: URLSession = .shared, workDirectory: URL? = nil) {
+    init(
+        session: URLSession = .shared,
+        workDirectory: URL? = nil,
+        retryPolicy: UpdateRetryPolicy = .default,
+        downloadConfiguration: URLSessionConfiguration = .ephemeral
+    ) {
         self.session = session
         self.workDirectory = workDirectory ?? UpdateInstaller.defaultWorkDirectory()
+        self.retryPolicy = retryPolicy
+        self.downloadConfiguration = downloadConfiguration
         super.init()
     }
 
@@ -59,6 +68,17 @@ final class UpdateInstaller: NSObject {
         progress: @escaping (Stage, Double) -> Void,
         completion: @escaping (Result<URL, UpdateError>) -> Void
     ) {
+        download(asset, attempt: 1, progress: progress, completion: completion)
+    }
+
+    // Retried in place: the CDN's 502/503/504 answers are short-lived, and
+    // surfacing one to the user costs them a click and an unexplainable error.
+    private func download(
+        _ asset: ReleaseAsset,
+        attempt: Int,
+        progress: @escaping (Stage, Double) -> Void,
+        completion: @escaping (Result<URL, UpdateError>) -> Void
+    ) {
         let directory = downloadDirectory
         do {
             try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
@@ -71,13 +91,37 @@ final class UpdateInstaller: NSObject {
         delegate.onProgress = { fraction in
             DispatchQueue.main.async { progress(.downloading, fraction) }
         }
-        delegate.onCompletion = { result in
+        delegate.onCompletion = { [weak self] result in
+            guard let self else { return }
+            if case .failure(let error) = result,
+               self.retryPolicy.shouldRetry(afterAttempt: attempt, error: error) {
+                let delay = self.retryPolicy.delay(afterAttempt: attempt)
+                Logger.shared.log(
+                    "Download attempt \(attempt) of \(self.retryPolicy.maxAttempts) for \(asset.name) failed "
+                        + "(\(error.errorDescription ?? String(describing: error))); retrying in \(delay)s"
+                )
+                self.downloadSession?.invalidateAndCancel()
+                self.downloadSession = nil
+                self.downloadDelegate = nil
+                self.destinationTask = nil
+                DispatchQueue.main.async {
+                    progress(.downloading, 0)
+                    DispatchQueue.main.asyncAfter(deadline: .now() + delay) { [weak self] in
+                        self?.download(asset, attempt: attempt + 1, progress: progress, completion: completion)
+                    }
+                }
+                return
+            }
             DispatchQueue.main.async { completion(result) }
         }
 
         self.downloadCompletion = completion
         self.downloadDelegate = delegate
-        self.downloadSession = URLSession(configuration: .ephemeral, delegate: delegate, delegateQueue: nil)
+        self.downloadSession = URLSession(
+            configuration: downloadConfiguration,
+            delegate: delegate,
+            delegateQueue: nil
+        )
 
         guard let task = self.downloadSession?.downloadTask(with: asset.downloadURL) else {
             completion(.failure(.downloadFailed("could not start the download")))

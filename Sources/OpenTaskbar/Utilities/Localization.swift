@@ -136,6 +136,7 @@ enum L10n {
         case updateErrorNotModified = "update.error.notModified"
         case updateErrorRateLimited = "update.error.rateLimited"
         case updateErrorHTTPStatus = "update.error.httpStatus"
+        case updateErrorServerBusy = "update.error.serverBusy"
         case updateErrorInvalidResponse = "update.error.invalidResponse"
         case updateErrorNoAsset = "update.error.noAsset"
         case updateErrorChecksum = "update.error.checksum"
@@ -702,7 +703,17 @@ enum L10n {
     }
 
     static func updateErrorHTTPStatus(_ code: Int) -> String {
-        format(.updateErrorHTTPStatus, fallback: "The update server returned HTTP %d.", code)
+        // A 5xx is the CDN failing to serve, not a bad request. The updater
+        // already retried it, so tell the user it is transient instead of
+        // leaving them with a bare status code.
+        if UpdateRetryPolicy.isTransient(statusCode: code) {
+            return format(
+                .updateErrorServerBusy,
+                fallback: "The update server returned HTTP %d and is busy. This is usually temporary — try again in a few minutes.",
+                code
+            )
+        }
+        return format(.updateErrorHTTPStatus, fallback: "The update server returned HTTP %d.", code)
     }
 
     static var updateErrorInvalidResponse: String {

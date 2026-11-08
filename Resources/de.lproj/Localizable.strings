@@ -128,6 +128,7 @@
 "update.error.notModified" = "Es ist keine neuere Version verfügbar.";
 "update.error.rateLimited" = "Der Update-Server begrenzt die Anzahl der Anfragen. Bitte später erneut versuchen.";
 "update.error.httpStatus" = "Der Update-Server hat HTTP %d zurückgegeben.";
+"update.error.serverBusy" = "Der Update-Server hat HTTP %d zurückgegeben und ist ausgelastet. Das ist meist vorübergehend – versuche es in ein paar Minuten erneut.";
 "update.error.invalidResponse" = "Der Update-Server hat eine unerwartete Antwort geliefert.";
 "update.error.noAsset" = "Dieses Release enthält keinen macOS-App-Download.";
 "update.error.checksum" = "Der Download stimmte nicht mit der veröffentlichten Prüfsumme überein und wurde verworfen.";

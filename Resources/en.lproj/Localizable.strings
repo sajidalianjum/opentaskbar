@@ -131,6 +131,7 @@
 "update.error.notModified" = "No newer release is available.";
 "update.error.rateLimited" = "The update server is rate limiting requests. Try again later.";
 "update.error.httpStatus" = "The update server returned HTTP %d.";
+"update.error.serverBusy" = "The update server returned HTTP %d and is busy. This is usually temporary — try again in a few minutes.";
 "update.error.invalidResponse" = "The update server returned an unexpected response.";
 "update.error.noAsset" = "This release does not include a macOS app download.";
 "update.error.checksum" = "The download did not match its published checksum and was discarded.";

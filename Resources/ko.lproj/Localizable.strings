@@ -130,6 +130,7 @@
 "update.error.notModified" = "더 최신 릴리스가 없습니다.";
 "update.error.rateLimited" = "업데이트 서버가 요청을 제한하고 있습니다. 잠시 후 다시 시도하세요.";
 "update.error.httpStatus" = "업데이트 서버가 HTTP %d 을(를) 반환했습니다.";
+"update.error.serverBusy" = "업데이트 서버가 HTTP %d 을(를) 반환했으며 현재 혼잡합니다. 대개 일시적인 문제이니 몇 분 후 다시 시도해 주세요.";
 "update.error.invalidResponse" = "업데이트 서버에서 예상치 못한 응답이 왔습니다.";
 "update.error.noAsset" = "이 릴리스에는 macOS 앱 다운로드가 포함되어 있지 않습니다.";
 "update.error.checksum" = "다운로드한 파일의 게시된 체크섬과 일치하지 않아 삭제되었습니다.";

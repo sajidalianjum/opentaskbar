@@ -124,7 +124,10 @@ final class TaskbarContentView: NSView, ForgivingHitTarget {
                 backgroundView.topAnchor.constraint(equalTo: topAnchor),
                 backgroundView.heightAnchor.constraint(equalToConstant: taskbarHeight),
 
-                contentStackView.centerYAnchor.constraint(equalTo: topAnchor, constant: -taskbarHeight / 2),
+                // The panel hangs edgeHotZoneSlop below the screen edge, so the
+                // visible pill occupies the top taskbarHeight of this view.
+                // Auto Layout's top anchor grows downward, hence +.
+                contentStackView.centerYAnchor.constraint(equalTo: topAnchor, constant: taskbarHeight / 2),
 
                 startSeparator.widthAnchor.constraint(equalToConstant: 1),
                 startSeparator.heightAnchor.constraint(lessThanOrEqualTo: contentStackView.heightAnchor, multiplier: 0.5),

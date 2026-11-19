@@ -20,9 +20,9 @@ final class CrashGuard {
         if let data = line.data(using: .utf8) {
             if FileManager.default.fileExists(atPath: crashLogPath) {
                 if let handle = try? FileHandle(forWritingTo: URL(fileURLWithPath: crashLogPath)) {
-                    handle.seekToEndOfFile()
-                    handle.write(data)
-                    handle.closeFile()
+                    defer { try? handle.close() }
+                    _ = try? handle.seekToEnd()
+                    try? handle.write(contentsOf: data)
                 }
             } else {
                 try? line.write(toFile: crashLogPath, atomically: true, encoding: .utf8)
@@ -35,9 +35,9 @@ final class CrashGuard {
         if let data = line.data(using: .utf8) {
             if FileManager.default.fileExists(atPath: crashLogPath) {
                 if let handle = try? FileHandle(forWritingTo: URL(fileURLWithPath: crashLogPath)) {
-                    handle.seekToEndOfFile()
-                    handle.write(data)
-                    handle.closeFile()
+                    defer { try? handle.close() }
+                    _ = try? handle.seekToEnd()
+                    try? handle.write(contentsOf: data)
                 }
             } else {
                 try? line.write(toFile: crashLogPath, atomically: true, encoding: .utf8)

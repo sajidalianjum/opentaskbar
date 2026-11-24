@@ -1327,30 +1327,25 @@ final class WindowManager {
         if group.isRunning {
             menu.addItem(NSMenuItem.separator())
 
-            let quitMenu = NSMenu()
-            let quitSubItem = NSMenuItem(title: L10n.quit, action: nil, keyEquivalent: "")
-            quitSubItem.submenu = quitMenu
-            menu.addItem(quitSubItem)
-
             let quitItem = NSMenuItem(title: L10n.quitApp(appName: appName), action: #selector(MenuItemActions.shared.quitApp(_:)), keyEquivalent: "q")
             quitItem.target = MenuItemActions.shared
             quitItem.representedObject = ["bundleID": group.bundleIdentifier]
-            quitMenu.addItem(quitItem)
+            menu.addItem(quitItem)
 
             let hasAppsToRight = (index + 1) < appGroups.count && !appGroups[(index + 1)...].allSatisfy { !$0.isRunning }
             if hasAppsToRight {
                 let quitRightItem = NSMenuItem(title: L10n.quitAppsToRight, action: #selector(MenuItemActions.shared.quitAppsToTheRight(_:)), keyEquivalent: "")
                 quitRightItem.target = MenuItemActions.shared
                 quitRightItem.representedObject = ["index": index]
-                quitMenu.addItem(quitRightItem)
+                menu.addItem(quitRightItem)
             }
 
-            quitMenu.addItem(NSMenuItem.separator())
+            menu.addItem(NSMenuItem.separator())
 
             let forceQuitItem = NSMenuItem(title: L10n.forceQuitApp(appName: appName), action: #selector(MenuItemActions.shared.forceQuitApp(_:)), keyEquivalent: "")
             forceQuitItem.target = MenuItemActions.shared
             forceQuitItem.representedObject = ["bundleID": group.bundleIdentifier]
-            quitMenu.addItem(forceQuitItem)
+            menu.addItem(forceQuitItem)
         }
 
         return menu

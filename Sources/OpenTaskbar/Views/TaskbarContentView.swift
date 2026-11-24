@@ -188,7 +188,9 @@ final class TaskbarContentView: NSView, ForgivingHitTarget {
                 backgroundView.leadingAnchor.constraint(equalTo: leadingAnchor),
                 backgroundView.trailingAnchor.constraint(equalTo: trailingAnchor),
                 backgroundView.topAnchor.constraint(equalTo: topAnchor),
-                backgroundView.heightAnchor.constraint(equalToConstant: taskbarHeight),
+                // Include the off-screen hot zone so the full-width bar covers
+                // the bottommost display pixel instead of leaving a hairline.
+                backgroundView.bottomAnchor.constraint(equalTo: bottomAnchor),
 
                 contentStackView.topAnchor.constraint(equalTo: topAnchor),
                 contentStackView.heightAnchor.constraint(equalToConstant: taskbarHeight),
